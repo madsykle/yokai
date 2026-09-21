@@ -15,7 +15,7 @@ koin = "4.0.4"
 leakcanary = "2.14"
 voyager = "1.1.0-beta03"
 # Liquid Glass tier libraries
-backdrop = "2.0.1"
+backdrop = "1.0.6"
 haze = "1.6.10"
 dynamicanimation = "1.1.0-alpha03"
 
