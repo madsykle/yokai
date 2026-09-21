@@ -69,14 +69,17 @@ sealed interface GlassTier {
     data object Scrim : GlassTier  // API 29–30 — tinted scrim fallback
 }
 
-@Composable
 fun glassTier(): GlassTier {
-    val api = android.os.Build.VERSION.SDK_INT
     return when {
-        api >= 33 -> GlassTier.Full
-        api >= 31 -> GlassTier.Blur
+        Build.VERSION.SDK_INT >= 33 -> GlassTier.Full
+        Build.VERSION.SDK_INT >= 31 -> GlassTier.Blur
         else -> GlassTier.Scrim
     }
+}
+
+@Composable
+fun glassTierComposable(): GlassTier {
+    return glassTier()
 }
 
 /**

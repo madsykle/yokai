@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.view.isGone
 import io.github.kyant0.backdrop.Backdrop
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTheme
@@ -179,8 +178,9 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
             val isDark = (resources.configuration.uiMode
                 and android.content.res.Configuration.UI_MODE_NIGHT_MASK)
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES
-            setBackgroundResource(
-                if (isDark) 0 else 0,
+            setBackgroundColor(
+                if (isDark) GlassColors.ScrimDark.toArgb()
+                else GlassColors.ScrimLight.toArgb(),
             )
         }
     }

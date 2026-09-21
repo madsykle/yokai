@@ -160,4 +160,27 @@
     <!-- Bottom Nav Floating Margins -->
     <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
     <dimen name="bottom_nav_bottom_margin">8dp</dimen>
+    <dimen name="bottom_nav_bottom_padding">8dp</dimen>
+
+    <!-- Bottom Nav Glass Selectors (Dark) -->
+    <color name="bottom_nav_item_selected">@color/accent_blue</color>
+    <color name="bottom_nav_item_unselected">@color/label_secondary_dark</color>
+    <color name="bottom_nav_text_selected">@color/accent_blue</color>
+    <color name="bottom_nav_text_unselected">@color/label_secondary_dark</color>
+
+    <drawable name="bottom_nav_item_selector">
+        <selector>
+            <item android:color="@color/bottom_nav_item_selected" android:state_selected="true" />
+            <item android:color="@color/bottom_nav_item_unselected" />
+        </selector>
+    </drawable>
+
+    <drawable name="bottom_nav_text_selector">
+        <selector>
+            <item android:color="@color/bottom_nav_text_selected" android:state_selected="true" />
+            <item android:color="@color/bottom_nav_text_unselected" />
+        </selector>
+    </drawable>
+
+    <color name="ripple_nav">@color/glass_tint_dark</color>
 </resources>

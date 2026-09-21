@@ -295,6 +295,17 @@
         <item name="tabRippleColor">?colorControlHighlight</item>
     </style>
 
+    <!-- iOS 27 Liquid Glass Bottom Nav Pill -->
+    <!-- DESIGN.md §1.2: Use glass scrim, never opaque backgrounds -->
+    <!-- Tier-aware set via GlassSurface.kt on the View programmatically -->
+    <style name="Widget.Tachiyomi.BottomNavigationView.Glass" parent="Widget.Tachiyomi.BottomNavigationView">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="itemIconTint">@color/bottom_nav_item_selector</item>
+        <item name="itemTextColor">@color/bottom_nav_text_selector</item>
+        <item name="itemRippleColor">@color/ripple_nav</item>
+        <item name="labelVisibilityMode">labeled</item>
+    </style>
+
     <style name="Widget.Tachiyomi.NavigationRail" parent="Widget.Material3.NavigationRailView">
         <item name="android:minHeight">68dp</item>
         <item name="itemIconTint">@color/bottom_nav_item_selector</item>

@@ -151,6 +151,8 @@ import yokai.presentation.core.Constants
 import yokai.presentation.extension.repo.ExtensionRepoController
 import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.glassTier
 import android.R as AR
 
 @SuppressLint("ResourceType")
@@ -373,6 +375,11 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         setContentView(binding.root)
 
+        // iOS 27 Liquid Glass: apply tier-aware glass to bottom nav
+        binding.bottomNav?.let { navView ->
+            navView.applyGlass(28f, glassTier())
+        }
+
         binding.toolbar.overflowIcon?.setTint(getResourceColor(R.attr.actionBarTintColor))
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -492,6 +499,14 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             )
             binding.bottomNav?.updatePadding(
                 bottom = systemInsets.bottom,
+            )
+
+            // iOS 27 Liquid Glass: content must scroll under the floating nav pill.
+            // Add the nav total height + system bottom inset as bottom padding to the
+            // router container so list content doesn't get clipped behind the glass nav.
+            val navHeight = resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height)
+            binding.controllerContainer.updatePadding(
+                bottom = navHeight + systemInsets.bottom,
             )
             binding.sideNav?.updatePadding(
                 left = 0,
