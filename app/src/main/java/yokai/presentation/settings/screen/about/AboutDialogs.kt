@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +19,7 @@ import java.io.Serializable
 import kotlin.coroutines.resume
 import yokai.domain.DialogHostState
 import yokai.i18n.MR
+import yokai.presentation.theme.GlassAlertDialog
 import android.R as AR
 
 data class NewUpdateData(
@@ -37,7 +37,7 @@ suspend fun DialogHostState.awaitNewUpdateDialog(
 
     val isOnA12 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = {
             onDismiss()
             cont.cancel()
@@ -95,7 +95,7 @@ private fun MarkdownText(text: String) {
 
 suspend fun DialogHostState.awaitNotificationPermissionDeniedDialog(): Unit = dialog { cont ->
     // cont.resume(Unit) so that new update dialog will be shown next
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = { if (cont.isActive) cont.resume(Unit) },
         title = { Text(text = stringResource(MR.strings.warning)) },
         text = { Text(text = stringResource(MR.strings.allow_notifications_recommended)) },

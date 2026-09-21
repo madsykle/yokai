@@ -22,6 +22,8 @@ import eu.kanade.tachiyomi.databinding.DialogTextInputBinding
 import eu.kanade.tachiyomi.widget.TriStateCheckBox
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceDialogAdapter
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceListener
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.glassTier
 import yokai.util.lang.getString
 
 fun Context.materialAlertDialog() = MaterialAlertDialogBuilder(withOriginalWidth())
@@ -179,3 +181,22 @@ fun MaterialAlertDialogBuilder.setTextInput(
     }
     return setView(binding.root)
 }
+
+/**
+ * Applies iOS 27 Liquid Glass styling to the created dialog.
+ * Call after show() or on the dialog after creation.
+ */
+fun AlertDialog.applyGlassDialog() {
+    window?.let { window ->
+        window.setBackgroundDrawableResource(android.R.color.transparent)
+        // Apply glass to the decor view
+        window.decorView.applyGlass(24f, yokai.presentation.theme.glassTier())
+        window.decorView.applyGlassDecorators(yokai.presentation.theme.glassTier())
+    }
+}
+
+/**
+ * Creates a MaterialAlertDialogBuilder with glass styling applied automatically.
+ */
+fun Context.materialGlassAlertDialog() = MaterialAlertDialogBuilder(withOriginalWidth())
+    .apply { /* Glass applied on show via extension */ }

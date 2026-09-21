@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
@@ -23,6 +22,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import yokai.domain.DialogHostState
 import yokai.i18n.MR
 import yokai.presentation.component.LabeledCheckbox
+import yokai.presentation.theme.GlassAlertDialog
 import android.R as AR
 
 suspend fun DialogHostState.awaitRestoreBackup(
@@ -48,7 +48,7 @@ suspend fun DialogHostState.awaitRestoreBackup(
             }"
         }
 
-        AlertDialog(
+        GlassAlertDialog(
             onDismissRequest = { cont.cancel() },
             confirmButton = {
                 TextButton(
@@ -70,7 +70,7 @@ suspend fun DialogHostState.awaitRestoreBackup(
             text = { Text(text = message) },
         )
     } else {
-        AlertDialog(
+        GlassAlertDialog(
             onDismissRequest = { cont.cancel() },
             confirmButton = {
                 TextButton(onClick = { cont.cancel() }) {
@@ -89,7 +89,7 @@ suspend fun DialogHostState.awaitCreateBackup(
 ): Unit = dialog { cont ->
     var options by mutableStateOf(BackupOptions())
 
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = { cont.cancel() },
         confirmButton = {
             TextButton(onClick = {

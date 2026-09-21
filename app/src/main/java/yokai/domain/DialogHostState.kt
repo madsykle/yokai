@@ -1,13 +1,14 @@
 package yokai.domain
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.unit.sp
+import yokai.presentation.theme.GlassAlertDialog
+import yokai.presentation.theme.GlassColors
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlin.coroutines.resume
@@ -40,14 +41,13 @@ class AlertDialogBuilder {
     var onDismiss: () -> Unit = onCancel
 
     suspend fun build(dialogHostState: DialogHostState): Unit = dialogHostState.dialog { cont ->
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        GlassAlertDialog(
             title = {
                 Text(
                     text = titleRes?.let { stringResource(it) } ?: title,
                     fontStyle = MaterialTheme.typography.titleMedium.fontStyle,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 24.sp,
+                    color = if (isSystemInDarkTheme()) GlassColors.LabelPrimaryDark else GlassColors.LabelPrimaryLight,
+                    fontSize = 20.sp,
                 )
             },
             text = if (textRes == null && text == null) null else {
@@ -55,7 +55,7 @@ class AlertDialogBuilder {
                     Text(
                         text = textRes?.let { stringResource(it) } ?: text ?: "",
                         fontStyle = MaterialTheme.typography.bodyMedium.fontStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isSystemInDarkTheme()) GlassColors.LabelSecondaryDark else GlassColors.LabelSecondaryLight,
                         fontSize = 14.sp,
                     )
                 }
@@ -73,7 +73,7 @@ class AlertDialogBuilder {
                 ) {
                     Text(
                         text = confirmText ?: confirmTextRes?.let { stringResource(it) } ?: androidx.compose.ui.res.stringResource(android.R.string.ok),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (isSystemInDarkTheme()) GlassColors.AccentBlueDark else GlassColors.AccentBlue,
                         fontSize = 14.sp,
                     )
                 }
@@ -85,7 +85,7 @@ class AlertDialogBuilder {
                 }) {
                     Text(
                         text = stringResource(MR.strings.cancel),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (isSystemInDarkTheme()) GlassColors.AccentBlueDark else GlassColors.AccentBlue,
                         fontSize = 14.sp,
                     )
                 }

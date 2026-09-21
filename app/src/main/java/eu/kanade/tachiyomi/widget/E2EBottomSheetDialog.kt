@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.glassTier
 
 /**
  * Edge to Edge BottomSheetDialog that uses a custom theme and settings to extend pass the nav bar
@@ -35,6 +37,9 @@ abstract class E2EBottomSheetDialog<VB : ViewBinding>(activity: Activity) :
             val wic = WindowInsetsControllerCompat(window, binding.root)
             window.navigationBarColor = activity.window.navigationBarColor
             wic.isAppearanceLightNavigationBars = isLight
+            // iOS 27 Liquid Glass: apply tier-aware glass to bottom sheet
+            window.decorView.applyGlass(24f, glassTier())
+            window.decorView.applyGlassDecorators(glassTier())
         }
         contentView.requestLayout()
     }
