@@ -30,6 +30,8 @@ import eu.kanade.tachiyomi.util.view.backgroundColor
 import eu.kanade.tachiyomi.util.view.isControllerVisible
 import eu.kanade.tachiyomi.util.view.setTextColorAlpha
 import eu.kanade.tachiyomi.widget.StatefulNestedScrollView
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.glassTier
 import uy.kohesive.injekt.injectLazy
 import kotlin.math.abs
 import kotlin.math.max
@@ -55,6 +57,11 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
         get() = preferences.useLargeToolbar().get() && !isExtraSmall
 
     var compactSearchMode = false
+
+    /** Tracks whether glass has been applied to the collapsed toolbar */
+    private var isGlassApplied = false
+    /** Tracks whether glass has been applied to the search toolbar */
+    private var isSearchGlassApplied = false
 
     /** Defines how the toolbar layout should be */
     private var toolbarMode = ToolbarState.EXPANDED
@@ -151,6 +158,7 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
     }
 
     fun setToolbarModeBy(controller: Controller?, useSmall: Boolean? = null) {
+        val previousMode = toolbarMode
         toolbarMode = if (useSmall ?: !useLargeToolbar) {
             when {
                 controller is FloatingSearchInterface && controller.showFloatingBar() -> {
@@ -169,6 +177,11 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 }
                 else -> ToolbarState.EXPANDED
             }
+        }
+        // Reset glass when expanding back to large toolbar
+        if (previousMode != ToolbarState.EXPANDED && toolbarMode == ToolbarState.EXPANDED) {
+            isGlassApplied = false
+            isSearchGlassApplied = false
         }
     }
 
@@ -338,6 +351,12 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 cardFrame?.backgroundColor = null
             } else {
                 mainToolbar?.alpha = 1f
+                // iOS 27 Liquid Glass: apply tier-aware glass to collapsed toolbar
+                if (!isGlassApplied) {
+                    mainToolbar?.applyGlass(24f, glassTier())
+                    mainToolbar?.applyGlassDecorators(glassTier())
+                    isGlassApplied = true
+                }
             }
             useSearchToolbarForMenu(compactSearchMode || offset > realHeight - shortH - tabHeight)
             return
@@ -442,6 +461,12 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 }
                 mainToolbar?.backgroundColor = null
                 cardFrame?.backgroundColor = null
+                // iOS 27 Liquid Glass: apply glass to search toolbar
+                if (!isSearchGlassApplied) {
+                    cardFrame?.applyGlass(24f, glassTier())
+                    cardFrame?.applyGlassDecorators(glassTier())
+                    isSearchGlassApplied = true
+                }
             }
         } else {
             if (mainActivity.currentToolbar != mainToolbar) {

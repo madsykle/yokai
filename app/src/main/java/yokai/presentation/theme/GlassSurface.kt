@@ -207,3 +207,56 @@ fun springAnimate(view: View, property: String, to: Float) {
         anim.start()
     }
 }
+
+/**
+ * Applies iOS 27 Liquid Glass decorators (darkened edge + specular highlight)
+ * to a View by setting a custom foreground drawable with gradient layers.
+ * Mirrors [GlassSurfaceDecorators] for the Compose side.
+ */
+fun View.applyGlassDecorators(tier: GlassTier? = null) {
+    val actualTier = tier ?: glassTier()
+
+    // Only apply decorators for blur/glass tiers (not scrim)
+    if (actualTier is GlassTier.Scrim) return
+
+    // Build a foreground drawable with vertical gradients for darkened edge + specular highlight
+    // GradientDrawable draws gradient across full bounds; we use a custom drawable to limit height
+    val decoratorDrawable = object : android.graphics.drawable.Drawable() {
+        private val darkenedEdgeShader = android.graphics.LinearGradient(
+            0f, 0f, 0f, 96 * resources.displayMetrics.density,
+            intArrayOf(GlassColors.DarkenedEdge.toArgb(), Color.Transparent.toArgb()),
+            null,
+            android.graphics.Shader.TileMode.CLAMP,
+        )
+        private val specularShader = android.graphics.LinearGradient(
+            0f, 0f, 0f, 24 * resources.displayMetrics.density,
+            intArrayOf(GlassColors.SpecularHighlight.toArgb(), Color.Transparent.toArgb()),
+            null,
+            android.graphics.Shader.TileMode.CLAMP,
+        )
+        private val paint = android.graphics.Paint().apply { isAntiAlias = true }
+
+        override fun draw(canvas: android.graphics.Canvas) {
+            val bounds = this.bounds
+            // Darkened edge (96dp from top)
+            paint.shader = darkenedEdgeShader
+            canvas.drawRect(
+                0f, 0f, bounds.width().toFloat(), 96 * resources.displayMetrics.density,
+                paint,
+            )
+            // Specular highlight (24dp from top)
+            paint.shader = specularShader
+            canvas.drawRect(
+                0f, 0f, bounds.width().toFloat(), 24 * resources.displayMetrics.density,
+                paint,
+            )
+        }
+
+        override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { paint.colorFilter = colorFilter }
+        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+    }
+
+    // Add to View overlay (non-interfering with background/clicks)
+    overlay.add(decoratorDrawable)
+}

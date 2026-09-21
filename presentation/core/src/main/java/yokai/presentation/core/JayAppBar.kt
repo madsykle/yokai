@@ -1,6 +1,7 @@
 package yokai.presentation.core
 
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,9 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import yokai.presentation.theme.GlassColors
+import yokai.presentation.theme.GlassSurface
+import yokai.presentation.theme.glassTintColor
 
 /**
  * Composable replacement for Jay's [eu.kanade.tachiyomi.ui.base.ExpandedAppBarLayout]
@@ -68,9 +72,13 @@ fun JayExpandedTopAppBar(
     val titleTextFontSizePx: Float = with(density) { titleTextStyle.fontSize.toPx() }
     val insetPaddingForSearchPx: Float = SearchBarDefaults.windowInsets.getTop(density).toFloat()
 
+    // iOS 27 Liquid Glass: tier-aware glass when app bar is collapsed
+    val isCollapsed = (scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f
+
     val appBarContainerColor = l@{
         if (textFieldState != null) return@l Color.Transparent
-        if ((scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f) colors.scrolledContainerColor else colors.containerColor
+        if (isCollapsed) glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+        else colors.containerColor
     }
 
     val bottomCollapsedFractionOrZero = { scrollBehavior?.bottomCollapsedFraction(titleTextFontSizePx) ?: 0f }
@@ -96,84 +104,150 @@ fun JayExpandedTopAppBar(
                 .semantics { isTraversalGroup = true }
                 .pointerInput(Unit) {}
     ) {
-        Column(
-            modifier = Modifier.drawBehind { drawRect(color = appBarContainerColor()) }
-        ) {
-            Surface(
-                color = Color.Transparent,
-                modifier =
-                    modifier
-                        .then(scrollBehavior?.let { with(it) { Modifier.smallAppBarScrollBehavior() } } ?: Modifier)
-                        .onSizeChanged { scrollBehavior?.topHeightPx = it.height.toFloat() }
-                        .fillMaxWidth()
-                        .windowInsetsPadding(windowInsets)
+        // iOS 27 Liquid Glass: collapsed state draws glass surface
+        if (isCollapsed) {
+            GlassSurface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { scrollBehavior?.topHeightPx = it.height.toFloat() }
+                    .then(scrollBehavior?.let { with(it) { Modifier.smallAppBarScrollBehavior() } } ?: Modifier),
+                cornerRadius = 0.dp,
+                darkenedEdge = true,
+                specularHighlight = true,
             ) {
-                Row(
-                    modifier = Modifier.padding(contentPadding),
-                    verticalAlignment = Alignment.CenterVertically,
+                Surface(
+                    color = Color.Transparent,
+                    modifier =
+                        modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(windowInsets)
                 ) {
-                    navigationIcon?.let {
-                        Box(
-                            Modifier
-                                .padding(start = 4.dp)
-                                .then(if (bottomCollapsedFractionOrZero() >= 1f) Modifier.alpha(titleAlpha()) else Modifier)
-                        ) {
-                            it()
-                        }
-                    }
-                    Box(
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .alpha(titleAlpha())
+                    Row(
+                        modifier = Modifier.padding(contentPadding),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        ProvideContentColorTextStyle(
-                            contentColor = colors.titleContentColor,
-                            textStyle = smallTitleTextStyle,
-                            content = title
-                        )
-                    }
-                    actions?.let {
-                        // Wrap the given action icons in a Row.
-                        val actionsRow =
-                            @Composable {
-                                Row(
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    content = it,
+                        navigationIcon?.let {
+                            Box(
+                                Modifier
+                                    .padding(start = 4.dp)
+                                    .then(if (bottomCollapsedFractionOrZero() >= 1f) Modifier.alpha(titleAlpha()) else Modifier)
+                            ) {
+                                it()
+                            }
+                        }
+                        Box(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .alpha(titleAlpha())
+                        ) {
+                            ProvideContentColorTextStyle(
+                                contentColor = colors.titleContentColor,
+                                textStyle = smallTitleTextStyle,
+                                content = title
+                            )
+                        }
+                        actions?.let {
+                            // Wrap the given action icons in a Row.
+                            val actionsRow =
+                                @Composable {
+                                    Row(
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        content = it,
+                                    )
+                                }
+                            Box(Modifier.padding(end = 4.dp)) {
+                                CompositionLocalProvider(
+                                    LocalContentColor provides colors.actionIconContentColor,
+                                    content = actionsRow,
                                 )
                             }
-                        Box(Modifier.padding(end = 4.dp)) {
-                            CompositionLocalProvider(
-                                LocalContentColor provides colors.actionIconContentColor,
-                                content = actionsRow,
-                            )
                         }
                     }
                 }
             }
-            Surface(
-                color = Color.Transparent,
-                modifier =
-                    modifier
-                        .then(scrollBehavior?.let { with(it) { Modifier.largeAppBarScrollBehavior() } } ?: Modifier)
-                        .onSizeChanged { scrollBehavior?.bottomHeightPx = it.height.toFloat() }
-                        .fillMaxWidth()
-                        .semantics { isTraversalGroup = true },
+        } else {
+            Column(
+                modifier = Modifier.drawBehind { drawRect(color = appBarContainerColor()) }
             ) {
-                Box(
+                Surface(
+                    color = Color.Transparent,
                     modifier =
-                        Modifier
-                            .padding(start = 16.dp, top = 64.dp, bottom = 8.dp)
-                            .weight(1f)
-                            .alpha(bottomTitleAlpha())
+                        modifier
+                            .then(scrollBehavior?.let { with(it) { Modifier.smallAppBarScrollBehavior() } } ?: Modifier)
+                            .onSizeChanged { scrollBehavior?.topHeightPx = it.height.toFloat() }
+                            .fillMaxWidth()
+                            .windowInsetsPadding(windowInsets)
                 ) {
-                    ProvideContentColorTextStyle(
-                        contentColor = colors.titleContentColor,
-                        textStyle = titleTextStyle,
-                        content = title
-                    )
+                    Row(
+                        modifier = Modifier.padding(contentPadding),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        navigationIcon?.let {
+                            Box(
+                                Modifier
+                                    .padding(start = 4.dp)
+                                    .then(if (bottomCollapsedFractionOrZero() >= 1f) Modifier.alpha(titleAlpha()) else Modifier)
+                            ) {
+                                it()
+                            }
+                        }
+                        Box(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .alpha(titleAlpha())
+                        ) {
+                            ProvideContentColorTextStyle(
+                                contentColor = colors.titleContentColor,
+                                textStyle = smallTitleTextStyle,
+                                content = title
+                            )
+                        }
+                        actions?.let {
+                            // Wrap the given action icons in a Row.
+                            val actionsRow =
+                                @Composable {
+                                    Row(
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        content = it,
+                                    )
+                                }
+                            Box(Modifier.padding(end = 4.dp)) {
+                                CompositionLocalProvider(
+                                    LocalContentColor provides colors.actionIconContentColor,
+                                    content = actionsRow,
+                                )
+                            }
+                        }
+                    }
                 }
+            }
+        }
+
+        Surface(
+            color = Color.Transparent,
+            modifier =
+                modifier
+                    .then(scrollBehavior?.let { with(it) { Modifier.largeAppBarScrollBehavior() } } ?: Modifier)
+                    .onSizeChanged { scrollBehavior?.bottomHeightPx = it.height.toFloat() }
+                    .fillMaxWidth()
+                    .semantics { isTraversalGroup = true },
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .padding(start = 16.dp, top = 64.dp, bottom = 8.dp)
+                        .weight(1f)
+                        .alpha(bottomTitleAlpha())
+            ) {
+                ProvideContentColorTextStyle(
+                    contentColor = colors.titleContentColor,
+                    textStyle = titleTextStyle,
+                    content = title
+                )
             }
         }
 
@@ -240,8 +314,13 @@ fun JayTopAppBar(
     searchResult: @Composable (ColumnScope.() -> Unit)? = null,
 ) {
 
-    val appBarContainerColor = {
-        if ((scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f) colors.scrolledContainerColor else colors.containerColor
+    // iOS 27 Liquid Glass: tier-aware glass when app bar is collapsed
+    val isCollapsed = (scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f
+
+    val appBarContainerColor = l@{
+        if (textFieldState != null) return@l Color.Transparent
+        if (isCollapsed) glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+        else colors.containerColor
     }
 
     Box(
