@@ -12,13 +12,6 @@
           "package_name": "eu.kanade.tachiyomi.debugYokai"
         }
       },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:636318130901:android:6487a6238b24d2a357f85c",
-        "android_client_info": {
-          "package_name": "eu.kanade.tachiyomi.madsykle.debugYokai"
-        }
-      },
       "oauth_client": [],
       "api_key": [
         {
@@ -28,6 +21,14 @@
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636318130901:android:6487a6238b24d2a357f85c",
+        "android_client_info": {
+          "package_name": "eu.kanade.tachiyomi.madsykle.debugYokai"
         }
       },
       "oauth_client": [],
