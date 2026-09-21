@@ -175,13 +175,8 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
             }
         }
         is GlassTier.Scrim -> {
-            val isDark = (resources.configuration.uiMode
-                and android.content.res.Configuration.UI_MODE_NIGHT_MASK)
-                == android.content.res.Configuration.UI_MODE_NIGHT_YES
-            setBackgroundColor(
-                if (isDark) GlassColors.ScrimDark.toArgb()
-                else GlassColors.ScrimLight.toArgb(),
-            )
+            val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            setBackgroundColor(if (isDark) GlassColors.ScrimDark.toArgb() else GlassColors.ScrimLight.toArgb())
         }
     }
 
