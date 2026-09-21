@@ -261,6 +261,4 @@
             <item android:color="@color/bottom_nav_text_unselected" />
         </selector>
     </drawable>
-
-    <color name="ripple_nav">@color/glass_tint_light</color>
 </resources>

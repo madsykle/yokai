@@ -152,6 +152,7 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.i18n)
     implementation(projects.presentation.core)
+    implementation(projects.presentation.theme)
     implementation(projects.source.api)
 
     // Compose
@@ -164,11 +165,6 @@ dependencies {
     implementation(libs.flexbox)
 
     implementation(libs.material)
-
-    // Liquid Glass tier libraries
-    implementation(libs.backdrop)
-    implementation(libs.haze)
-    implementation(libs.dynamicanimation)
 
     // Android X libraries
     implementation(androidx.bundles.androidx)

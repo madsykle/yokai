@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "yokai.presentation.core"
+    namespace = "yokai.presentation.theme"
 
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -28,9 +28,8 @@ kotlin {
 }
 
 dependencies {
-    api(libs.material)
-    api(libs.bundles.logging)
-    implementation(projects.presentation.theme)
-
     implementation(compose.bundles.compose)
+    implementation(libs.backdrop)
+    implementation(libs.haze)
+    implementation(libs.dynamicanimation)
 }
