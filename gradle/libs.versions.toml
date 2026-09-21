@@ -14,6 +14,10 @@ kermit = "2.0.5"
 koin = "4.0.4"
 leakcanary = "2.14"
 voyager = "1.1.0-beta03"
+# Liquid Glass tier libraries
+backdrop = "2.0.1"
+haze = "1.6.10"
+dynamicanimation = "1.1.0-alpha03"
 
 [libraries]
 aboutlibraries = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
@@ -27,6 +31,10 @@ coil3-svg = { module = "io.coil-kt.coil3:coil-svg" }
 coil3-gif = { module = "io.coil-kt.coil3:coil-gif" }
 coil3-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp" }
 compose-theme-adapter3 = { module = "com.google.accompanist:accompanist-themeadapter-material3", version = "0.36.0" }
+# Liquid Glass tier libraries
+backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+dynamicanimation = { module = "androidx.dynamicanimation:dynamicanimation", version.ref = "dynamicanimation" }
 conductor = { module = "com.bluelinelabs:conductor", version = "4.0.0-preview-4" }
 conductor-support-preference = { module = "com.github.tachiyomiorg:conductor-support-preference", version = "3.0.0" }
 conscrypt = { module = "org.conscrypt:conscrypt-android", version = "2.5.2" }

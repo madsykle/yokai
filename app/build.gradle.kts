@@ -49,7 +49,7 @@ val supportedAbis = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     defaultConfig {
-        applicationId = "eu.kanade.tachiyomi"
+        applicationId = "eu.kanade.tachiyomi.madsykle"
         versionCode = 161
         versionName = _versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -164,6 +164,11 @@ dependencies {
     implementation(libs.flexbox)
 
     implementation(libs.material)
+
+    // Liquid Glass tier libraries
+    implementation(libs.backdrop)
+    implementation(libs.haze)
+    implementation(libs.dynamicanimation)
 
     // Android X libraries
     implementation(androidx.bundles.androidx)

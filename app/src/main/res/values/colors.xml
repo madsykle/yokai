@@ -200,4 +200,43 @@
     <color name="tabBarIconColorDoki">@color/secondaryDoki</color>
     <color name="rippleColorDoki">#1FEABD62</color>
     <color name="backgroundDoki">#040716</color>
+
+    <!-- iOS 27 Liquid Glass Design Tokens -->
+    <!-- Glass Base Colors (92% opacity for scrim fallback) -->
+    <color name="glass_light_base">#F2F2F7</color>
+    <color name="glass_dark_base">#1C1C1E</color>
+    <!-- Glass Tint Colors -->
+    <color name="glass_tint_light">#1FFFFFFF</color>  <!-- #FFFFFF at 12% -->
+    <color name="glass_tint_dark">#59000000</color>  <!-- #000000 at 35% -->
+    <!-- Accent Colors -->
+    <color name="accent_blue">#007AFF</color>
+    <color name="accent_green">#34C759</color>
+    <color name="accent_red">#FF3B30</color>
+    <!-- Label Colors (auto-switch via luminance sampling) -->
+    <color name="label_primary_light">#000000</color>
+    <color name="label_primary_dark">#FFFFFF</color>
+    <color name="label_secondary_light">#613C3C43</color>  <!-- #3C3C43 at 60% -->
+    <color name="label_secondary_dark">#99EBEBF5</color>  <!-- #EBEBF5 at 60% -->
+    <!-- Glass Border / Specular -->
+    <color name="glass_darkened_edge">#33000000</color>  <!-- 1px border -->
+    <color name="glass_specular_highlight">#1FFFFFFF</color>  <!-- white at 12% for top edge gradient -->
+    <!-- Tier 3 Scrim Fallback (92% opacity) -->
+    <color name="glass_scrim_light">#E6F2F2F7</color>
+    <color name="glass_scrim_dark">#E61C1C1E</color>
+    <!-- Shape Corner Radii -->
+    <dimen name="corner_radius_bottom_nav">28dp</dimen>
+    <dimen name="corner_radius_sheet">24dp</dimen>
+    <dimen name="corner_radius_button">14dp</dimen>
+    <dimen name="corner_radius_card">12dp</dimen>
+    <!-- Spacing (4dp base unit) -->
+    <dimen name="space_1">4dp</dimen>
+    <dimen name="space_2">8dp</dimen>
+    <dimen name="space_3">12dp</dimen>
+    <dimen name="space_4">16dp</dimen>
+    <dimen name="space_5">20dp</dimen>
+    <dimen name="space_6">24dp</dimen>
+    <dimen name="space_8">32dp</dimen>
+    <!-- Bottom Nav Floating Margins -->
+    <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
+    <dimen name="bottom_nav_bottom_margin">8dp</dimen>
 </resources>
