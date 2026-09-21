@@ -30,7 +30,7 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleStandardDebug --no-daemon
       - name: Upload Debug APK
-        uses: actions/upload_artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: yokai-madsykle-debug
           path: app/build/outputs/apk/standard/debug/app-standard-debugYokai-*-arm64-v8a.apk
