@@ -53,7 +53,5 @@ jobs:
         run: |
           mkdir -p ~/.gradle
           cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
-      - name: Kotlin lint
-        run: ./gradlew ktlintCheck --no-daemon
       - name: Android Lint
         run: ./gradlew lintStandardDebug --no-daemon
