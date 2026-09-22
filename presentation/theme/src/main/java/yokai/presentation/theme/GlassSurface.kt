@@ -21,16 +21,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTheme
-import dev.chrisbanes.haze.haze
 
 /**
  * Tier-aware GlassSurface composable.
  *
  * Implements iOS 27 Liquid Glass with three tiers (DESIGN.md §3):
  * - Tier 1 (API 33+): Simple translucent background (no AGSL in older Compose)
- * - Tier 2 (API 31–32): Haze blur
+ * - Tier 2 (API 31–32): Simple translucent background (no Haze in older Compose)
  * - Tier 3 (API 29–30): Scrim fallback
  *
  * RULE: Never stack glass on glass (DESIGN.md §1.2).
@@ -51,63 +48,22 @@ fun GlassSurface(
     val shape = RoundedCornerShape(cornerRadius)
     val tintColor = glassTintColor(tintAlpha, isDark)
 
-    when (tier) {
-        is GlassTier.Full -> {
-            // Tier 1: Simple translucent background with border (no AGSL in older Compose)
-            Box(
-                modifier = modifier
-                    .clip(shape)
-                    .background(tintColor),
-            ) {
-                GlassSurfaceDecorators(
-                    shape = shape,
-                    darkenedEdge = darkenedEdge,
-                    specularHighlight = specularHighlight,
-                )
-                content()
-            }
-        }
+    // All tiers use the same simple implementation for compatibility
+    val backgroundColor = when (tier) {
+        is GlassTier.Scrim -> if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
+        else -> tintColor
+    }
 
-        is GlassTier.Blur -> {
-            // Tier 2: Haze blur (API 31-32)
-            Box(
-                modifier = modifier
-                    .clip(shape)
-                    .haze(
-                        style = HazeStyle.Translucent,
-                        theme = HazeTheme(
-                            blur = 20f,
-                            tint = tintColor,
-                        ),
-                    )
-                    .background(tintColor),
-            ) {
-                GlassSurfaceDecorators(
-                    shape = shape,
-                    darkenedEdge = darkenedEdge,
-                    specularHighlight = specularHighlight,
-                )
-                content()
-            }
-        }
-
-        is GlassTier.Scrim -> {
-            // Tier 3: Scrim fallback (API 29-30)
-            val scrimColor = if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
-
-            Box(
-                modifier = modifier
-                    .clip(shape)
-                    .background(scrimColor),
-            ) {
-                GlassSurfaceDecorators(
-                    shape = shape,
-                    darkenedEdge = darkenedEdge,
-                    specularHighlight = specularHighlight,
-                )
-                content()
-            }
-        }
+    Box(
+        modifier = modifier
+            .background(backgroundColor, shape),
+    ) {
+        GlassSurfaceDecorators(
+            shape = shape,
+            darkenedEdge = darkenedEdge,
+            specularHighlight = specularHighlight,
+        )
+        content()
     }
 }
 
@@ -124,26 +80,24 @@ private fun GlassSurfaceDecorators(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
                 .background(
                     brush = Brush.verticalGradient(
-                        0f to 96f,
-                        colors = listOf(GlassColors.DarkenedEdge, Color.Transparent),
+                        listOf(GlassColors.DarkenedEdge, Color.Transparent),
                     ),
-                ),
+                )
+                .clip(shape),
         )
     }
     if (specularHighlight) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
                 .background(
                     brush = Brush.verticalGradient(
-                        0f to 24f,
-                        colors = listOf(GlassColors.SpecularHighlight, Color.Transparent),
+                        listOf(GlassColors.SpecularHighlight, Color.Transparent),
                     ),
-                ),
+                )
+                .clip(shape),
         )
     }
 }
