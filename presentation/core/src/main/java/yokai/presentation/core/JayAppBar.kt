@@ -75,13 +75,17 @@ fun JayExpandedTopAppBar(
     // iOS 27 Liquid Glass: tier-aware glass when app bar is collapsed
     val isCollapsed = (scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f
 
+    // Compute composable values before the lambda
+    val glassTint = glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+
     val appBarContainerColor = l@{
         if (textFieldState != null) return@l Color.Transparent
-        if (isCollapsed) glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+        if (isCollapsed) glassTint
         else colors.containerColor
     }
 
-    val bottomCollapsedFractionOrZero = { scrollBehavior?.bottomCollapsedFraction(titleTextFontSizePx) ?: 0f }
+    Box(
+        modifier =
 
     val titleAlpha = {
         val bottomFraction = bottomCollapsedFractionOrZero()
@@ -317,9 +321,12 @@ fun JayTopAppBar(
     // iOS 27 Liquid Glass: tier-aware glass when app bar is collapsed
     val isCollapsed = (scrollBehavior?.overlappedFraction() ?: 0f) > 0.01f
 
+    // Compute composable values before the lambda
+    val glassTint = glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+
     val appBarContainerColor = l@{
         if (textFieldState != null) return@l Color.Transparent
-        if (isCollapsed) glassTintColor(GlassColors.GlassBaseTintAlpha, isSystemInDarkTheme())
+        if (isCollapsed) glassTint
         else colors.containerColor
     }
 
