@@ -28,10 +28,11 @@ import eu.kanade.tachiyomi.util.system.getResourceColor
 import eu.kanade.tachiyomi.util.system.isTablet
 import eu.kanade.tachiyomi.util.view.backgroundColor
 import eu.kanade.tachiyomi.util.view.isControllerVisible
+import yokai.presentation.theme.applyGlassDecorators
+import yokai.presentation.theme.glassTier
 import eu.kanade.tachiyomi.util.view.setTextColorAlpha
 import eu.kanade.tachiyomi.widget.StatefulNestedScrollView
 import yokai.presentation.theme.applyGlass
-import yokai.presentation.theme.glassTier
 import uy.kohesive.injekt.injectLazy
 import kotlin.math.abs
 import kotlin.math.max
