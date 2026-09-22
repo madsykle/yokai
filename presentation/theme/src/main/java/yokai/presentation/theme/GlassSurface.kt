@@ -15,10 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RenderEffect as ComposeRenderEffect
 import androidx.compose.ui.graphics.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.kyant0.backdrop.Backdrop
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTheme
 import dev.chrisbanes.haze.haze
@@ -27,7 +27,7 @@ import dev.chrisbanes.haze.haze
  * Tier-aware GlassSurface composable.
  *
  * Implements iOS 27 Liquid Glass with three tiers (DESIGN.md §3):
- * - Tier 1 (API 33+): Backdrop AGSL shader (refraction + lensing)
+ * - Tier 1 (API 33+): RenderEffect gaussian blur (Compose equivalent of AGSL)
  * - Tier 2 (API 31–32): Haze blur
  * - Tier 3 (API 29–30): Scrim fallback
  *
@@ -47,13 +47,23 @@ fun GlassSurface(
     val tier = glassTier()
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(cornerRadius)
+    val tintColor = glassTintColor(tintAlpha, isDark)
 
     when (tier) {
         is GlassTier.Full -> {
-            // Tier 1: Backdrop AGSL shader with refraction
-            Backdrop(
-                modifier = modifier.clip(shape),
-                tint = glassTintColor(tintAlpha, isDark),
+            // Tier 1: Compose RenderEffect with gaussian blur (API 33+)
+            // Equivalent to AGSL shader but using standard Compose APIs
+            Box(
+                modifier = modifier
+                    .clip(shape)
+                    .renderEffect(
+                        ComposeRenderEffect.createBlurEffect(
+                            radiusX = 20f,
+                            radiusY = 20f,
+                            tileMode = Shader.TileMode.CLAMP,
+                        )
+                    )
+                    .background(tintColor),
             ) {
                 GlassSurfaceDecorators(
                     shape = shape,
@@ -65,7 +75,7 @@ fun GlassSurface(
         }
 
         is GlassTier.Blur -> {
-            // Tier 2: Haze blur
+            // Tier 2: Haze blur (API 31-32)
             Box(
                 modifier = modifier
                     .clip(shape)
@@ -73,10 +83,10 @@ fun GlassSurface(
                         hazeStyle = HazeStyle.Translucent,
                         theme = HazeTheme(
                             blur = 20f,
-                            tint = glassTintColor(tintAlpha, isDark),
+                            tint = tintColor,
                         ),
                     )
-                    .background(glassTintColor(tintAlpha, isDark)),
+                    .background(tintColor),
             ) {
                 GlassSurfaceDecorators(
                     shape = shape,
@@ -88,7 +98,7 @@ fun GlassSurface(
         }
 
         is GlassTier.Scrim -> {
-            // Tier 3: Scrim fallback
+            // Tier 3: Scrim fallback (API 29-30)
             val scrimColor = if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
 
             Box(

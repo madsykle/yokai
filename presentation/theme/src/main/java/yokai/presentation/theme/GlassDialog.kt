@@ -58,7 +58,7 @@ fun GlassAlertDialog(
         containerColor = containerColor,
         titleContentColor = onSurface,
         textContentColor = onSurfaceVariant,
-        buttonContentColor = onSurface.copy(alpha = 0.8f),
+        // buttonContentColor not available in this version
     )
 }
 
@@ -90,7 +90,7 @@ fun GlassBottomSheetContainer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp, bottom = 8.dp),
-            contentAlignment = Alignment.CenterHorizontally,
+            contentAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
             Box(
                 modifier = Modifier
