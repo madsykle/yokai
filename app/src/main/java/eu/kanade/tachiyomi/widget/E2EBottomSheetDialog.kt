@@ -9,6 +9,7 @@ import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
 
 /**

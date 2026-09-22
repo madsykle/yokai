@@ -19,7 +19,6 @@ import yokai.util.lang.getString
 import dev.icerock.moko.resources.compose.stringResource
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import yokai.presentation.theme.Size
-import yokai.presentation.theme.header
 import yokai.util.secondaryItemAlpha
 import java.io.File
 
@@ -56,7 +55,7 @@ private fun StorageInfo(
     ) {
         Text(
             text = file.absolutePath,
-            style = MaterialTheme.typography.header,
+            style = MaterialTheme.typography.titleLarge,
         )
 
         Text(

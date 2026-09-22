@@ -23,6 +23,7 @@ import eu.kanade.tachiyomi.widget.TriStateCheckBox
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceDialogAdapter
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceListener
 import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
 import yokai.util.lang.getString
 
@@ -189,9 +190,9 @@ fun MaterialAlertDialogBuilder.setTextInput(
 fun AlertDialog.applyGlassDialog() {
     window?.let { window ->
         window.setBackgroundDrawableResource(android.R.color.transparent)
-        // Apply glass to the decor view
-        window.decorView.applyGlass(24f, yokai.presentation.theme.glassTier())
-        window.decorView.applyGlassDecorators(yokai.presentation.theme.glassTier())
+        val glassTier = glassTier()
+        window.decorView.applyGlass(24f, glassTier)
+        window.decorView.applyGlassDecorators(glassTier)
     }
 }
 
