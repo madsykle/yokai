@@ -111,7 +111,6 @@ fun YokaiTheme(content: @Composable () -> Unit) {
             layoutDirection = LayoutDirection.Rtl,
             setTextColors = true,
             readTypography = false,
-            typography = YokaiTypography.typography,
         )
 
     MaterialTheme(
