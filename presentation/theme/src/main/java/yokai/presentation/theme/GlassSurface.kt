@@ -127,7 +127,7 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
     when (actualTier) {
         is GlassTier.Full, is GlassTier.Blur -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val blurEffect = RenderEffect.createGaussianBlurEffect(
+                val blurEffect = RenderEffect.createBlurEffect(
                     20f, 20f, Shader.TileMode.CLAMP,
                 )
                 setRenderEffect(blurEffect)
@@ -135,7 +135,8 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
         }
         is GlassTier.Scrim -> {
             val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-            setBackgroundColor(if (isDark) GlassColors.ScrimDark.toArgb() else GlassColors.ScrimLight.toArgb())
+            val color = if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
+            setBackgroundColor(color.toArgb())
         }
     }
 
