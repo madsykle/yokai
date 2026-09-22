@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("yokai.android.application")
     id("yokai.android.application.compose")
+    kotlin("android")
     alias(kotlinx.plugins.serialization)
     alias(kotlinx.plugins.parcelize)
     alias(libs.plugins.aboutlibraries)

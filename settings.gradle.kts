@@ -4,6 +4,9 @@ pluginManagement {
         mavenCentral()
         google()
     }
+    plugins {
+        kotlin("android") version "2.4.10"
+    }
 }
 
 dependencyResolutionManagement {
