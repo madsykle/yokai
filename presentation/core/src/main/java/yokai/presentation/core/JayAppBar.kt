@@ -101,17 +101,6 @@ fun JayExpandedTopAppBar(
         1f - bottomCollapsedFractionOrZero()
     }
 
-    Box(
-        modifier =
-                bottomFraction
-            },
-        )
-    }
-
-    val bottomTitleAlpha = {
-        1f - bottomCollapsedFractionOrZero()
-    }
-
     Column(
         modifier =
             Modifier
