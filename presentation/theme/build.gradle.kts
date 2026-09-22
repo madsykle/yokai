@@ -31,4 +31,5 @@ dependencies {
     implementation(compose.bundles.compose)
     implementation(compose.ui)
     implementation(compose.ui.graphics)
+    implementation(libs.compose.theme.adapter3)
 }
