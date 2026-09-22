@@ -4,6 +4,7 @@ import android.graphics.Outline
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
+import android.util.FloatProperty
 import android.view.View
 import android.view.ViewOutlineProvider
 import androidx.compose.animation.core.spring
@@ -11,14 +12,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RenderEffect as ComposeRenderEffect
+import androidx.compose.ui.graphics.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -151,7 +152,7 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
  * Spring animation helper for Views (DESIGN.md §4.5)
  * Matches iOS 27 spring: dampingRatio=0.75, stiffness=300
  */
-fun springAnimate(view: View, property: String, to: Float) {
+fun springAnimate(view: View, property: FloatProperty<View>, to: Float) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val anim = androidx.dynamicanimation.animation.SpringAnimation(view, property, to)
         anim.spring = androidx.dynamicanimation.animation.SpringForce(to)
@@ -173,7 +174,6 @@ fun View.applyGlassDecorators(tier: GlassTier? = null) {
     if (actualTier is GlassTier.Scrim) return
 
     // Build a foreground drawable with vertical gradients for darkened edge + specular highlight
-    // GradientDrawable draws gradient across full bounds; we use a custom drawable to limit height
     val decoratorDrawable = object : android.graphics.drawable.Drawable() {
         private val darkenedEdgeShader = android.graphics.LinearGradient(
             0f, 0f, 0f, 96 * resources.displayMetrics.density,

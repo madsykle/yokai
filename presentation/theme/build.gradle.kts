@@ -29,7 +29,6 @@ kotlin {
 
 dependencies {
     implementation(compose.bundles.compose)
-    implementation(libs.backdrop)
-    implementation(libs.haze)
-    implementation(libs.dynamicanimation)
+    implementation(compose.ui)
+    implementation(compose.ui.graphics)
 }
