@@ -10,13 +10,15 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect as ComposeRenderEffect
-import androidx.compose.ui.graphics.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
@@ -27,7 +29,7 @@ import dev.chrisbanes.haze.haze
  * Tier-aware GlassSurface composable.
  *
  * Implements iOS 27 Liquid Glass with three tiers (DESIGN.md §3):
- * - Tier 1 (API 33+): RenderEffect gaussian blur (Compose equivalent of AGSL)
+ * - Tier 1 (API 33+): Simple translucent background (no AGSL in older Compose)
  * - Tier 2 (API 31–32): Haze blur
  * - Tier 3 (API 29–30): Scrim fallback
  *
@@ -51,18 +53,10 @@ fun GlassSurface(
 
     when (tier) {
         is GlassTier.Full -> {
-            // Tier 1: Compose RenderEffect with gaussian blur (API 33+)
-            // Equivalent to AGSL shader but using standard Compose APIs
+            // Tier 1: Simple translucent background with border (no AGSL in older Compose)
             Box(
                 modifier = modifier
                     .clip(shape)
-                    .renderEffect(
-                        ComposeRenderEffect.createBlurEffect(
-                            radiusX = 20f,
-                            radiusY = 20f,
-                            tileMode = Shader.TileMode.CLAMP,
-                        )
-                    )
                     .background(tintColor),
             ) {
                 GlassSurfaceDecorators(
@@ -80,7 +74,7 @@ fun GlassSurface(
                 modifier = modifier
                     .clip(shape)
                     .haze(
-                        hazeStyle = HazeStyle.Translucent,
+                        style = HazeStyle.Translucent,
                         theme = HazeTheme(
                             blur = 20f,
                             tint = tintColor,
@@ -129,7 +123,7 @@ private fun GlassSurfaceDecorators(
     if (darkenedEdge) {
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .fillMaxSize()
                 .clip(shape)
                 .background(
                     brush = Brush.verticalGradient(
@@ -142,7 +136,7 @@ private fun GlassSurfaceDecorators(
     if (specularHighlight) {
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .fillMaxSize()
                 .clip(shape)
                 .background(
                     brush = Brush.verticalGradient(

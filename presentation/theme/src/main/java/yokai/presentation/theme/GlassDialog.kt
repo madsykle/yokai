@@ -90,7 +90,7 @@ fun GlassBottomSheetContainer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp, bottom = 8.dp),
-            contentAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
