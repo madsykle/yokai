@@ -84,8 +84,7 @@ fun JayExpandedTopAppBar(
         else colors.containerColor
     }
 
-    Box(
-        modifier =
+    val bottomCollapsedFractionOrZero = { scrollBehavior?.bottomCollapsedFraction(titleTextFontSizePx) ?: 0f }
 
     val titleAlpha = {
         val bottomFraction = bottomCollapsedFractionOrZero()
@@ -93,6 +92,17 @@ fun JayExpandedTopAppBar(
             if (bottomFraction >= 1f) {
                 1f - (scrollBehavior?.topCollapsedFraction(titleTextFontSizePx) ?: 0f)
             } else {
+                bottomFraction
+            },
+        )
+    }
+
+    val bottomTitleAlpha = {
+        1f - bottomCollapsedFractionOrZero()
+    }
+
+    Box(
+        modifier =
                 bottomFraction
             },
         )
