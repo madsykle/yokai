@@ -4,10 +4,8 @@ import android.graphics.Outline
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
-import android.util.FloatProperty
 import android.view.View
 import android.view.ViewOutlineProvider
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -18,8 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect as ComposeRenderEffect
-import androidx.compose.ui.graphics.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -85,8 +81,8 @@ private fun GlassSurfaceDecorators(
                     brush = Brush.verticalGradient(
                         listOf(GlassColors.DarkenedEdge, Color.Transparent),
                     ),
-                )
-                .clip(shape),
+                    shape = shape,
+                ),
         )
     }
     if (specularHighlight) {
@@ -97,8 +93,8 @@ private fun GlassSurfaceDecorators(
                     brush = Brush.verticalGradient(
                         listOf(GlassColors.SpecularHighlight, Color.Transparent),
                     ),
-                )
-                .clip(shape),
+                    shape = shape,
+                ),
         )
     }
 }
@@ -113,6 +109,18 @@ fun glassTintColor(tintAlpha: Float, isDark: Boolean): Color {
     } else {
         Color(0x1AFFFFFF).copy(alpha = tintAlpha)
     }
+}
+
+/**
+ * Converts a Compose Color to an Android ARGB Int.
+ */
+fun Color.toArgbCompat(): Int {
+    return android.graphics.Color.argb(
+        (alpha * 255).toInt(),
+        (red * 255).toInt(),
+        (green * 255).toInt(),
+        (blue * 255).toInt(),
+    )
 }
 
 /**
@@ -136,7 +144,7 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
         is GlassTier.Scrim -> {
             val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
             val color = if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
-            setBackgroundColor(color.toArgb())
+            setBackgroundColor(color.toArgbCompat())
         }
     }
 
@@ -147,20 +155,6 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
         }
     }
     clipToOutline = true
-}
-
-/**
- * Spring animation helper for Views (DESIGN.md §4.5)
- * Matches iOS 27 spring: dampingRatio=0.75, stiffness=300
- */
-fun springAnimate(view: View, property: FloatProperty<View>, to: Float) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val anim = androidx.dynamicanimation.animation.SpringAnimation(view, property, to)
-        anim.spring = androidx.dynamicanimation.animation.SpringForce(to)
-            .setDampingRatio(0.75f)
-            .setStiffness(300f)
-        anim.start()
-    }
 }
 
 /**
@@ -176,15 +170,19 @@ fun View.applyGlassDecorators(tier: GlassTier? = null) {
 
     // Build a foreground drawable with vertical gradients for darkened edge + specular highlight
     val decoratorDrawable = object : android.graphics.drawable.Drawable() {
+        private val darkenedEdgeColor = GlassColors.DarkenedEdge.toArgbCompat()
+        private val specularColor = GlassColors.SpecularHighlight.toArgbCompat()
+        private val transparentColor = android.graphics.Color.TRANSPARENT
+
         private val darkenedEdgeShader = android.graphics.LinearGradient(
             0f, 0f, 0f, 96 * resources.displayMetrics.density,
-            intArrayOf(GlassColors.DarkenedEdge.toArgb(), Color.Transparent.toArgb()),
+            intArrayOf(darkenedEdgeColor, transparentColor),
             null,
             android.graphics.Shader.TileMode.CLAMP,
         )
         private val specularShader = android.graphics.LinearGradient(
             0f, 0f, 0f, 24 * resources.displayMetrics.density,
-            intArrayOf(GlassColors.SpecularHighlight.toArgb(), Color.Transparent.toArgb()),
+            intArrayOf(specularColor, transparentColor),
             null,
             android.graphics.Shader.TileMode.CLAMP,
         )
