@@ -29,18 +29,3 @@ tasks.named("dependencyUpdates", com.github.benmanes.gradle.versions.updates.Dep
 tasks.register("clean", Delete::class) {
     delete(rootProject.layout.buildDirectory)
 }
-
-configurations.all {
-    resolutionStrategy {
-        // Force Kotlin 2.4.10 to override Compose BOM 2026.02.00 constraints
-        force("org.jetbrains.kotlin:kotlin-stdlib:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-stdlib-common:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-reflect:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-scripting-jvm:2.4.10")
-        force("org.jetbrains.kotlin:kotlin-scripting-jvm-host:2.4.10")
-    }
-}

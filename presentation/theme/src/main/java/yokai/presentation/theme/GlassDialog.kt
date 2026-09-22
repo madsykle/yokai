@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 fun GlassAlertDialog(
     onDismissRequest: () -> Unit,
     confirmButton: @Composable () -> Unit,
-    dismissButton: @Composable () -> Unit,
+    dismissButton: @Composable (() -> Unit)? = null,
     title: @Composable (() -> Unit)? = null,
     text: @Composable (() -> Unit)? = null,
     icon: @Composable (() -> Unit)? = null,
