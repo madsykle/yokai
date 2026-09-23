@@ -212,25 +212,25 @@ object GlassHaptics {
 /**
  * Extension functions for easier access
  */
-fun View.springAnimate(property: DynamicAnimation.ViewProperty, targetValue: Float, listener: ((Boolean) -> Unit)? = null) =
+fun View.springAnimate(property: DynamicAnimation.ViewProperty, targetValue: Float, listener: ((Boolean) -> Unit)? = null): Unit =
     GlassMotion.springAnimate(this, property, targetValue, listener)
 
-fun View.springFadeIn(duration: Long = 250, listener: ((Boolean) -> Unit)? = null) =
+fun View.springFadeIn(duration: Long = 250, listener: ((Boolean) -> Unit)? = null): Unit =
     GlassMotion.springFadeIn(this, duration, listener)
 
-fun View.springFadeOut(duration: Long = 250, listener: ((Boolean) -> Unit)? = null) =
+fun View.springFadeOut(duration: Long = 250, listener: ((Boolean) -> Unit)? = null): Unit =
     GlassMotion.springFadeOut(this, duration, listener)
 
-fun View.springSlideY(targetY: Float, listener: ((Boolean) -> Unit)? = null) =
+fun View.springSlideY(targetY: Float, listener: ((Boolean) -> Unit)? = null): Unit =
     GlassMotion.springSlideY(this, targetY, listener)
 
-fun View.springScale(targetScale: Float, listener: ((Boolean) -> Unit)? = null) =
+fun View.springScale(targetScale: Float, listener: ((Boolean) -> Unit)? = null): Unit =
     GlassMotion.springScale(this, targetScale, listener)
 
-fun View.lightImpact() = GlassHaptics.lightImpact(this)
-fun View.mediumImpact() = GlassHaptics.mediumImpact(this)
-fun View.heavyImpact() = GlassHaptics.heavyImpact(this)
-fun View.selectionChanged() = GlassHaptics.selectionChanged(this)
+fun View.lightImpact(): Unit = GlassHaptics.lightImpact(this)
+fun View.mediumImpact(): Unit = GlassHaptics.mediumImpact(this)
+fun View.heavyImpact(): Unit = GlassHaptics.heavyImpact(this)
+fun View.selectionChanged(): Unit = GlassHaptics.selectionChanged(this)
 
 /**
  * Apply spring-based fade in/out to BottomSheetDialog
