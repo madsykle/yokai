@@ -11,11 +11,10 @@ import android.view.HapticFeedbackConstants
 import androidx.dynamicanimation.animation.DynamicAnimation
 import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.dynamicanimation.animation.SpringForce
-import androidx.core.view.ViewCompat
+import androidx.core.view.doOnNextLayout
+import androidx.core.view.isVisible
 import androidx.core.view.performHapticFeedback
-import androidx.core.view.ViewKt.doOnNextLayout
 import eu.kanade.tachiyomi.R
-import yokai.util.lang.getString
 
 /**
  * iOS 27 Liquid Glass Motion Utilities
@@ -42,13 +41,12 @@ object GlassMotion {
             stiffness = STIFFNESS
         }
         val springAnimation = SpringAnimation(this, property).apply {
-            this.spring = springForce
-            startVelocity = 0f
+            spring = springForce
         }
 
-        listener?.let {
+        listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                it(!isCanceled)
+                callback(isCanceled.not())
             }
         }
         springAnimation.start()
@@ -60,18 +58,17 @@ object GlassMotion {
     @SuppressLint("RestrictedApi")
     fun View.springFadeIn(duration: Long = 250, listener: ((Boolean) -> Unit)? = null) {
         alpha = 0f
-        isVisible = true
+        this.isVisible = true
         val springForce = SpringForce(1f).apply {
             dampingRatio = DAMPING_RATIO
             stiffness = STIFFNESS
         }
         val springAnimation = SpringAnimation(this, DynamicAnimation.ALPHA).apply {
-            this.spring = springForce
-            startVelocity = 0f
+            spring = springForce
         }
-        listener?.let {
+        listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                it(!isCanceled)
+                callback(isCanceled.not())
             }
         }
         springAnimation.start()
@@ -87,15 +84,14 @@ object GlassMotion {
             stiffness = STIFFNESS
         }
         val springAnimation = SpringAnimation(this, DynamicAnimation.ALPHA).apply {
-            this.spring = springForce
-            startVelocity = 0f
+            spring = springForce
         }
-        listener?.let {
+        listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                if (!isCanceled) {
-                    isVisible = false
+                if (isCanceled.not()) {
+                    this@springFadeOut.isVisible = false
                 }
-                it(!isCanceled)
+                callback(isCanceled.not())
             }
         }
         springAnimation.start()
@@ -132,22 +128,20 @@ object GlassMotion {
             stiffness = STIFFNESS
         }
         val springAnimation = SpringAnimation(Float::class.java).apply {
-            this.spring = springForce
-            startValue = startValue
-            startVelocity = 0f
+            spring = springForce
         }
 
         val animator = ValueAnimator()
         animator.addUpdateListener {
             onUpdate(it.animatedValue as Float)
         }
-        onEnd?.let {
+        onEnd?.let { callback ->
             animator.addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    it(true)
+                    callback(true)
                 }
                 override fun onAnimationCancel(animation: Animator) {
-                    it(false)
+                    callback(false)
                 }
             })
         }
