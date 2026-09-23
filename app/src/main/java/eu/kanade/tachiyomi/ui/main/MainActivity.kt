@@ -151,7 +151,7 @@ import yokai.presentation.core.Constants
 import yokai.presentation.extension.repo.ExtensionRepoController
 import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
-import eu.kanade.tachiyomi.util.system.applyGlassTabHaptics
+import eu.kanade.tachiyomi.util.system.lightImpact
 import yokai.presentation.theme.applyGlass
 import yokai.presentation.theme.glassTier
 import android.R as AR
@@ -379,7 +379,6 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         // iOS 27 Liquid Glass: apply tier-aware glass to bottom nav
         binding.bottomNav?.let { navView ->
             navView.applyGlass(28f, glassTier())
-            navView.applyGlassTabHaptics()
         }
 
         binding.toolbar.overflowIcon?.setTint(getResourceColor(R.attr.actionBarTintColor))
@@ -569,6 +568,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                     controller?.toggleSheet()
                 }
             }
+            // iOS 27 Liquid Glass: haptic feedback on tab switch (DESIGN.md §4.5)
+            nav.lightImpact()
             true
         }
 
