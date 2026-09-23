@@ -4,7 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Build
 import android.view.View
 import android.view.HapticFeedbackConstants
@@ -14,7 +13,6 @@ import androidx.dynamicanimation.animation.SpringForce
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import androidx.core.view.performHapticFeedback
-import eu.kanade.tachiyomi.R
 
 /**
  * iOS 27 Liquid Glass Motion Utilities
@@ -46,7 +44,7 @@ object GlassMotion {
 
         listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                callback(isCanceled.not())
+                callback(!isCanceled)
             }
         }
         springAnimation.start()
@@ -58,7 +56,7 @@ object GlassMotion {
     @SuppressLint("RestrictedApi")
     fun View.springFadeIn(duration: Long = 250, listener: ((Boolean) -> Unit)? = null) {
         alpha = 0f
-        this.isVisible = true
+        isVisible = true
         val springForce = SpringForce(1f).apply {
             dampingRatio = DAMPING_RATIO
             stiffness = STIFFNESS
@@ -68,7 +66,7 @@ object GlassMotion {
         }
         listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                callback(isCanceled.not())
+                callback(!isCanceled)
             }
         }
         springAnimation.start()
@@ -88,10 +86,10 @@ object GlassMotion {
         }
         listener?.let { callback ->
             springAnimation.addEndListener { _, _, _, isCanceled ->
-                if (isCanceled.not()) {
-                    this@springFadeOut.isVisible = false
+                if (!isCanceled) {
+                    isVisible = false
                 }
-                callback(isCanceled.not())
+                callback(!isCanceled)
             }
         }
         springAnimation.start()
@@ -113,43 +111,6 @@ object GlassMotion {
         springAnimate(DynamicAnimation.SCALE_X, targetScale)
         springAnimate(DynamicAnimation.SCALE_Y, targetScale, listener)
     }
-
-    /**
-     * Apply spring animation to ValueAnimator for custom properties
-     */
-    fun createSpringAnimator(
-        startValue: Float,
-        endValue: Float,
-        onUpdate: (Float) -> Unit,
-        onEnd: ((Boolean) -> Unit)? = null,
-    ): ValueAnimator {
-        val springForce = SpringForce(endValue).apply {
-            dampingRatio = DAMPING_RATIO
-            stiffness = STIFFNESS
-        }
-        val springAnimation = SpringAnimation(Float::class.java).apply {
-            spring = springForce
-        }
-
-        val animator = ValueAnimator()
-        animator.addUpdateListener {
-            onUpdate(it.animatedValue as Float)
-        }
-        onEnd?.let { callback ->
-            animator.addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    callback(true)
-                }
-                override fun onAnimationCancel(animation: Animator) {
-                    callback(false)
-                }
-            })
-        }
-        // SpringAnimation doesn't directly support ValueAnimator callbacks,
-        // so we use SpringAnimation's internal animation
-        springAnimation.start()
-        return animator
-    }
 }
 
 /**
@@ -162,44 +123,28 @@ object GlassHaptics {
      * Light impact - for tab switches, toggle changes
      */
     fun View.lightImpact() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
-        } else {
-            performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-        }
+        performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
     }
 
     /**
      * Medium impact - for sheet dismiss, confirm actions
      */
     fun View.mediumImpact() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            performHapticFeedback(HapticFeedbackConstants.CONFIRM, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
-        } else {
-            performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        }
+        performHapticFeedback(HapticFeedbackConstants.CONFIRM)
     }
 
     /**
      * Heavy impact - for destructive actions
      */
     fun View.heavyImpact() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
-        } else {
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        }
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
     /**
      * Selection changed - for picker changes, slider moves
      */
     fun View.selectionChanged() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
-        } else {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        }
+        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
     }
 }
 
@@ -269,7 +214,7 @@ fun androidx.appcompat.app.AlertDialog.Builder.applyGlassButtonHaptics() {
 /**
  * Apply spring animation to ViewPropertyAnimator (for existing animations)
  */
-fun ViewPropertyAnimator.withSpring(): ViewPropertyAnimator {
+fun android.view.ViewPropertyAnimator.withSpring(): android.view.ViewPropertyAnimator {
     // Note: ViewPropertyAnimator doesn't support spring physics directly.
     // Use GlassMotion.springAnimate() instead for spring physics.
     return this
