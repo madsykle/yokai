@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: yokai-madsykle-debug
-          path: app/build/outputs/apk/standard/debug/app-standard-debug-arm64-v8a.apk
+          path: app/build/outputs/apk/standard/debug/*.apk
           retention-days: 7
       - name: Run unit tests
         run: ./gradlew testStandardDebugUnitTest --no-daemon
