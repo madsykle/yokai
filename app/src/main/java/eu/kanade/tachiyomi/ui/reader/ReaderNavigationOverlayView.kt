@@ -13,6 +13,9 @@ import androidx.core.view.isVisible
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation
 import eu.kanade.tachiyomi.ui.reader.viewer.navigation.DisabledNavigation
 import yokai.util.lang.getString
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.applyGlassDecorators
+import yokai.presentation.theme.glassTier
 import kotlin.math.abs
 
 class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) : View(context, attributeSet) {
@@ -38,6 +41,10 @@ class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) 
 
     fun showNavigationAgain() {
         invalidate()
+
+        // iOS 27 Liquid Glass: apply tier-aware glass to reader overlay
+        applyGlass(24f, glassTier())
+        applyGlassDecorators(glassTier())
 
         if (isVisible || navigation is DisabledNavigation) return
 

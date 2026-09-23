@@ -27,7 +27,12 @@ import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
 import yokai.util.lang.getString
 
-fun Context.materialAlertDialog() = MaterialAlertDialogBuilder(withOriginalWidth())
+fun Context.materialAlertDialog(): MaterialAlertDialogBuilder {
+    return MaterialAlertDialogBuilder(withOriginalWidth())
+        .setOnShowListener { dialogInterface ->
+            (dialogInterface as? AlertDialog)?.applyGlassDialog()
+        }
+}
 
 fun MaterialAlertDialogBuilder.addCheckBoxPrompt(
     stringRes: StringResource,
@@ -193,11 +198,15 @@ fun AlertDialog.applyGlassDialog() {
         val glassTier = glassTier()
         window.decorView.applyGlass(24f, glassTier)
         window.decorView.applyGlassDecorators(glassTier)
+        // Ensure dialog content backgrounds are transparent so glass shows through
+        window.decorView.findViewById<ViewGroup>(android.R.id.content)?.let { content ->
+            content.background = null
+        }
     }
 }
 
 /**
  * Creates a MaterialAlertDialogBuilder with glass styling applied automatically.
+ * (Same as materialAlertDialog() now - kept for backwards compatibility)
  */
-fun Context.materialGlassAlertDialog() = MaterialAlertDialogBuilder(withOriginalWidth())
-    .apply { /* Glass applied on show via extension */ }
+fun Context.materialGlassAlertDialog() = materialAlertDialog()

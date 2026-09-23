@@ -152,6 +152,9 @@ import yokai.domain.manga.models.cover
 import yokai.i18n.MR
 import yokai.presentation.core.Constants
 import yokai.util.lang.getString
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.applyGlassDecorators
+import yokai.presentation.theme.glassTier
 import android.R as AR
 
 class MangaDetailsController :
@@ -247,6 +250,9 @@ class MangaDetailsController :
 
         setTabletMode(view)
         setRecycler(view)
+        // iOS 27 Liquid Glass: apply tier-aware glass to the FAB
+        binding.fab.applyGlass(24f, glassTier())
+        binding.fab.applyGlassDecorators(glassTier())
         ViewCompat.setOnApplyWindowInsetsListener(binding.fab) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 
