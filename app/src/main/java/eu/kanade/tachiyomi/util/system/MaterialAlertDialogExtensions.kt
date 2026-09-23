@@ -27,12 +27,18 @@ import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
 import yokai.util.lang.getString
 
-fun Context.materialAlertDialog(): MaterialAlertDialogBuilder {
-    return MaterialAlertDialogBuilder(withOriginalWidth())
-        .setOnShowListener { dialogInterface ->
-            (dialogInterface as? AlertDialog)?.applyGlassDialog()
-        }
+/**
+ * Custom MaterialAlertDialogBuilder that applies iOS 27 Liquid Glass styling on show.
+ */
+class GlassAlertDialogBuilder(context: Context) : MaterialAlertDialogBuilder(context) {
+    override fun show(): AlertDialog {
+        val dialog = super.show()
+        dialog.applyGlassDialog()
+        return dialog
+    }
 }
+
+fun Context.materialAlertDialog(): MaterialAlertDialogBuilder = GlassAlertDialogBuilder(withOriginalWidth())
 
 fun MaterialAlertDialogBuilder.addCheckBoxPrompt(
     stringRes: StringResource,
