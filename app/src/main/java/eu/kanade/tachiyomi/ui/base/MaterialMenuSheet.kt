@@ -70,8 +70,8 @@ class MaterialMenuSheet(
         binding.menuSheetRecycler.layoutManager = LinearLayoutManager(context)
         binding.menuSheetRecycler.adapter = fastAdapter
 
-        fastAdapter.onClickListener = { _, _, item, _ ->
-            item.itemView?.lightImpact()
+        fastAdapter.onClickListener = { _, viewHolder, item, _ ->
+            viewHolder.itemView.lightImpact()
             val shouldDismiss = onMenuItemClicked(this@MaterialMenuSheet, item.sheetItem.id)
             if (shouldDismiss) {
                 dismiss()

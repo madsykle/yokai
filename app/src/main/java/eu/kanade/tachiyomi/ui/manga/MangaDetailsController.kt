@@ -306,9 +306,9 @@ class MangaDetailsController :
             }
         })
         binding.fab.transitionName = "details start reading transition"
-        binding.fab.setOnClickListener {
-            it.lightImpact()
-            readNextChapter(it)
+        binding.fab.setOnClickListener { view ->
+            view.lightImpact()
+            readNextChapter(view)
         }
 
         presenter.onCreateLate()
