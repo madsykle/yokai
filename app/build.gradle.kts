@@ -156,6 +156,9 @@ dependencies {
     implementation(projects.presentation.theme)
     implementation(projects.source.api)
 
+    // Spring animations for iOS 27 Liquid Glass motion (Phase 5)
+    implementation(libs.dynamicanimation)
+
     // Compose
     implementation(platform(compose.bom))
     implementation(compose.bundles.compose)

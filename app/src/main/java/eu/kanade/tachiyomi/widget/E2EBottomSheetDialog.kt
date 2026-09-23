@@ -8,6 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import eu.kanade.tachiyomi.util.system.mediumImpact
+import eu.kanade.tachiyomi.util.system.springFadeIn
+import eu.kanade.tachiyomi.util.system.springFadeOut
 import yokai.presentation.theme.applyGlass
 import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
@@ -41,6 +44,21 @@ abstract class E2EBottomSheetDialog<VB : ViewBinding>(activity: Activity) :
             // iOS 27 Liquid Glass: apply tier-aware glass to bottom sheet
             window.decorView.applyGlass(24f, glassTier())
             window.decorView.applyGlassDecorators(glassTier())
+
+            // iOS 27 Liquid Glass: Spring animation for sheet enter/exit (Phase 5)
+            val decorView = window.decorView
+            decorView.alpha = 0f
+            decorView.doOnNextLayout {
+                decorView.springFadeIn()
+            }
+
+            setOnDismissListener { _ ->
+                decorView.springFadeOut {
+                    if (it) {
+                        decorView.mediumImpact() // Haptic on sheet dismiss
+                    }
+                }
+            }
         }
         contentView.requestLayout()
     }

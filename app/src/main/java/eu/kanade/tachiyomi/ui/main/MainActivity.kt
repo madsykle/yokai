@@ -151,6 +151,7 @@ import yokai.presentation.core.Constants
 import yokai.presentation.extension.repo.ExtensionRepoController
 import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
+import eu.kanade.tachiyomi.util.system.applyGlassTabHaptics
 import yokai.presentation.theme.applyGlass
 import yokai.presentation.theme.glassTier
 import android.R as AR
@@ -378,6 +379,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         // iOS 27 Liquid Glass: apply tier-aware glass to bottom nav
         binding.bottomNav?.let { navView ->
             navView.applyGlass(28f, glassTier())
+            navView.applyGlassTabHaptics()
         }
 
         binding.toolbar.overflowIcon?.setTint(getResourceColor(R.attr.actionBarTintColor))
@@ -1373,12 +1375,6 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 if (overflowDialog != null) return false
                 val overflowDialog = OverflowDialog(this)
                 this.overflowDialog = overflowDialog
-                overflowDialog.blurBehindWindow(
-                    window,
-                    onDismiss = {
-                        this.overflowDialog = null
-                    },
-                )
                 overflowDialog.show()
             }
             else -> return super.onOptionsItemSelected(item)

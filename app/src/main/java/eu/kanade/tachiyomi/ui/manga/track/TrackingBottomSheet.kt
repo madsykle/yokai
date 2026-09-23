@@ -48,6 +48,7 @@ import eu.kanade.tachiyomi.util.system.e
 import eu.kanade.tachiyomi.util.system.isOnline
 import eu.kanade.tachiyomi.util.system.isPromptChecked
 import eu.kanade.tachiyomi.util.system.launchIO
+import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.materialAlertDialog
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.rootWindowInsetsCompat
@@ -208,6 +209,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
             return
         }
 
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
+
         if (track.tracking_url.isNotBlank()) {
             activity.openInBrowser(track.tracking_url.toUri())
             controller.refreshTracker = position
@@ -220,6 +223,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
             dismiss()
             return
         }
+
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
 
         if (item.service is EnhancedTrackService) {
             if (item.track != null) {
@@ -414,6 +419,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
             return
         }
 
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
+
         val statusList = item.service.getStatusList()
         val statusString = statusList.map { item.service.getStatus(it) }
         val selectedIndex = statusList.indexOf(item.track.status)
@@ -434,6 +441,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
     override fun onRemoveClick(position: Int) {
         val item = adapter?.getItem(position) ?: return
         if (item.track == null) return
+
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
 
         val dialog = activity.materialAlertDialog()
             .setNegativeButton(AR.string.cancel, null)
@@ -476,6 +485,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
             return
         }
 
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
+
         val binding = TrackChaptersDialogBinding.inflate(activity.layoutInflater)
         val dialog = activity.materialAlertDialog()
             .setTitle(MR.strings.chapters)
@@ -508,6 +519,8 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
             dismiss()
             return
         }
+
+        (binding.trackRecycler.findViewHolderForAdapterPosition(position)?.itemView)?.lightImpact()
 
         val scores = item.service.getScoreList().toTypedArray()
         val binding = TrackScoreDialogBinding.inflate(activity.layoutInflater)
@@ -603,7 +616,13 @@ class TrackingBottomSheet(private val controller: MangaDetailsController) :
                 setReadingDate(trackItem, readingDate, result)
             }
         }
+        
+        // iOS 27 Liquid Glass: Apply glass styling to MaterialDatePicker dialog
         dialog.show((activity as AppCompatActivity).supportFragmentManager, readingDate.toString())
+        
+        // Apply glass after dialog is shown
+        (activity as AppCompatActivity).supportFragmentManager.executePendingTransactions()
+        (dialog.dialog as? androidx.appcompat.app.AlertDialog)?.applyGlassDialog()
     }
 
     private fun getSuggestedDate(trackItem: TrackItem, readingDate: ReadingDate, suggestedDate: Long?): String? {

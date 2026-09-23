@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.domain.manga.models.Manga
 import eu.kanade.tachiyomi.ui.manga.MangaDetailsController
 import eu.kanade.tachiyomi.util.chapter.ChapterUtil
 import eu.kanade.tachiyomi.util.system.dpToPx
+import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.materialAlertDialog
 import eu.kanade.tachiyomi.util.system.rootWindowInsetsCompat
 import eu.kanade.tachiyomi.util.system.setNegativeStateItems
@@ -110,6 +111,7 @@ class ChaptersSortBottomSheet(controller: MangaDetailsController) :
         binding.hideTitles.isChecked = presenter.manga.hideChapterTitle(presenter.preferences)
 
         binding.setAsDefaultSort.setOnClickListener {
+            it.lightImpact()
             presenter.setGlobalChapterSort(
                 presenter.manga.sorting,
                 presenter.manga.sortDescending,
@@ -119,6 +121,7 @@ class ChaptersSortBottomSheet(controller: MangaDetailsController) :
         }
 
         binding.resetAsDefaultSort.setOnClickListener {
+            it.lightImpact()
             presenter.resetSortingToDefault()
 
             binding.byChapterNumber.state = SortTextView.State.NONE
@@ -142,6 +145,7 @@ class ChaptersSortBottomSheet(controller: MangaDetailsController) :
         setHideTitleListener()
 
         binding.chapterFilterLayout.setAsDefaultFilter.setOnClickListener {
+            it.lightImpact()
             presenter.setGlobalChapterFilters(
                 binding.chapterFilterLayout.showUnread.state,
                 binding.chapterFilterLayout.showDownload.state,
@@ -152,6 +156,7 @@ class ChaptersSortBottomSheet(controller: MangaDetailsController) :
         }
 
         binding.chapterFilterLayout.resetAsDefaultFilter.setOnClickListener {
+            it.lightImpact()
             presenter.resetFilterToDefault()
 
             binding.chapterFilterLayout.root.setCheckboxes(presenter.manga, presenter.preferences)
@@ -164,6 +169,7 @@ class ChaptersSortBottomSheet(controller: MangaDetailsController) :
         binding.filterGroupsButton.isVisible = presenter.allChapterScanlators.size > 1
 
         binding.filterGroupsButton.setOnClickListener {
+            it.lightImpact()
             val scanlators = presenter.allChapterScanlators.toList()
             val filteredScanlators =
                 presenter.manga.filtered_scanlators?.let { ChapterUtil.getScanlators(it) }.orEmpty()

@@ -26,6 +26,7 @@ import yokai.presentation.theme.applyGlass
 import yokai.presentation.theme.applyGlassDecorators
 import yokai.presentation.theme.glassTier
 import yokai.util.lang.getString
+import eu.kanade.tachiyomi.util.system.lightImpact
 
 /**
  * Custom MaterialAlertDialogBuilder that applies iOS 27 Liquid Glass styling on show.
@@ -34,6 +35,18 @@ class GlassAlertDialogBuilder(context: Context) : MaterialAlertDialogBuilder(con
     override fun show(): AlertDialog {
         val dialog = super.show()
         dialog.applyGlassDialog()
+        
+        // iOS 27 Liquid Glass: Add haptic feedback to buttons (Phase 5)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener { v ->
+            v.lightImpact()
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setOnClickListener { v ->
+            v.lightImpact()
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener { v ->
+            v.lightImpact()
+        }
+        
         return dialog
     }
 }

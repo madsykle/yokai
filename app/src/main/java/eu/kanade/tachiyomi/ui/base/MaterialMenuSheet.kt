@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import eu.kanade.tachiyomi.databinding.BottomMenuSheetBinding
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.getResourceColor
+import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.rootWindowInsetsCompat
 import eu.kanade.tachiyomi.util.view.RecyclerWindowInsetsListener
 import eu.kanade.tachiyomi.util.view.checkHeightThen
@@ -70,6 +71,7 @@ class MaterialMenuSheet(
         binding.menuSheetRecycler.adapter = fastAdapter
 
         fastAdapter.onClickListener = { _, _, item, _ ->
+            item.itemView?.lightImpact()
             val shouldDismiss = onMenuItemClicked(this@MaterialMenuSheet, item.sheetItem.id)
             if (shouldDismiss) {
                 dismiss()

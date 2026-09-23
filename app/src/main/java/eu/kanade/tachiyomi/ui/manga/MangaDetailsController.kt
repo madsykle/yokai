@@ -117,6 +117,7 @@ import eu.kanade.tachiyomi.util.system.isPromptChecked
 import eu.kanade.tachiyomi.util.system.isTablet
 import eu.kanade.tachiyomi.util.system.launchIO
 import eu.kanade.tachiyomi.util.system.launchUI
+import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.materialAlertDialog
 import eu.kanade.tachiyomi.util.system.rootWindowInsetsCompat
 import eu.kanade.tachiyomi.util.system.setCustomTitleAndMessage
@@ -305,7 +306,10 @@ class MangaDetailsController :
             }
         })
         binding.fab.transitionName = "details start reading transition"
-        binding.fab.setOnClickListener { readNextChapter(it) }
+        binding.fab.setOnClickListener {
+            it.lightImpact()
+            readNextChapter(it)
+        }
 
         presenter.onCreateLate()
         binding.swipeRefresh.isRefreshing = presenter.isLoading

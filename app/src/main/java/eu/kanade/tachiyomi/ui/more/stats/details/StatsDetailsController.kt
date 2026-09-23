@@ -826,7 +826,13 @@ class StatsDetailsController :
                 presenter.getStatisticData()
             }
         }
+        
+        // iOS 27 Liquid Glass: Apply glass styling to MaterialDatePicker dialog
         dialog.show((activity as AppCompatActivity).supportFragmentManager, activity?.getString(MR.strings.read_duration))
+        
+        // Apply glass after dialog is shown
+        (activity as AppCompatActivity).supportFragmentManager.executePendingTransactions()
+        (dialog.dialog as? androidx.appcompat.app.AlertDialog)?.applyGlassDialog()
     }
 
     /**

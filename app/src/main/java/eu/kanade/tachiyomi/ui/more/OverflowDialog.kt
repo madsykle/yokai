@@ -23,8 +23,12 @@ import eu.kanade.tachiyomi.util.lang.addBetaTag
 import eu.kanade.tachiyomi.util.lang.withSubtitle
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.getResourceColor
+import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import uy.kohesive.injekt.injectLazy
+import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.applyGlassDecorators
+import yokai.presentation.theme.glassTier
 import android.R as AR
 
 class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.OverflowDialogTheme) {
@@ -42,7 +46,22 @@ class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.Overflow
                 0.075f,
             ),
         )
+
+        // iOS 27 Liquid Glass: Apply tier-aware glass to overflow dialog
+        window?.let { window ->
+            window.navigationBarColor = Color.TRANSPARENT
+            window.decorView.fitsSystemWindows = true
+            val wic = WindowInsetsControllerCompat(window, window.decorView)
+            wic.isAppearanceLightStatusBars = false
+            wic.isAppearanceLightNavigationBars = false
+
+            // Apply iOS 27 Liquid Glass styling (tier-aware)
+            window.decorView.applyGlass(24f, glassTier())
+            window.decorView.applyGlassDecorators(glassTier())
+        }
+
         binding.touchOutside.setOnClickListener {
+            it.lightImpact()
             cancel()
         }
         val incogText = context.getString(MR.strings.incognito_mode)
@@ -65,6 +84,7 @@ class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.Overflow
                 },
             )
             setOnClickListener {
+                it.lightImpact()
                 preferences.incognitoMode().toggle()
                 val incog = preferences.incognitoMode().get()
                 val newTitle = context.getString(
@@ -89,11 +109,13 @@ class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.Overflow
             }
         }
         binding.settingsItem.setOnClickListener {
+            it.lightImpact()
             activity.showSettings()
             dismiss()
         }
 
         binding.helpItem.setOnClickListener {
+            it.lightImpact()
             activity.openInBrowser(URL_HELP)
             dismiss()
         }
@@ -111,24 +133,19 @@ class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.Overflow
         binding.aboutItem.text = context.getString(MR.strings.about).withSubtitle(newVName)
 
         binding.aboutItem.setOnClickListener {
+            it.lightImpact()
             activity.showAbout()
             dismiss()
         }
 
         binding.statsItem.setOnClickListener {
+            it.lightImpact()
             activity.showStats()
             dismiss()
         }
 
         binding.overflowCardView.updateLayoutParams<ViewGroup.MarginLayoutParams> {
             topMargin = activity.toolbarHeight - 2.dpToPx
-        }
-        window?.let { window ->
-            window.navigationBarColor = Color.TRANSPARENT
-            window.decorView.fitsSystemWindows = true
-            val wic = WindowInsetsControllerCompat(window, window.decorView)
-            wic.isAppearanceLightStatusBars = false
-            wic.isAppearanceLightNavigationBars = false
         }
     }
 
