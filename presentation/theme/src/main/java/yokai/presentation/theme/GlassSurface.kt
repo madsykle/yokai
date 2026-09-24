@@ -153,7 +153,7 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
     background = when (actualTier) {
         is GlassTier.Full, is GlassTier.Blur -> {
             // Translucent material tint; user-adjustable via the transparency pref (§2.2).
-            glassTintDrawable(radiusPx, context.glassTintAlpha(), isDark)
+            glassTintDrawable(radiusPx, glassTintAlpha(context), isDark)
         }
         is GlassTier.Scrim -> {
             // DESIGN.md §3 Tier 3: deliberate near-opaque scrim (mirrors Reduce
