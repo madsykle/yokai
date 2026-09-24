@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.util.system
 
 import android.content.Context
 import android.content.DialogInterface
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,8 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.shape.MaterialShapeDrawable
+import com.google.android.material.shape.ShapeAppearanceModel
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.databinding.CustomDialogTitleMessageBinding
 import eu.kanade.tachiyomi.databinding.DialogQuadstateBinding
@@ -22,9 +25,9 @@ import eu.kanade.tachiyomi.databinding.DialogTextInputBinding
 import eu.kanade.tachiyomi.widget.TriStateCheckBox
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceDialogAdapter
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceListener
-import yokai.presentation.theme.applyGlass
-import yokai.presentation.theme.applyGlassDecorators
+import yokai.presentation.theme.GlassColors
 import yokai.presentation.theme.glassTier
+import yokai.presentation.theme.toArgbCompat
 import yokai.util.lang.getString
 import eu.kanade.tachiyomi.util.system.lightImpact
 
@@ -35,18 +38,23 @@ class GlassAlertDialogBuilder(context: Context) : MaterialAlertDialogBuilder(con
     override fun show(): AlertDialog {
         val dialog = super.show()
         dialog.applyGlassDialog()
-        
-        // iOS 27 Liquid Glass: Add haptic feedback to buttons (Phase 5)
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener { v ->
-            v.lightImpact()
+
+        // iOS 27 Liquid Glass: haptic feedback on dialog buttons (§4.5).
+        // Uses an OnTouchListener that returns false so Material's internal click
+        // handler (dismiss + listener dispatch) is preserved — replacing
+        // setOnClickListener here would make every dialog button dead.
+        fun android.widget.Button.hapticOnPress() {
+            setOnTouchListener { v, event ->
+                if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                    v.lightImpact()
+                }
+                false
+            }
         }
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setOnClickListener { v ->
-            v.lightImpact()
-        }
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener { v ->
-            v.lightImpact()
-        }
-        
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.hapticOnPress()
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.hapticOnPress()
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.hapticOnPress()
+
         return dialog
     }
 }
@@ -209,19 +217,30 @@ fun MaterialAlertDialogBuilder.setTextInput(
 
 /**
  * Applies iOS 27 Liquid Glass styling to the created dialog.
- * Call after show() or on the dialog after creation.
+ *
+ * DESIGN.md §5.3: dialog surfaces are OPAQUE — the dim scrim behind the window
+ * is what separates them from content (§1.2: no glass on glass). The previous
+ * implementation painted tint on the FULL-SCREEN decorView, which washed the
+ * entire app behind the dialog. Here the window background is replaced with a
+ * rounded (28dp, §4.3) opaque surface carrying the §2.2 darkened rim.
  */
 fun AlertDialog.applyGlassDialog() {
-    window?.let { window ->
-        window.setBackgroundDrawableResource(android.R.color.transparent)
-        val glassTier = glassTier()
-        window.decorView.applyGlass(24f, glassTier)
-        window.decorView.applyGlassDecorators(glassTier)
-        // Ensure dialog content backgrounds are transparent so glass shows through
-        window.decorView.findViewById<ViewGroup>(android.R.id.content)?.let { content ->
-            content.background = null
+    val tier = glassTier()
+    val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+        android.content.res.Configuration.UI_MODE_NIGHT_YES
+    val d = context.resources.displayMetrics.density
+    val baseColor = if (isDark) GlassColors.GlassDarkBase else GlassColors.GlassLightBase
+
+    val background = MaterialShapeDrawable().apply {
+        shapeAppearanceModel = ShapeAppearanceModel.builder()
+            .setAllCornerSizes(28 * d)
+            .build()
+        fillColor = ColorStateList.valueOf(baseColor.toArgbCompat())
+        if (tier !is GlassTier.Scrim) {
+            stroke(1.coerceAtLeast((0.5 * d).toInt()).toFloat(), GlassColors.DarkenedEdge.toArgbCompat())
         }
     }
+    window?.setBackgroundDrawable(background)
 }
 
 /**

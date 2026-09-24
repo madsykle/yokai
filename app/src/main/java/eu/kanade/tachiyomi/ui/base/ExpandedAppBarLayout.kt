@@ -59,11 +59,6 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
 
     var compactSearchMode = false
 
-    /** Tracks whether glass has been applied to the collapsed toolbar */
-    private var isGlassApplied = false
-    /** Tracks whether glass has been applied to the search toolbar */
-    private var isSearchGlassApplied = false
-
     /** Defines how the toolbar layout should be */
     private var toolbarMode = ToolbarState.EXPANDED
         set(value) {
@@ -178,11 +173,6 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 }
                 else -> ToolbarState.EXPANDED
             }
-        }
-        // Reset glass when expanding back to large toolbar
-        if (previousMode != ToolbarState.EXPANDED && toolbarMode == ToolbarState.EXPANDED) {
-            isGlassApplied = false
-            isSearchGlassApplied = false
         }
     }
 
@@ -352,12 +342,10 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 cardFrame?.backgroundColor = null
             } else {
                 mainToolbar?.alpha = 1f
-                // iOS 27 Liquid Glass: apply tier-aware glass to collapsed toolbar
-                if (!isGlassApplied) {
-                    mainToolbar?.applyGlass(24f, glassTier())
-                    mainToolbar?.applyGlassDecorators(glassTier())
-                    isGlassApplied = true
-                }
+                // iOS 27 Liquid Glass: tier-aware tint on the collapsed toolbar (§5.2).
+                // applyGlass/applyGlassDecorators are idempotent now, so no guard flag.
+                mainToolbar?.applyGlass(24f, glassTier())
+                mainToolbar?.applyGlassDecorators(glassTier())
             }
             useSearchToolbarForMenu(compactSearchMode || offset > realHeight - shortH - tabHeight)
             return
@@ -462,12 +450,9 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 }
                 mainToolbar?.backgroundColor = null
                 cardFrame?.backgroundColor = null
-                // iOS 27 Liquid Glass: apply glass to search toolbar
-                if (!isSearchGlassApplied) {
-                    cardFrame?.applyGlass(24f, glassTier())
-                    cardFrame?.applyGlassDecorators(glassTier())
-                    isSearchGlassApplied = true
-                }
+                // iOS 27 Liquid Glass: tier-aware tint on the floating search toolbar (§5.2)
+                cardFrame?.applyGlass(24f, glassTier())
+                cardFrame?.applyGlassDecorators(glassTier())
             }
         } else {
             if (mainActivity.currentToolbar != mainToolbar) {

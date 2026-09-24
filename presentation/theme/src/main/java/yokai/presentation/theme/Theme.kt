@@ -1,5 +1,6 @@
 package yokai.presentation.theme
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -44,9 +45,10 @@ object GlassColors {
     val DarkenedEdge = Color(0x33000000)         // 1px border
     val SpecularHighlight = Color(0x1FFFFFFF)    // white at 12% on top edge
 
-    // Tier 3 Scrim Fallback (DESIGN.md §3.3)
-    val ScrimLight = Color(0xE6F2F2F7)
-    val ScrimDark = Color(0xE61C1C1E)
+    // Tier 3 Scrim Fallback (DESIGN.md §3.3) — near-opaque, mirrors Reduce Transparency
+    val ScrimLight = Color(0xF2F2F7)
+    val ScrimDark = Color(0x1C1C1E)
+    val ScrimFallbackAlpha = 0.90f
 
     // Default opacity for glass tint (DESIGN.md §2.2: base tint alpha ≈ 0.72)
     val GlassBaseTintAlpha = 0.72f
@@ -60,6 +62,18 @@ val iOSspring = spring<Float>(
     dampingRatio = 0.75f,
     stiffness = 300f,
 )
+
+/**
+ * SharedPreferences key for the iOS 27 transparency slider (DESIGN.md §2.2).
+ * Stored as a percent Int (30–95) in the app's default SharedPreferences file.
+ * Default 70 ≈ DESIGN.md §2.2 "base tint alpha ≈ 0.72".
+ */
+const val GLASS_TRANSPARENCY_PREF_KEY = "glass_transparency_alpha"
+
+fun glassTintAlpha(context: Context): Float {
+    val prefs = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
+    return prefs.getInt(GLASS_TRANSPARENCY_PREF_KEY, 70).coerceIn(30, 95) / 100f
+}
 
 /**
  * Glass tier info — consumed by glass components to pick Backdrop / Haze / scrim.
@@ -98,7 +112,7 @@ val glassShapes = Shapes(
 /**
  * Glass transparency preference key
  */
-const val GLASS_TRANSPARENCY_PREF = "pref_glass_transparency"
+const val GLASS_TRANSPARENCY_PREF = GLASS_TRANSPARENCY_PREF_KEY
 
 @Composable
 fun YokaiTheme(content: @Composable () -> Unit) {

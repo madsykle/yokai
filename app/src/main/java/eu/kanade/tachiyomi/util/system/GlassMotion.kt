@@ -4,7 +4,6 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.core.view.isVisible
-import androidx.core.view.performHapticFeedback
 import androidx.dynamicanimation.animation.DynamicAnimation
 import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.dynamicanimation.animation.SpringForce
@@ -38,8 +37,9 @@ private fun springAnimation(
     return SpringAnimation(view, property).apply {
         spring = springForce
         listener?.let { callback ->
-            addEndListener { _, _, _, isCanceled ->
-                callback(!isCanceled)
+            // OnAnimationEndListener params: (animation, canceled, value, velocity)
+            addEndListener { _, canceled, _, _ ->
+                callback(!canceled)
             }
         }
         start()

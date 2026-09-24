@@ -152,7 +152,7 @@ import yokai.presentation.extension.repo.ExtensionRepoController
 import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
 import eu.kanade.tachiyomi.util.system.lightImpact
-import yokai.presentation.theme.applyGlass
+import yokai.presentation.theme.FloatingGlassNavController
 import yokai.presentation.theme.glassTier
 import android.R as AR
 
@@ -376,9 +376,9 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         setContentView(binding.root)
 
-        // iOS 27 Liquid Glass: apply tier-aware glass to bottom nav
+        // iOS 27 Liquid Glass: floating glass nav pill (DESIGN.md §5.1).
         binding.bottomNav?.let { navView ->
-            navView.applyGlass(28f, glassTier())
+            FloatingGlassNavController.attach(navView, 28f, glassTier())
         }
 
         binding.toolbar.overflowIcon?.setTint(getResourceColor(R.attr.actionBarTintColor))

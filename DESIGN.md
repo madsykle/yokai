@@ -336,3 +336,24 @@ Priority order:
 5. **Reader Overlay Controls** (Phase 5)
    - `ReaderNavigationOverlayView` → glass controls only, never on manga page
    - Fade in/out via opacity, not slide
+
+---
+
+## 11. Implementation Audit (2026-09-24)
+
+Verification pass against HIG Materials/Navigation + Apple Books ref (`ref/Apple Books iOS 7.png`). Fixes applied in one pass:
+
+**Correctness fixes (were violating §1.2/§5.3/§5.4 at runtime):**
+- Fonts: all 8 `inter_*.ttf` were corrupted (GitHub HTML saved as TTF, app would crash on first inflate). Replaced with Inter 4.1 static TTFs (Regular/Medium/SemiBold/Bold × app + theme modules).
+- `View.applyGlass` used `setRenderEffect(blur)` which blurs the view's OWN content (nav icons, sheet contents) — never the backdrop. Replaced with tier-aware translucent material tint (white/black, §4.1) as background drawable; §1.4 luminance adaptation comes from the base tint + dim scrim.
+- Full-screen `window.decorView.applyGlass(...)` on sheets/dialogs/reader painted tint over the ENTIRE app. Sheets (§5.3) are opaque surfaces over the dim scrim; dialogs now use a rounded (28dp) opaque `MaterialShapeDrawable` window background with the §2.2 darkened rim.
+- Reader overlay: glass removed entirely (full-screen over manga page = §1.1 violation); fades converted from 1s tween to springs (§4.5).
+- Decorators (`applyGlassDecorators`) now idempotent `foreground` drawable (specular + 1px §2.2 rim); scrim tier draws exact §3 colors `#F2F2F7`/`#1C1C1E` @ 90%.
+- `GlassMotion.addEndListener` lambda param fixed (4th param of `OnAnimationEndListener` is velocity, not canceled) and bad `androidx.core.view.performHapticFeedback` import removed (platform `View.performHapticFeedback` used).
+- §2.2 transparency slider added to Settings → Appearance (6 stops, 30–95%, default 70 ≈ 0.72), read by all glass surfaces via `glassTintAlpha(context)`.
+
+**Known follow-ups (intentional, do not regress):**
+- Ref look (Books): active-tab concentric pill + separate circular search button are future polish; current accent tint on selected item is the fallback.
+- `main_activity.xml` still pads `controller_container` by `bottom_nav_total_height` (content does NOT scroll under the pill). §5.1 asks for under-scroll; safe rollout needs per-screen inset handling first.
+- Tier 1 (API 33+) renders the same translucent tint as Tier 2. Kyant0 Backdrop (AGSL refraction/lensing) remains wired in `libs.versions.toml` but is not composed yet; per §3 it needs an `AndroidView`-wrapped backdrop source on XML screens.
+- Haze (§3 Tier 2 for Compose) is a dependency but unused on Compose glass surfaces pending a Compose host surface (JayAppBar draws color behind, not a haze child).

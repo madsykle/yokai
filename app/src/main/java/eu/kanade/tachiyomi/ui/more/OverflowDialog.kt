@@ -26,9 +26,6 @@ import eu.kanade.tachiyomi.util.system.getResourceColor
 import eu.kanade.tachiyomi.util.system.lightImpact
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import uy.kohesive.injekt.injectLazy
-import yokai.presentation.theme.applyGlass
-import yokai.presentation.theme.applyGlassDecorators
-import yokai.presentation.theme.glassTier
 import android.R as AR
 
 class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.OverflowDialogTheme) {
@@ -55,9 +52,10 @@ class OverflowDialog(activity: MainActivity) : Dialog(activity, R.style.Overflow
             wic.isAppearanceLightStatusBars = false
             wic.isAppearanceLightNavigationBars = false
 
-            // Apply iOS 27 Liquid Glass styling (tier-aware)
-            window.decorView.applyGlass(24f, glassTier())
-            window.decorView.applyGlassDecorators(glassTier())
+            // iOS 27 Liquid Glass (§5.3): the overflow CARD is the surface — never
+            // tint the full-screen decorView (§1.2). The card keeps its blended
+            // opaque background from above (§1.3 restraint: no extra glass here).
+            window.decorView.fitsSystemWindows = true
         }
 
         binding.touchOutside.setOnClickListener {

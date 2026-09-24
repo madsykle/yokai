@@ -1,11 +1,18 @@
 package yokai.presentation.theme
 
+import android.content.res.Configuration
+import android.graphics.LinearGradient
 import android.graphics.Outline
-import android.graphics.RenderEffect
+import android.graphics.PixelFormat
 import android.graphics.Shader
-import android.os.Build
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.graphics.Canvas
+import android.graphics.ColorFilter
+import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -16,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -35,7 +43,7 @@ import androidx.compose.ui.unit.dp
 fun GlassSurface(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 24.dp,
-    tintAlpha: Float = GlassColors.GlassBaseTintAlpha,
+    tintAlpha: Float = glassTintAlpha(LocalContext.current),
     darkenedEdge: Boolean = true,
     specularHighlight: Boolean = true,
     content: @Composable () -> Unit,
@@ -47,7 +55,11 @@ fun GlassSurface(
 
     // All tiers use the same simple implementation for compatibility
     val backgroundColor = when (tier) {
-        is GlassTier.Scrim -> if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
+        is GlassTier.Scrim -> if (isDark) {
+            GlassColors.ScrimDark.copy(alpha = GlassColors.ScrimFallbackAlpha)
+        } else {
+            GlassColors.ScrimLight.copy(alpha = GlassColors.ScrimFallbackAlpha)
+        }
         else -> tintColor
     }
 
@@ -127,24 +139,31 @@ fun Color.toArgbCompat(): Int {
  * View-based glass implementation for XML-inflated components.
  * Used by MainActivity's bottom nav and top bar.
  * Call: `view.applyGlass(28f, glassTier())`
+ *
+ * DESIGN.md §3: the material layer is a translucent tint over the backdrop.
+ * A View must NEVER blur its own content via [android.view.View.setRenderEffect] —
+ * that blurs the icons/labels INSIDE the view, not what is behind it (HIG: the
+ * material layer blurs the backdrop, not the foreground content).
  */
 fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
     val actualTier = tier ?: glassTier()
     val radiusPx = cornerRadiusDp * resources.displayMetrics.density
+    val isDark = isNightMode()
 
-    when (actualTier) {
+    background = when (actualTier) {
         is GlassTier.Full, is GlassTier.Blur -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val blurEffect = RenderEffect.createBlurEffect(
-                    20f, 20f, Shader.TileMode.CLAMP,
-                )
-                setRenderEffect(blurEffect)
-            }
+            // Translucent material tint; user-adjustable via the transparency pref (§2.2).
+            glassTintDrawable(radiusPx, context.glassTintAlpha(), isDark)
         }
         is GlassTier.Scrim -> {
-            val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-            val color = if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight
-            setBackgroundColor(color.toArgbCompat())
+            // DESIGN.md §3 Tier 3: deliberate near-opaque scrim (mirrors Reduce
+            // Transparency) in the exact §3 colors (#F2F2F7 / #1C1C1E @ 90%).
+            GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = radiusPx
+                setColor((if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight).toArgbCompat())
+                alpha = (GlassColors.ScrimFallbackAlpha * 255).toInt()
+            }
         }
     }
 
@@ -157,58 +176,62 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
     clipToOutline = true
 }
 
+private fun View.isNightMode(): Boolean =
+    (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+/**
+ * Rounded translucent material-tint drawable used as the glass background.
+ * Light mode tints white (§4.1 GlassTintLight), dark mode tints black (GlassTintDark).
+ */
+private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean): GradientDrawable {
+    val baseColor = if (isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+    return GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = radiusPx
+        setColor(baseColor)
+        this.alpha = (alpha.coerceIn(0f, 1f) * 255).toInt()
+    }
+}
+
 /**
  * Applies iOS 27 Liquid Glass decorators (darkened edge + specular highlight)
- * to a View by setting a custom foreground drawable with gradient layers.
+ * to a View by setting its `foreground` to a layered gradient drawable.
+ * Idempotent: re-assignment replaces the previous decorators (§2.2).
  * Mirrors [GlassSurfaceDecorators] for the Compose side.
  */
 fun View.applyGlassDecorators(tier: GlassTier? = null) {
     val actualTier = tier ?: glassTier()
 
     // Only apply decorators for blur/glass tiers (not scrim)
-    if (actualTier is GlassTier.Scrim) return
-
-    // Build a foreground drawable with vertical gradients for darkened edge + specular highlight
-    val decoratorDrawable = object : android.graphics.drawable.Drawable() {
-        private val darkenedEdgeColor = GlassColors.DarkenedEdge.toArgbCompat()
-        private val specularColor = GlassColors.SpecularHighlight.toArgbCompat()
-        private val transparentColor = android.graphics.Color.TRANSPARENT
-
-        private val darkenedEdgeShader = android.graphics.LinearGradient(
-            0f, 0f, 0f, 96 * resources.displayMetrics.density,
-            intArrayOf(darkenedEdgeColor, transparentColor),
-            null,
-            android.graphics.Shader.TileMode.CLAMP,
-        )
-        private val specularShader = android.graphics.LinearGradient(
-            0f, 0f, 0f, 24 * resources.displayMetrics.density,
-            intArrayOf(specularColor, transparentColor),
-            null,
-            android.graphics.Shader.TileMode.CLAMP,
-        )
-        private val paint = android.graphics.Paint().apply { isAntiAlias = true }
-
-        override fun draw(canvas: android.graphics.Canvas) {
-            val bounds = this.bounds
-            // Darkened edge (96dp from top)
-            paint.shader = darkenedEdgeShader
-            canvas.drawRect(
-                0f, 0f, bounds.width().toFloat(), 96 * resources.displayMetrics.density,
-                paint,
-            )
-            // Specular highlight (24dp from top)
-            paint.shader = specularShader
-            canvas.drawRect(
-                0f, 0f, bounds.width().toFloat(), 24 * resources.displayMetrics.density,
-                paint,
-            )
-        }
-
-        override fun setAlpha(alpha: Int) { paint.alpha = alpha }
-        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { paint.colorFilter = colorFilter }
-        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+    if (actualTier is GlassTier.Scrim) {
+        foreground = null
+        return
     }
 
-    // Add to View overlay (non-interfering with background/clicks)
-    overlay.add(decoratorDrawable)
+    val d = resources.displayMetrics.density
+    val specularShader = LinearGradient(
+        0f, 0f, 0f, 24 * d,
+        intArrayOf(GlassColors.SpecularHighlight.toArgbCompat(), android.graphics.Color.TRANSPARENT),
+        null,
+        Shader.TileMode.CLAMP,
+    )
+    val specular = object : Drawable() {
+        private val paint = Paint().apply { isAntiAlias = true }
+        override fun draw(canvas: Canvas) {
+            paint.shader = specularShader
+            canvas.drawRect(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.top + 24 * d, paint)
+        }
+        override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+        override fun setColorFilter(colorFilter: ColorFilter?) { paint.colorFilter = colorFilter }
+        @Deprecated("Deprecated in Java")
+        override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+    }
+
+    // Darkened edge: 1px border per DESIGN.md §2.2 (rim on all sides)
+    val border = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        setStroke(1.coerceAtLeast((0.5 * d).toInt()), GlassColors.DarkenedEdge.toArgbCompat())
+    }
+
+    foreground = LayerDrawable(arrayOf<Drawable>(specular, border))
 }

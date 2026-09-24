@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
  *
  * Provides:
  * - 24dp top corners only (bottom corners remain square for system gesture area)
- * - Grabber handle indicator
+ * - Grabber handle indicator (36×5dp, §5.3)
  * - Tier-aware glass background (Backdrop/Haze/Scrim)
  * - Darkened edge + specular highlight decorators
  *
@@ -43,7 +43,8 @@ fun GlassAlertDialog(
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    val containerColor = glassTintColor(GlassColors.GlassBaseTintAlpha, isDark)
+    // DESIGN.md §1.2: dialog surfaces are OPAQUE — no glass on glass over the scrim
+    val containerColor = if (isDark) GlassColors.GlassDarkBase else GlassColors.GlassLightBase
     val onSurface = if (isDark) GlassColors.LabelPrimaryDark else GlassColors.LabelPrimaryLight
     val onSurfaceVariant = if (isDark) GlassColors.LabelSecondaryDark else GlassColors.LabelSecondaryLight
 
@@ -58,7 +59,6 @@ fun GlassAlertDialog(
         containerColor = containerColor,
         titleContentColor = onSurface,
         textContentColor = onSurfaceVariant,
-        // buttonContentColor not available in this version
     )
 }
 
@@ -77,7 +77,8 @@ fun GlassBottomSheetContainer(
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    val containerColor = glassTintColor(GlassColors.GlassBaseTintAlpha, isDark)
+    // DESIGN.md §1.2: sheet containers are OPAQUE (§5.3)
+    val containerColor = if (isDark) GlassColors.GlassDarkBase else GlassColors.GlassLightBase
 
     Box(
         modifier = modifier
@@ -94,10 +95,10 @@ fun GlassBottomSheetContainer(
         ) {
             Box(
                 modifier = Modifier
-                    .size(width = 36.dp, height = 4.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .background(
                         if (isDark) Color.White.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.4f),
-                        RoundedCornerShape(2.dp),
+                        RoundedCornerShape(2.5.dp),
                     ),
             )
         }

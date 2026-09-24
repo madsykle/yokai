@@ -7,20 +7,22 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewPropertyAnimator
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation
 import eu.kanade.tachiyomi.ui.reader.viewer.navigation.DisabledNavigation
 import yokai.util.lang.getString
-import yokai.presentation.theme.applyGlass
-import yokai.presentation.theme.applyGlassDecorators
-import yokai.presentation.theme.glassTier
+import eu.kanade.tachiyomi.util.system.springFadeIn
+import eu.kanade.tachiyomi.util.system.springFadeOut
 import kotlin.math.abs
+
+private object ViewPropertyAnimatorHolderMarker
 
 class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) : View(context, attributeSet) {
 
-    private var viewPropertyAnimator: ViewPropertyAnimator? = null
+    // Guards against double-triggering fade animations; the underlying
+    // animations are springs from GlassMotion (§4.5).
+    private var viewPropertyAnimator: Any? = null
 
     private var navigation: ViewerNavigation? = null
 
@@ -42,22 +44,16 @@ class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) 
     fun showNavigationAgain() {
         invalidate()
 
-        // iOS 27 Liquid Glass: apply tier-aware glass to reader overlay
-        applyGlass(24f, glassTier())
-        applyGlassDecorators(glassTier())
-
         if (isVisible || navigation is DisabledNavigation) return
 
-        viewPropertyAnimator = animate()
-            .alpha(1f)
-            .setDuration(FADE_DURATION)
-            .withStartAction {
-                isVisible = true
-            }
-            .withEndAction {
-                viewPropertyAnimator = null
-            }
-        viewPropertyAnimator?.start()
+        // DESIGN.md §5.4: overlay fades with opacity (never slide);
+        // §4.5: springs only — no tween().
+        // NOTE: no glass background here — this view is FULL-SCREEN over the manga
+        // page, and §1.1 forbids glass on content. The tint painted the page over.
+        viewPropertyAnimator = ViewPropertyAnimatorHolderMarker
+        springFadeIn {
+            viewPropertyAnimator = null
+        }
     }
 
     private val regionPaint = Paint()
@@ -115,14 +111,13 @@ class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) 
         super.performClick()
 
         if (viewPropertyAnimator == null && isVisible) {
-            viewPropertyAnimator = animate()
-                .alpha(0f)
-                .setDuration(FADE_DURATION)
-                .withEndAction {
+            springFadeOut { completed ->
+                if (completed) {
                     isVisible = false
-                    viewPropertyAnimator = null
                 }
-            viewPropertyAnimator?.start()
+                viewPropertyAnimator = null
+            }
+            viewPropertyAnimator = ViewPropertyAnimatorHolderMarker
         }
 
         return true
@@ -134,5 +129,3 @@ class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) 
         return super.onTouchEvent(event)
     }
 }
-
-private const val FADE_DURATION = 1000L

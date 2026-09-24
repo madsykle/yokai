@@ -12,9 +12,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import eu.kanade.tachiyomi.util.system.mediumImpact
 import eu.kanade.tachiyomi.util.system.springFadeIn
 import eu.kanade.tachiyomi.util.system.springFadeOut
-import yokai.presentation.theme.applyGlass
-import yokai.presentation.theme.applyGlassDecorators
-import yokai.presentation.theme.glassTier
 
 /**
  * Edge to Edge BottomSheetDialog that uses a custom theme and settings to extend pass the nav bar
@@ -42,10 +39,10 @@ abstract class E2EBottomSheetDialog<VB : ViewBinding>(activity: Activity) :
             val wic = WindowInsetsControllerCompat(window, binding.root)
             window.navigationBarColor = activity.window.navigationBarColor
             wic.isAppearanceLightNavigationBars = isLight
-            // iOS 27 Liquid Glass: apply tier-aware glass to bottom sheet
-            window.decorView.applyGlass(24f, glassTier())
-            window.decorView.applyGlassDecorators(glassTier())
-
+            // iOS 27 Liquid Glass (DESIGN.md §5.3): the sheet surface itself is OPAQUE
+            // (rule 1.2 — no glass on glass); the dimming scrim stays. The previous
+            // decorView-wide glass painted a full-screen tint over the whole app.
+            //
             // iOS 27 Liquid Glass: Spring animation for sheet enter/exit (Phase 5)
             val decorView = window.decorView
             decorView.alpha = 0f
@@ -56,7 +53,7 @@ abstract class E2EBottomSheetDialog<VB : ViewBinding>(activity: Activity) :
             setOnDismissListener { _ ->
                 decorView.springFadeOut {
                     if (it) {
-                        decorView.mediumImpact() // Haptic on sheet dismiss
+                        decorView.mediumImpact() // Haptic on sheet dismiss (§4.5)
                     }
                 }
             }

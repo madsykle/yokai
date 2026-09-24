@@ -33,6 +33,7 @@ import kotlin.math.max
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import yokai.domain.base.BasePreferences
+import yokai.presentation.theme.GLASS_TRANSPARENCY_PREF_KEY
 import yokai.i18n.MR
 import yokai.util.lang.getString
 import eu.kanade.tachiyomi.data.preference.PreferenceKeys as Keys
@@ -174,6 +175,28 @@ class SettingsAppearanceController : SettingsLegacyController() {
                 titleRes = MR.strings.hide_bottom_nav
                 summaryRes = MR.strings.hides_on_scroll
                 defaultValue = true
+            }
+
+            // iOS 27 Liquid Glass transparency slider (DESIGN.md §2.2):
+            // user-adjustable from ultra clear to fully tinted.
+            intListPreference(activity) {
+                key = GLASS_TRANSPARENCY_PREF_KEY
+                title = "Glass transparency"
+                entries = listOf(
+                    "Ultra clear",
+                    "Clear",
+                    "Frosted",
+                    "Default",
+                    "Milky",
+                    "Fully tinted",
+                )
+                entryValues = listOf(30, 45, 60, 70, 85, 95)
+                defaultValue = 70
+
+                onChange {
+                    activity?.recreate()
+                    true
+                }
             }
 
             intListPreference(activity) {
