@@ -26,10 +26,10 @@ import eu.kanade.tachiyomi.widget.TriStateCheckBox
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceDialogAdapter
 import eu.kanade.tachiyomi.widget.materialdialogs.TriStateMultiChoiceListener
 import yokai.presentation.theme.GlassColors
+import yokai.presentation.theme.GlassTier
 import yokai.presentation.theme.glassTier
 import yokai.presentation.theme.toArgbCompat
 import yokai.util.lang.getString
-import eu.kanade.tachiyomi.util.system.lightImpact
 
 /**
  * Custom MaterialAlertDialogBuilder that applies iOS 27 Liquid Glass styling on show.
@@ -237,7 +237,7 @@ fun AlertDialog.applyGlassDialog() {
             .build()
         fillColor = ColorStateList.valueOf(baseColor.toArgbCompat())
         if (tier !is GlassTier.Scrim) {
-            stroke(1.coerceAtLeast((0.5 * d).toInt()).toFloat(), GlassColors.DarkenedEdge.toArgbCompat())
+            setStroke(1.coerceAtLeast((0.5 * d).toInt()).toFloat(), GlassColors.DarkenedEdge.toArgbCompat())
         }
     }
     window?.setBackgroundDrawable(background)
