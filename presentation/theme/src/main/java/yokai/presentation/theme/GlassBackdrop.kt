@@ -11,6 +11,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -80,7 +81,15 @@ fun Modifier.glassBackdrop(
         is GlassTier.Full -> drawBackdrop(
             backdrop = state.layer,
             shape = { shape },
-            effects = { blur(blurRadius.toPx()) },
+            effects = {
+                // Blur, then lens: the lensing is what separates tier 1 from tier 2, and it
+                // is already a no-op below API 33 inside the library.
+                blur(blurRadius.toPx())
+                lens(
+                    refractionHeight = DEFAULT_GLASS_REFRACTION_HEIGHT.toPx(),
+                    refractionAmount = DEFAULT_GLASS_REFRACTION_AMOUNT.toPx(),
+                )
+            },
         )
         is GlassTier.Blur -> hazeEffect(
             state = state.haze,
@@ -92,3 +101,10 @@ fun Modifier.glassBackdrop(
 
 /** DESIGN.md §3: enough to read as frosted without smearing what is behind. */
 val DEFAULT_GLASS_BLUR_RADIUS: Dp = 24.dp
+
+/**
+ * How far into the surface the tier 1 lens distortion reaches, and how far it bends.
+ * Deliberately restrained: the point is the bend you can see at the rim, not a fisheye.
+ */
+val DEFAULT_GLASS_REFRACTION_HEIGHT: Dp = 24.dp
+val DEFAULT_GLASS_REFRACTION_AMOUNT: Dp = 16.dp

@@ -15,10 +15,13 @@ koin = "4.0.4"
 leakcanary = "2.14"
 voyager = "1.1.0-beta03"
 # Liquid Glass tier libraries
-# backdrop must stay >= 2.0.0: 1.x has no `rememberLayerBackdrop`/`Modifier.layerBackdrop`
-# (it could not record Compose content as a backdrop), and it is built with the same
-# Kotlin (2.4.10) the project uses. DESIGN.md §3 names 2.0.1.
-backdrop = "2.0.1"
+# backdrop is deliberately pinned to 1.x. 2.0.1 is a Compose Multiplatform build that
+# depends on Compose 1.12.0, and Compose >= 1.12 requires compileSdk 37 - more than AGP
+# 8.12.2 supports here. 1.0.6 already has everything DESIGN.md §3 needs
+# (rememberLayerBackdrop / Modifier.layerBackdrop / drawBackdrop + blur & lens effects)
+# and asks for minCompileSdk 36 with Compose 1.10.3, which is exactly this project's
+# Compose BOM.
+backdrop = "1.0.6"
 haze = "1.6.10"
 dynamicanimation = "1.1.0-alpha03"
 

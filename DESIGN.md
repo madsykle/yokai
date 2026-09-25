@@ -383,28 +383,35 @@ Second pass, targeting the three §11 follow-ups plus the `build_push` red. Veri
   Signing stays required, so `build_push` still fails at **Sign APK** until the fork defines
   `SIGNING_KEY` / `ALIAS` / `KEY_STORE_PASSWORD` / `KEY_PASSWORD` (+ `NIGHTLY_PAT`).
 
-**Blocker found for Tier 1/Tier 2 backdrop (items 3–4), not yet implemented:**
+**Tier 1 / Tier 2 backdrop — implemented, with one prerequisite that was not obvious:**
 
-Both `Backdrop` (AGSL refraction, API 33+) and `Haze` (blur, API 31–32) need a *source* that
-records the content the chrome sits over. In the Compose path there is currently no such content:
+Both `Backdrop` (refraction, API 33+) and `Haze` (blur, API 31–32) need a *source* that records
+the content the chrome sits over. In the Compose path that source did not exist:
 
 - M3 `Scaffold` places the body content first and the top bar on top of it (verified in
-  material3 1.5.0-alpha14 `ScaffoldLayout`), so a glass top bar *would* be drawn above the
-  content — good.
+  material3 1.5.0-alpha14 `ScaffoldLayout`), so a glass top bar *is* drawn above the content.
 - But `Scaffold` passes the top bar's **current** height as the content's top inset, and
   `JayAppBarScrollBehavior.appBarScrollBehavior()` collapses by *reporting a smaller height*
   (`.layout { layout(placeable.width, placeable.height + scrollOffset) { placeable.placeWithLayer(0, scrollOffset) } }`),
   not by translating inside a fixed box.
-- Net effect: the content's top edge always tracks the bar's bottom edge, so nothing is ever
-  behind the glass and both backdrops would sample empty space.
+- Net effect: the content's top edge always tracked the bar's bottom edge, so nothing was ever
+  behind the glass and both backdrops would have sampled empty space.
 
-The fix is to make the content's top inset **sticky at the expanded app-bar height** while
-letting the bar collapse over it (which is also what iOS large titles do: the scroll inset is the
-large-title height and never shrinks). That is a change to `YokaiScaffold` content insets plus
-`JayAppBar`, and it alters scrolling behaviour on **every Compose screen**, so it needs a
-conscious go-ahead rather than a silent roll-out — the same caution §11 recorded.
+Fix: the content's top inset is now **sticky at the expanded app-bar height** while the bar
+collapses over it — what iOS large titles do (the scroll inset is the large-title height and
+never shrinks). Applied in `YokaiScaffold`; this changes scrolling behaviour on every Compose
+screen, which is the intended §5.1 behaviour but is the one part of this work that CI cannot
+confirm visually.
 
-The XML chrome (bottom pill, `ExpandedAppBarLayout`) is already correct in this respect: the
-container is unpadded and the chrome is a later sibling, so content genuinely passes underneath.
-The libraries are also not dependencies yet (`presentation/theme` pulls in neither), and the
-catalog still pins `backdrop = 1.0.6` while §3 specifies `2.0.1`.
+**Do not bump `backdrop` to 2.x without bumping `compileSdk`.** 2.0.1 is a Compose
+Multiplatform build that depends on Compose 1.12.0, and Compose ≥ 1.12 declares
+`minCompileSdk 37`; this project compiles against android-36 and AGP 8.12.2 caps out at 36, so
+`:app:checkStandardDebugAarMetadata` fails with 22 issues (all of the Compose 1.12.0 artifacts
+plus `kyant0:backdrop-android:2.0.1` and `kyant0:shapes-android:1.2.1`). 1.0.6 is the right
+pin: it has the full API §3 needs (`rememberLayerBackdrop`, `Modifier.layerBackdrop`,
+`drawBackdrop`, `blur`, and the `lens` refraction effect) and asks for `minCompileSdk 36` with
+Compose 1.10.3 — exactly this project's Compose BOM. `haze` is unconstrained by this
+(`minCompileSdk 1`).
+
+The XML chrome was already correct in this respect: the container is unpadded and the chrome is
+a later sibling, so content genuinely passes underneath.
