@@ -93,7 +93,11 @@ fun Modifier.glassBackdrop(
         )
         is GlassTier.Blur -> hazeEffect(
             state = state.haze,
-            style = HazeStyle(blurRadius = blurRadius),
+            // `tints` has to be spelled out: HazeStyle declares both a `tints` and a `tint`
+            // constructor and every other parameter has a default, so a looser call is an
+            // overload-resolution ambiguity. It stays empty on purpose - the material tint is
+            // drawn by the caller on top of the blur, exactly as on the tier 1 path.
+            style = HazeStyle(tints = emptyList(), blurRadius = blurRadius),
         )
         is GlassTier.Scrim -> this
     }
