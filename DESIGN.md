@@ -485,3 +485,35 @@ functions with unit tests (`FloatingNavInsetsTest`, `GlassTierTest`): `glassTier
 Still unverified visually: the sticky-inset scroll behaviour from §12, the slider's live repaint
 on a real frame budget, and the tier-1/tier-2 effects. CI proves compilation and the unit tests
 only.
+
+---
+
+## 14. Device Contrast Audit (2026-09-25)
+
+First on-device verification pass (`currentappss/` screenshots, dark mode, 1080×2400). Pixel
+analysis of the three main screens found the redesign was running but rendering as *nothing*,
+and it traced to one wrong assumption carried through the whole material:
+
+**Dark glass was tinted BLACK, which can only be invisible.** §4.1's `GlassTintDark: #000000 @
+35%` over the `#1C1C1C` page lands on `#141414` — *darker than the page*. The floating pill, the
+round search button and every glass surface rendered as a void; the tab capsule floated in empty
+space. HIG dark materials do the opposite: they LIFT above their backdrop. Both material paths
+now tint white in both modes, with dark mode at half the user's transparency value
+(`GLASS_DARK_BASE_ALPHA = 0.50`, so the default 70% reads as a 35% white veil — a clearly visible
+frosted surface). The §3 scrim is lifted the same way (`#2C2C2E`, not `#1C1C1E`).
+
+**The dark rim was black-on-black.** §2.1's darkened edge `#33000000` cannot separate a dark
+surface from a dark page. The rim is now mode-aware: `#59FFFFFF` (light) in dark mode,
+`#33000000` in light mode — `DarkenedEdgeDark` in `GlassColors`, and the dialog rim follows.
+
+**The specular ramp only covered 24dp** of a 76dp-tall pill, so the surface read as a flat wash.
+The sheen now spans the full height (25% white at the top edge in dark mode, 12% in light).
+
+**Sub-contrast tokens raised:** unselected nav labels `#99EBEBF5` → `#C9E1E4E8` (~79%), and the
+dark active indicator `#24FFFFFF` (7% white, invisible) → `#42FFFFFF`.
+
+Light mode is structurally unchanged: white frost on a light page carries through the rim,
+indicator and accent icons, which is what iOS light glass does.
+
+New open question for the next device pass: whether the lifted dark veil is *too* present at the
+"Fully tinted" stop (95% × 0.50 ≈ 48% white).

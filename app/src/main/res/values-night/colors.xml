@@ -133,11 +133,13 @@
     <color name="accent_blue">#0A84FF</color>
     <color name="accent_green">#30D158</color>
     <color name="accent_red">#FF453A</color>
-    <!-- Label Colors (auto-switch via luminance sampling) -->
+    <!-- Label Colors (auto-switch via luminance sampling). The dark secondary label is
+         lifted well above §4.1's #99EBEBF5 (60% #EBEBF5), which measured sub-contrast against
+         a lifted glass surface on-device - nav labels were barely legible. -->
     <color name="label_primary_light">#000000</color>
     <color name="label_primary_dark">#FFFFFF</color>
     <color name="label_secondary_light">#613C3C43</color>  <!-- #3C3C43 at 60% -->
-    <color name="label_secondary_dark">#99EBEBF5</color>  <!-- #EBEBF5 at 60% -->
+    <color name="label_secondary_dark">#C9E1E4E8</color>  <!-- ~79% #E1E4E8 -->
     <!-- Glass Border / Specular -->
     <color name="glass_darkened_edge">#33000000</color>  <!-- 1px border -->
     <color name="glass_specular_highlight">#1FFFFFFF</color>  <!-- white at 12% for top edge gradient -->
@@ -178,8 +180,9 @@
     <color name="bottom_nav_item_unselected">@color/label_secondary_dark</color>
     <color name="bottom_nav_text_selected">@color/accent_blue</color>
     <color name="bottom_nav_text_unselected">@color/label_secondary_dark</color>
-    <!-- Lighter concentric pill on the selected tab (see values/colors.xml). -->
-    <color name="bottom_nav_active_indicator">#24FFFFFF</color>
+    <!-- Lighter concentric pill on the selected tab (see values/colors.xml). Dark value is
+         lifted from §4.1's #24FFFFFF (7% white), which measured invisible on-device. -->
+    <color name="bottom_nav_active_indicator">#42FFFFFF</color>
 
     <drawable name="bottom_nav_item_selector">
         <selector>

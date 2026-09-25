@@ -216,7 +216,7 @@
     <color name="label_primary_light">#000000</color>
     <color name="label_primary_dark">#FFFFFF</color>
     <color name="label_secondary_light">#613C3C43</color>  <!-- #3C3C43 at 60% -->
-    <color name="label_secondary_dark">#99EBEBF5</color>  <!-- #EBEBF5 at 60% -->
+    <color name="label_secondary_dark">#C9E1E4E8</color>  <!-- ~79% #E1E4E8; lifted for contrast (see values-night) -->
     <!-- Glass Border / Specular -->
     <color name="glass_darkened_edge">#33000000</color>  <!-- 1px border -->
     <color name="glass_specular_highlight">#1FFFFFFF</color>  <!-- white at 12% for top edge gradient -->
@@ -261,6 +261,9 @@
     <!-- Lighter concentric pill on the selected tab; the bar behind it is the
          frosted capsule, so the highlight has to read as "one layer up". -->
     <color name="bottom_nav_active_indicator">#59FFFFFF</color>
+    <!-- Mode-aware rim (§2.1): light mode rims dark, dark mode rims light. A black rim
+         cannot separate a dark surface from a dark page (measured invisible on-device). -->
+    <color name="glass_rim_dark">#59FFFFFF</color>
 
     <drawable name="bottom_nav_item_selector">
         <selector>

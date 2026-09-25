@@ -14,6 +14,7 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -60,7 +62,9 @@ fun GlassSurface(
     // All tiers use the same simple implementation for compatibility
     val backgroundColor = when (tier) {
         is GlassTier.Scrim -> if (isDark) {
-            GlassColors.ScrimDark.copy(alpha = GlassColors.ScrimFallbackAlpha)
+            // §3 near-opaque scrim, but LIFTED: a #1C1C1E fill on a #1C1C1C page is a
+            // invisible bar. The scrim stays deliberate by being plainly lighter.
+            Color(0xFF2C2C2E).copy(alpha = GlassColors.ScrimFallbackAlpha)
         } else {
             GlassColors.ScrimLight.copy(alpha = GlassColors.ScrimFallbackAlpha)
         }
@@ -92,25 +96,31 @@ private fun GlassSurfaceDecorators(
     darkenedEdge: Boolean,
     specularHighlight: Boolean,
 ) {
+    val isDark = isSystemInDarkTheme()
     if (darkenedEdge) {
+        // Mode-aware rim (see View.applyGlassDecorators): dark mode rims light, because a
+        // black rim cannot separate a dark surface from a dark page.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        listOf(GlassColors.DarkenedEdge, Color.Transparent),
-                    ),
+                .border(
+                    width = 1.dp,
+                    brush = SolidColor(if (isDark) GlassColors.DarkenedEdgeDark else GlassColors.DarkenedEdge),
                     shape = shape,
                 ),
         )
     }
     if (specularHighlight) {
+        // §2.1 brighter specular: highlight ramp over the full height, stronger in dark mode.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        listOf(GlassColors.SpecularHighlight, Color.Transparent),
+                        listOf(
+                            Color.White.copy(alpha = if (isDark) 0.25f else 0.12f),
+                            Color.Transparent,
+                        ),
                     ),
                     shape = shape,
                 ),
@@ -119,14 +129,19 @@ private fun GlassSurfaceDecorators(
 }
 
 /**
- * Glass tint color with given alpha.
+ * Glass tint color at the given alpha.
+ *
+ * Both modes tint WHITE — the §1.4 lift. Dark glass lifts from the dark page (white veil);
+ * light glass sits on the light page (white frost). Tinting black in dark mode produced a
+ * surface *darker* than the `#1C1C1C` page — a hole, not a material — which is exactly what
+ * the device screenshots showed.
  */
 @Composable
 fun glassTintColor(tintAlpha: Float, isDark: Boolean): Color {
     return if (isDark) {
-        Color(0x59000000).copy(alpha = tintAlpha)
+        Color.White.copy(alpha = tintAlpha * GlassColors.GLASS_DARK_BASE_ALPHA)
     } else {
-        Color(0x1AFFFFFF).copy(alpha = tintAlpha)
+        Color.White.copy(alpha = tintAlpha)
     }
 }
 
@@ -168,14 +183,15 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Bool
         }
         is GlassTier.Scrim -> {
             // DESIGN.md §3 Tier 3: deliberate near-opaque scrim (mirrors Reduce
-            // Transparency) in the exact §3 colors (#F2F2F7 / #1C1C1E @ 90%).
-            // Real blur is impossible here - AGSL needs API 33, RenderEffect needs 31, and
-            // RenderScript is banned outright by §7.1 - so the tier is differentiated by
-            // its edge treatment instead (see applyGlassDecorators).
+            // Transparency). Real blur is impossible here - AGSL needs API 33, RenderEffect
+            // needs 31, and RenderScript is banned outright by §7.1 - so the tier is
+            // differentiated by its edge treatment instead (see applyGlassDecorators).
+            // The dark scrim is LIFTED (#2C2C2E, not §4.1's #1C1C1E): a #1C1C1E fill on a
+            // #1C1C1C page is an invisible bar, which the device screenshots showed.
             GradientDrawable().apply {
                 shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
                 cornerRadius = radiusPx
-                setColor((if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight).toArgbCompat())
+                setColor(if (isDark) 0xFF2C2C2E.toInt() else GlassColors.ScrimLight.toArgbCompat())
                 alpha = (GlassColors.ScrimFallbackAlpha * 255).toInt()
             }
         }
@@ -201,15 +217,17 @@ private fun View.isNightMode(): Boolean =
 
 /**
  * Rounded translucent material-tint drawable used as the glass background.
- * Light mode tints white (§4.1 GlassTintLight), dark mode tints black (GlassTintDark).
+ *
+ * Both modes tint WHITE (§1.4 lift). Tinting black in dark mode landed *darker* than the
+ * `#1C1C1C` page — a hole, not a material — so dark glass instead lifts with a white veil at
+ * half the user's transparency value ([GlassColors.GLASS_DARK_BASE_ALPHA]).
  */
 private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean, circle: Boolean = false): GradientDrawable {
-    val baseColor = if (isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     return GradientDrawable().apply {
         shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
         cornerRadius = radiusPx
-        setColor(baseColor)
-        this.alpha = (alpha.coerceIn(0f, 1f) * 255).toInt()
+        setColor(android.graphics.Color.WHITE)
+        this.alpha = ((alpha * (if (isDark) GlassColors.GLASS_DARK_BASE_ALPHA else 1f)).coerceIn(0f, 1f) * 255).toInt()
     }
 }
 
@@ -218,9 +236,9 @@ private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean, ci
  * setting its `foreground` to a layered gradient drawable. Idempotent: re-assignment replaces
  * the previous decorators (§2.2). Mirrors [GlassSurfaceDecorators] for the Compose side.
  *
- * Deliberately tier-independent: the rim and the specular ramp are the same treatment on every
- * tier, including [GlassTier.Scrim], where §3 asks the fallback for a "1px light top edge" so
- * it still reads as a deliberate material rather than a plain opaque bar.
+ * Deliberately tier-independent: the rim and the sheen are the same treatment on every tier,
+ * including [GlassTier.Scrim], where §3 asks the fallback for a "1px light top edge" so it
+ * still reads as a deliberate material rather than a plain opaque bar.
  *
  * [cornerRadiusDp] must match the radius passed to [applyGlass] - the stroke is drawn as a
  * GradientDrawable, and without the radius the rim would render as a square outline over a
@@ -229,17 +247,40 @@ private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean, ci
 fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = false) {
     val d = resources.displayMetrics.density
     val radiusPx = cornerRadiusDp * d
-    val specularShader = LinearGradient(
-        0f, 0f, 0f, 24 * d,
-        intArrayOf(GlassColors.SpecularHighlight.toArgbCompat(), android.graphics.Color.TRANSPARENT),
+    val isDark = isNightMode()
+
+    // §2.1 darkened edge — but mode-aware. On a dark page a BLACK rim cannot separate a
+    // black surface (it measured invisible on-device), so dark mode rims LIGHT. The stroke
+    // follows the shape of the surface it outlines, not its bounding box.
+    val rimColor = if (isDark) GlassColors.DarkenedEdgeDark else GlassColors.DarkenedEdge
+    val border = GradientDrawable().apply {
+        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+        cornerRadius = radiusPx
+        setStroke(1.coerceAtLeast((0.5 * d).toInt()), rimColor.toArgbCompat())
+    }
+
+    // §2.1 brighter specular: a top-edge highlight ramp over the full height so the surface
+    // reads as a lit material instead of a flat wash. The ramp is subtler in light mode, where
+    // white-on-white needs less help.
+    val highlightTop = if (isDark) 0x40 else GlassColors.SpecularHighlight.alpha
+    val sheenShader = LinearGradient(
+        0f, 0f, 0f, bounds.height().coerceAtLeast(1).toFloat(),
+        intArrayOf(
+            (highlightTop shl 24) or 0x00FFFFFF,
+            android.graphics.Color.TRANSPARENT,
+        ),
         null,
         Shader.TileMode.CLAMP,
     )
-    val specular = object : Drawable() {
+    val sheen = object : Drawable() {
         private val paint = Paint().apply { isAntiAlias = true }
         override fun draw(canvas: Canvas) {
-            paint.shader = specularShader
-            canvas.drawRect(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.top + 24 * d, paint)
+            paint.shader = sheenShader
+            canvas.drawRect(
+                bounds.left.toFloat(), bounds.top.toFloat(),
+                bounds.right.toFloat(), bounds.bottom.toFloat(),
+                paint,
+            )
         }
         override fun setAlpha(alpha: Int) { paint.alpha = alpha }
         override fun setColorFilter(colorFilter: ColorFilter?) { paint.colorFilter = colorFilter }
@@ -247,13 +288,5 @@ fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = fal
         override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 
-    // Darkened edge: 1px border per DESIGN.md §2.2 (rim on all sides), following the shape
-    // of the surface it outlines rather than its bounding box.
-    val border = GradientDrawable().apply {
-        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
-        cornerRadius = radiusPx
-        setStroke(1.coerceAtLeast((0.5 * d).toInt()), GlassColors.DarkenedEdge.toArgbCompat())
-    }
-
-    foreground = LayerDrawable(arrayOf<Drawable>(specular, border))
+    foreground = LayerDrawable(arrayOf<Drawable>(sheen, border))
 }

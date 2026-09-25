@@ -47,8 +47,11 @@ object GlassColors {
     val LabelSecondaryLight = Color(0x613C3C43)  // #3C3C43 at 60%
     val LabelSecondaryDark = Color(0x99EBEBF5)  // #EBEBF5 at 60%
 
-    // Glass Border / Specular (DESIGN.md §2.2)
-    val DarkenedEdge = Color(0x33000000)         // 1px border
+    // Glass Border / Specular (DESIGN.md §2.2). The rim is *mode-aware*: on a dark page a
+    // black rim cannot separate a black surface, so dark mode rims light (iOS dark materials
+    // are lighter than their backdrop); light mode rims dark.
+    val DarkenedEdge = Color(0x33000000)         // light-mode rim
+    val DarkenedEdgeDark = Color(0x59FFFFFF)     // dark-mode rim (35% white)
     val SpecularHighlight = Color(0x1FFFFFFF)    // white at 12% on top edge
 
     // Tier 3 Scrim Fallback (DESIGN.md §3.3) — near-opaque, mirrors Reduce Transparency
@@ -58,6 +61,18 @@ object GlassColors {
 
     // Default opacity for glass tint (DESIGN.md §2.2: base tint alpha ≈ 0.72)
     val GlassBaseTintAlpha = 0.72f
+
+    /**
+     * Light-lifted material base for dark mode (DESIGN.md §1.4 / HIG Materials).
+     *
+     * A dark glass surface tinted with BLACK can only ever be darker than the page behind it:
+     * over `#1C1C1C` a 70% black wash lands on `#141414`, which reads as a hole, not a
+     * material. iOS dark materials do the opposite — they LIFT above the backdrop so blur
+     * shows through a lighter veil. Measured on-device: the black tint was invisible against
+     * the `#1C1C1C` background on every screen.
+     */
+    const val GLASS_DARK_BASE_ALPHA = 0.50f   // white @ 50% over dark content
+    const val GLASS_LIGHT_BASE_ALPHA = 0.72f  // white @ 72% over light content
 }
 
 /**

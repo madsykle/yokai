@@ -236,9 +236,12 @@ fun AlertDialog.applyGlassDialog() {
             .setAllCornerSizes(28 * d)
             .build()
         fillColor = ColorStateList.valueOf(baseColor.toArgbCompat())
-        if (tier !is GlassTier.Scrim) {
-            setStroke(1.coerceAtLeast((0.5 * d).toInt()).toFloat(), GlassColors.DarkenedEdge.toArgbCompat())
-        }
+        // Mode-aware rim (see applyGlassDecorators): on the dark dialog surface a black rim
+        // is invisible, so dark mode rims light.
+        setStroke(
+            1.coerceAtLeast((0.5 * d).toInt()).toFloat(),
+            (if (isDark) GlassColors.DarkenedEdgeDark else GlassColors.DarkenedEdge).toArgbCompat(),
+        )
     }
     window?.setBackgroundDrawable(background)
 }
