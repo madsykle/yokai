@@ -704,6 +704,9 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         nav.isVisible = !hideBottomNav
         updateControllersWithSideNavChanges()
+        // The round search button is a sibling of the pill, not a tab in it, so it must hide
+        // and show with the pill - otherwise it lingers alone on pushed screens.
+        binding.bottomNavSearch?.isVisible = !hideBottomNav
         binding.bottomView?.visibility = if (hideBottomNav) View.GONE else binding.bottomView?.visibility ?: View.GONE
         nav.alpha = if (hideBottomNav) 0f else 1f
         router.addChangeListener(
@@ -1561,6 +1564,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         if (nav == binding.sideNav) {
             nav.isVisible = !hideBottomNav
             updateControllersWithSideNavChanges(from)
+            binding.bottomNavSearch?.isVisible = !hideBottomNav
             nav.alpha = 1f
         } else {
             animationSet?.cancel()
@@ -1574,6 +1578,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             }
             alphaAnimation.doOnEnd {
                 nav.isVisible = !hideBottomNav
+                binding.bottomNavSearch?.isVisible = !hideBottomNav
                 binding.bottomView?.visibility =
                     if (hideBottomNav) {
                         View.GONE

@@ -111,16 +111,15 @@ private fun GlassSurfaceDecorators(
         )
     }
     if (specularHighlight) {
-        // §2.1 brighter specular: highlight ramp over the full height, stronger in dark mode.
+        // §2.1 brighter specular: a THIN lit band at the top edge, then nothing - a full-height
+        // wash read as a wedge on device (see applyGlassDecorators).
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isDark) 0.25f else 0.12f),
-                            Color.Transparent,
-                        ),
+                        0f to Color.White.copy(alpha = if (isDark) 0.25f else 0.12f),
+                        0.25f to Color.Transparent,
                     ),
                     shape = shape,
                 ),
@@ -259,11 +258,11 @@ fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = fal
         setStroke(1.coerceAtLeast((0.5 * d).toInt()), rimColor.toArgbCompat())
     }
 
-    // §2.1 brighter specular: a top-edge highlight ramp over the full height so the surface
-    // reads as a lit material instead of a flat wash. The ramp is subtler in light mode, where
-    // white-on-white needs less help. (Alpha values: 0x40 = 25%, 0x1F = 12% =
-    // GlassColors.SpecularHighlight.) The shader is built on first draw, when the bounds -
-    // and with them the ramp height - are actually known.
+    // §2.1 brighter specular: a THIN lit band at the top edge (a quarter of the surface),
+    // then nothing. A full-height gradient wash made the surface read as a bright-to-dark
+    // wedge on device; the iOS look is an even material with a lit top rim.
+    // (Alpha values: 0x40 = 25% dark mode, 0x1F = 12% light mode.) The shader is built on
+    // first draw, when the bounds - and with them the ramp height - are actually known.
     val highlightTop = if (isDark) 0x40 else 0x1F
     val sheen = object : Drawable() {
         private val paint = Paint().apply { isAntiAlias = true }
@@ -280,7 +279,7 @@ fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = fal
                         (highlightTop shl 24) or 0x00FFFFFF,
                         android.graphics.Color.TRANSPARENT,
                     ),
-                    null,
+                    floatArrayOf(0f, 0.25f),
                     Shader.TileMode.CLAMP,
                 )
             }

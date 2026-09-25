@@ -101,7 +101,9 @@ fun InfoScreen(
                     .windowInsetsPadding(NavigationBarDefaults.windowInsets)
                     .padding(
                         horizontal = Size.medium,
-                        vertical = Size.small,
+                        // The button sat flush against the very bottom edge on 3-button-nav
+                        // devices; one extra small gap keeps it out of the gesture area.
+                        vertical = Size.small + Size.extraTiny,
                     ),
             ) {
                 Button(
