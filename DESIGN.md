@@ -353,7 +353,58 @@ Verification pass against HIG Materials/Navigation + Apple Books ref (`ref/Apple
 - §2.2 transparency slider added to Settings → Appearance (6 stops, 30–95%, default 70 ≈ 0.72), read by all glass surfaces via `glassTintAlpha(context)`.
 
 **Known follow-ups (intentional, do not regress):**
-- Ref look (Books): active-tab concentric pill + separate circular search button are future polish; current accent tint on selected item is the fallback.
-- `main_activity.xml` still pads `controller_container` by `bottom_nav_total_height` (content does NOT scroll under the pill). §5.1 asks for under-scroll; safe rollout needs per-screen inset handling first.
-- Tier 1 (API 33+) renders the same translucent tint as Tier 2. Kyant0 Backdrop (AGSL refraction/lensing) remains wired in `libs.versions.toml` but is not composed yet; per §3 it needs an `AndroidView`-wrapped backdrop source on XML screens.
-- Haze (§3 Tier 2 for Compose) is a dependency but unused on Compose glass surfaces pending a Compose host surface (JayAppBar draws color behind, not a haze child).
+- Tier 1 (API 33+) renders the same translucent tint as Tier 2. Kyant0 Backdrop (AGSL refraction/lensing) remains wired in `libs.versions.toml` but is not composed yet.
+- Haze (§3 Tier 2 for Compose) is a dependency but unused on Compose glass surfaces.
+
+---
+
+## 12. Reference-Fidelity Pass (2026-09-25)
+
+Second pass, targeting the three §11 follow-ups plus the `build_push` red. Verified green on
+`9aee13ef4b` (CI Build, incl. `lintStandardDebug`) with artifact `yokai-madsykle-debug`.
+
+**Done:**
+- **Concentric active-tab pill (§5.1).** The selected tab is now a lighter capsule around the
+  icon, per `ref/Apple Books iOS 7.png`, instead of a tint over the whole item. Configured via
+  `itemActiveIndicatorStyle` — the flat `itemActiveIndicatorWidth`/`…Color` attributes **do not
+  exist** in Material 1.14, so the nested style is the only supported route;
+  `NavigationBarActiveIndicator` reads `android:width`/`android:height`/`marginHorizontal`/
+  `android:color`/`shapeAppearance`.
+- **Separate circular glass button.** `bottom_nav_search` + `bottom_nav_search_button` in
+  `main_activity.xml`, tier-aware via the new `FloatingGlassNavController.attachCircle`
+  (`applyGlass(…, circle = true)` clips with an oval so the ripple stays round). Opens
+  `GlobalSearchController`, which was otherwise reachable only through the Browse long-press.
+- **Content scrolls under the pill (§5.1).** `controller_container` is no longer padded; the nav
+  inset is pushed to each screen's scrollables via `MainActivity.insetScrollables`, which sets
+  `clipToPadding = false` and only ever *increases* bottom padding (so screens that already reserve
+  space for a download bar / FAB / FAB keep their own value). Applied on every controller change.
+- **Nightly publish** repointed from upstream `null2264/yokai-nightly` to the fork's own
+  `madsykle/yokai-nightly` (`build_push.yml` `Create Nightly`, plus the commit/release links).
+  Signing stays required, so `build_push` still fails at **Sign APK** until the fork defines
+  `SIGNING_KEY` / `ALIAS` / `KEY_STORE_PASSWORD` / `KEY_PASSWORD` (+ `NIGHTLY_PAT`).
+
+**Blocker found for Tier 1/Tier 2 backdrop (items 3–4), not yet implemented:**
+
+Both `Backdrop` (AGSL refraction, API 33+) and `Haze` (blur, API 31–32) need a *source* that
+records the content the chrome sits over. In the Compose path there is currently no such content:
+
+- M3 `Scaffold` places the body content first and the top bar on top of it (verified in
+  material3 1.5.0-alpha14 `ScaffoldLayout`), so a glass top bar *would* be drawn above the
+  content — good.
+- But `Scaffold` passes the top bar's **current** height as the content's top inset, and
+  `JayAppBarScrollBehavior.appBarScrollBehavior()` collapses by *reporting a smaller height*
+  (`.layout { layout(placeable.width, placeable.height + scrollOffset) { placeable.placeWithLayer(0, scrollOffset) } }`),
+  not by translating inside a fixed box.
+- Net effect: the content's top edge always tracks the bar's bottom edge, so nothing is ever
+  behind the glass and both backdrops would sample empty space.
+
+The fix is to make the content's top inset **sticky at the expanded app-bar height** while
+letting the bar collapse over it (which is also what iOS large titles do: the scroll inset is the
+large-title height and never shrinks). That is a change to `YokaiScaffold` content insets plus
+`JayAppBar`, and it alters scrolling behaviour on **every Compose screen**, so it needs a
+conscious go-ahead rather than a silent roll-out — the same caution §11 recorded.
+
+The XML chrome (bottom pill, `ExpandedAppBarLayout`) is already correct in this respect: the
+container is unpadded and the chrome is a later sibling, so content genuinely passes underneath.
+The libraries are also not dependencies yet (`presentation/theme` pulls in neither), and the
+catalog still pins `backdrop = 1.0.6` while §3 specifies `2.0.1`.
