@@ -284,7 +284,7 @@ This is a fork of `null2264/yokai` working as `madsykle/yokai`.
 **Status:** Complete
 
 - [x] App ID changed to `eu.kanade.tachiyomi.madsykle` in `app/build.gradle.kts`
-- [x] Tier libraries added: `backdrop:2.0.1`, `haze:1.6.10`, `dynamicanimation:1.1.0-alpha03` in `libs.versions.toml` + `app/build.gradle.kts`
+- [x] Tier libraries declared in `libs.versions.toml`: `backdrop:1.0.6`, `haze:1.6.10`, `dynamicanimation:1.1.0-alpha03`. `dynamicanimation` is an `app` dependency; `backdrop`/`haze` are dependencies of `presentation/theme` only (§12), so no other module is coupled to a glass library.
 - [x] Inter font (400/500/600/700) added to `app/src/main/res/font/`
 - [x] iOS 27 design tokens in `colors.xml` + `values-night/colors.xml`: glass base, tint, accent, label, border, specular, scrim colors
 - [x] Shape tokens in `dimens`: corner radii (28/24/14/12dp pill/card), spacing (4dp unit)
@@ -352,16 +352,20 @@ Verification pass against HIG Materials/Navigation + Apple Books ref (`ref/Apple
 - `GlassMotion.addEndListener` lambda param fixed (4th param of `OnAnimationEndListener` is velocity, not canceled) and bad `androidx.core.view.performHapticFeedback` import removed (platform `View.performHapticFeedback` used).
 - §2.2 transparency slider added to Settings → Appearance (6 stops, 30–95%, default 70 ≈ 0.72), read by all glass surfaces via `glassTintAlpha(context)`.
 
-**Known follow-ups (intentional, do not regress):**
-- Tier 1 (API 33+) renders the same translucent tint as Tier 2. Kyant0 Backdrop (AGSL refraction/lensing) remains wired in `libs.versions.toml` but is not composed yet.
-- Haze (§3 Tier 2 for Compose) is a dependency but unused on Compose glass surfaces.
+**Known follow-ups (both since resolved — see §12):**
+- ~~Tier 1 (API 33+) renders the same translucent tint as Tier 2.~~ Backdrop now supplies real
+  refraction on tier 1.
+- ~~Haze (§3 Tier 2 for Compose) is a dependency but unused on Compose glass surfaces.~~ Haze now
+  supplies the tier 2 blur, driven from `YokaiScaffold`.
 
 ---
 
 ## 12. Reference-Fidelity Pass (2026-09-25)
 
 Second pass, targeting the three §11 follow-ups plus the `build_push` red. Verified green on
-`9aee13ef4b` (CI Build, incl. `lintStandardDebug`) with artifact `yokai-madsykle-debug`.
+`edea58000c`: CI Build (incl. Android Lint) success with artifact `yokai-madsykle-debug`
+(252.6 MB), and `build_push` success as well — it builds, runs unit tests and uploads the R8
+APK/mapping, then *skips* sign/cleanup/publish because the fork has no signing secrets.
 
 **Done:**
 - **Concentric active-tab pill (§5.1).** The selected tab is now a lighter capsule around the
@@ -377,11 +381,16 @@ Second pass, targeting the three §11 follow-ups plus the `build_push` red. Veri
 - **Content scrolls under the pill (§5.1).** `controller_container` is no longer padded; the nav
   inset is pushed to each screen's scrollables via `MainActivity.insetScrollables`, which sets
   `clipToPadding = false` and only ever *increases* bottom padding (so screens that already reserve
-  space for a download bar / FAB / FAB keep their own value). Applied on every controller change.
+  space for a download bar / FAB keep their own value). Applied on every controller change.
 - **Nightly publish** repointed from upstream `null2264/yokai-nightly` to the fork's own
   `madsykle/yokai-nightly` (`build_push.yml` `Create Nightly`, plus the commit/release links).
-  Signing stays required, so `build_push` still fails at **Sign APK** until the fork defines
-  `SIGNING_KEY` / `ALIAS` / `KEY_STORE_PASSWORD` / `KEY_PASSWORD` (+ `NIGHTLY_PAT`).
+  Signing is still *required* to publish, but the release steps are now gated on the secrets
+  actually existing: they cannot be read from a step `if:` (the `secrets` context is unavailable
+  there), so a `Check release secrets` step surfaces them as step outputs and
+  `Sign APK` / cleanup / release / nightly skip while they are unset. Adding
+  `SIGNING_KEY` / `ALIAS` / `KEY_STORE_PASSWORD` / `KEY_PASSWORD` (and `NIGHTLY_PAT`) re-enables
+  the whole path with no further change.
+- **Tier 1 / tier 2 material wired up** — see below.
 
 **Tier 1 / Tier 2 backdrop — implemented, with one prerequisite that was not obvious:**
 
