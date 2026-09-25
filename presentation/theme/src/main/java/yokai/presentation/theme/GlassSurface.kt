@@ -31,9 +31,13 @@ import androidx.compose.ui.unit.dp
  * Tier-aware GlassSurface composable.
  *
  * Implements iOS 27 Liquid Glass with three tiers (DESIGN.md §3):
- * - Tier 1 (API 33+): Simple translucent background (no AGSL in older Compose)
- * - Tier 2 (API 31–32): Simple translucent background (no Haze in older Compose)
- * - Tier 3 (API 29–30): Scrim fallback
+ * - Tier 1 (API 33+): Backdrop refraction over the sampled content ([backdrop])
+ * - Tier 2 (API 31–32): Haze blur over the sampled content ([backdrop])
+ * - Tier 3 (API 29–30): scrim fallback
+ *
+ * [backdrop] must come from [rememberGlassBackdropState] and be attached to the content
+ * underneath with [glassBackdropSource]; without it this is a plain translucent material and
+ * nothing is blurred or refracted.
  *
  * RULE: Never stack glass on glass (DESIGN.md §1.2).
  * RULE: Cap at 2–3 glass surfaces per screen (DESIGN.md §1.3).
@@ -44,6 +48,7 @@ fun GlassSurface(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 24.dp,
     tintAlpha: Float = glassTintAlpha(LocalContext.current),
+    backdrop: GlassBackdropState? = null,
     darkenedEdge: Boolean = true,
     specularHighlight: Boolean = true,
     content: @Composable () -> Unit,
@@ -65,6 +70,9 @@ fun GlassSurface(
 
     Box(
         modifier = modifier
+            // Blur/refraction first, then the tint on top of it: that ordering is what makes
+            // the material read as glass instead of just a translucent panel.
+            .glassBackdrop(state = backdrop, shape = shape)
             .background(backgroundColor, shape),
     ) {
         GlassSurfaceDecorators(

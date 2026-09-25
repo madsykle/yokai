@@ -76,6 +76,29 @@ jobs:
           } >> "$GITHUB_OUTPUT" 2> /dev/null
 
       # PROD
+      # The fork may not define the signing / publish secrets. Those secrets cannot be
+      # read from a step `if:` (the `secrets` context is not available there), so surface
+      # them as step outputs and gate the release steps on them. Without this, every push
+      # to master fails at "Sign APK" even though the app itself built fine.
+      - name: Check release secrets
+        id: release_secrets
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.SIGNING_KEY }}" ] && [ -n "${{ secrets.ALIAS }}" ] \
+            && [ -n "${{ secrets.KEY_STORE_PASSWORD }}" ] && [ -n "${{ secrets.KEY_PASSWORD }}" ]; then
+            echo "sign_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sign_enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Signing secrets are not configured. Skipping sign, cleanup and publish. Set SIGNING_KEY, ALIAS, KEY_STORE_PASSWORD and KEY_PASSWORD to enable them."
+          fi
+
+          if [ -n "${{ secrets.NIGHTLY_PAT }}" ]; then
+            echo "publish_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish_enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::NIGHTLY_PAT is not configured. Skipping the nightly publish to madsykle/yokai-nightly."
+          fi
+
       - name: Prepare release build
         if: github.event.inputs.version != '' && github.event.inputs.beta != 'true'
         run: |
@@ -156,7 +179,7 @@ jobs:
 
       - name: Sign APK
         uses: null2264/actions/android-signer@363cb9cf3d66bd9c72ed6860142c6b2c121d7e94
-        if: env.VERSION_TAG != ''
+        if: env.VERSION_TAG != '' && steps.release_secrets.outputs.sign_enabled == 'true'
         with:
           releaseDir: app/build/outputs/apk/standard/${{ steps.version_stage.outputs.STAGE }}
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
@@ -166,7 +189,7 @@ jobs:
           summarise: true
 
       - name: Clean up build artifacts
-        if: env.VERSION_TAG != ''
+        if: env.VERSION_TAG != '' && steps.release_secrets.outputs.sign_enabled == 'true'
         run: |
           set -e
 
@@ -193,7 +216,7 @@ jobs:
           echo "APK_X86_64_SHA=$sha" >> $GITHUB_ENV
 
       - name: Create Release
-        if: startsWith(env.VERSION_TAG, 'v')
+        if: startsWith(env.VERSION_TAG, 'v') && steps.release_secrets.outputs.sign_enabled == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION_TAG }}
@@ -229,7 +252,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Nightly
-        if: startsWith(env.VERSION_TAG, 'r')
+        if: startsWith(env.VERSION_TAG, 'r') && steps.release_secrets.outputs.sign_enabled == 'true' && steps.release_secrets.outputs.publish_enabled == 'true'
         uses: softprops/action-gh-release@v2
         with:
           repository: madsykle/yokai-nightly

@@ -32,4 +32,10 @@ dependencies {
     implementation(compose.ui)
     implementation(compose.ui.graphics)
     implementation(libs.compose.theme.adapter3)
+
+    // Liquid Glass tiers (DESIGN.md §3). Referenced only from this module so that
+    // consumers keep using the platform-agnostic GlassSurface / glassBackdrop API and
+    // never depend on a specific glass library themselves.
+    implementation(libs.backdrop)
+    implementation(libs.haze)
 }

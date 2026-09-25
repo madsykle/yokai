@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -41,8 +42,10 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import yokai.presentation.theme.GlassBackdropState
 import yokai.presentation.theme.GlassColors
 import yokai.presentation.theme.GlassSurface
+import yokai.presentation.theme.glassBackdrop
 import yokai.presentation.theme.glassTintColor
 
 /**
@@ -65,6 +68,7 @@ fun JayExpandedTopAppBar(
     contentPadding: PaddingValues = PaddingValues(all = 0.dp),
     windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
     scrollBehavior: JayAppBarScrollBehavior? = null,
+    backdrop: GlassBackdropState? = null,
     textFieldState: TextFieldState? = null,
     searchResult: @Composable (ColumnScope.() -> Unit)? = null,
 ) {
@@ -115,6 +119,7 @@ fun JayExpandedTopAppBar(
                     .onSizeChanged { scrollBehavior?.topHeightPx = it.height.toFloat() }
                     .then(scrollBehavior?.let { with(it) { Modifier.smallAppBarScrollBehavior() } } ?: Modifier),
                 cornerRadius = 0.dp,
+                backdrop = backdrop,
                 darkenedEdge = true,
                 specularHighlight = true,
             ) {
@@ -313,6 +318,7 @@ fun JayTopAppBar(
     contentPadding: PaddingValues = PaddingValues(all = 0.dp),
     windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
     scrollBehavior: JayAppBarScrollBehavior? = null,
+    backdrop: GlassBackdropState? = null,
     textFieldState: TextFieldState? = null,
     searchResult: @Composable (ColumnScope.() -> Unit)? = null,
 ) {
@@ -332,6 +338,9 @@ fun JayTopAppBar(
     Box(
         modifier =
             modifier
+                // iOS 27 Liquid Glass: the collapsed bar blurs/refracts the content that
+                // scrolls beneath it. The source is attached by the host (YokaiScaffold).
+                .then(if (isCollapsed && textFieldState == null) Modifier.glassBackdrop(backdrop, RectangleShape) else Modifier)
                 .then(if (textFieldState == null) Modifier.drawBehind { drawRect(color = appBarContainerColor()) } else Modifier)
                 .semantics { isTraversalGroup = true }
                 .pointerInput(Unit) {}

@@ -15,7 +15,10 @@ koin = "4.0.4"
 leakcanary = "2.14"
 voyager = "1.1.0-beta03"
 # Liquid Glass tier libraries
-backdrop = "1.0.6"
+# backdrop must stay >= 2.0.0: 1.x has no `rememberLayerBackdrop`/`Modifier.layerBackdrop`
+# (it could not record Compose content as a backdrop), and it is built with the same
+# Kotlin (2.4.10) the project uses. DESIGN.md §3 names 2.0.1.
+backdrop = "2.0.1"
 haze = "1.6.10"
 dynamicanimation = "1.1.0-alpha03"
 
