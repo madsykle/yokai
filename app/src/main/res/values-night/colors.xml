@@ -161,12 +161,22 @@
     <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
     <dimen name="bottom_nav_bottom_margin">8dp</dimen>
     <dimen name="bottom_nav_bottom_padding">8dp</dimen>
+    <dimen name="bottom_nav_total_height">76dp</dimen>
+    <!-- Concentric active-tab pill (DESIGN.md §5.1): sized around the 24dp icon. -->
+    <dimen name="bottom_nav_active_indicator_width">56dp</dimen>
+    <dimen name="bottom_nav_active_indicator_height">32dp</dimen>
+    <dimen name="bottom_nav_active_indicator_corner">16dp</dimen>
+    <!-- Separate circular glass search button next to the pill (ref/Apple Books). -->
+    <dimen name="bottom_nav_search_button_size">48dp</dimen>
+    <dimen name="bottom_nav_search_button_margin">8dp</dimen>
 
     <!-- Bottom Nav Glass Selectors (Dark) -->
     <color name="bottom_nav_item_selected">@color/accent_blue</color>
     <color name="bottom_nav_item_unselected">@color/label_secondary_dark</color>
     <color name="bottom_nav_text_selected">@color/accent_blue</color>
     <color name="bottom_nav_text_unselected">@color/label_secondary_dark</color>
+    <!-- Lighter concentric pill on the selected tab (see values/colors.xml). -->
+    <color name="bottom_nav_active_indicator">#24FFFFFF</color>
 
     <drawable name="bottom_nav_item_selector">
         <selector>

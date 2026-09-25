@@ -232,16 +232,16 @@ jobs:
         if: startsWith(env.VERSION_TAG, 'r')
         uses: softprops/action-gh-release@v2
         with:
-          repository: null2264/yokai-nightly
+          repository: madsykle/yokai-nightly
           tag_name: ${{ env.VERSION_TAG }}
           name: Yōkai Nightly (${{ env.VERSION_TAG }})
           body: |
             > [!CAUTION]
             > _**This alpha version is for testing only!**_
             >
-            > This build is triggered by commit [`${{ env.COMMIT_SHORT_HASH }}`](https://github.com/null2264/yokai/commit/${{ env.COMMIT_HASH }})
+            > This build is triggered by commit [`${{ env.COMMIT_SHORT_HASH }}`](https://github.com/madsykle/yokai/commit/${{ env.COMMIT_HASH }})
 
-            It is not ready for daily use and we do not guarantee its usability. Please download the latest stable releases instead (https://github.com/null2264/yokai/releases/latest). If you insist, please be sure to ALWAYS backup before updating.
+            It is not ready for daily use and we do not guarantee its usability. Please download the latest stable releases instead (https://github.com/madsykle/yokai/releases/latest). If you insist, please be sure to ALWAYS backup before updating.
 
             ${{ steps.changelog.outputs.CHANGELOG }}
             ---

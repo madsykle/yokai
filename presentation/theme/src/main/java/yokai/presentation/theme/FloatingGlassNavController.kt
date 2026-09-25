@@ -16,4 +16,24 @@ object FloatingGlassNavController {
         view.applyGlass(cornerRadiusDp, tier)
         view.applyGlassDecorators(tier)
     }
+
+    /**
+     * Circular sibling of [attach] for the standalone glass button that sits next to
+     * the nav capsule (ref/Apple Books iOS 7.png: a separate round control, same
+     * material, deliberately not part of the capsule).
+     *
+     * The pill's corner radius cannot describe a circle before the view is measured,
+     * so the radius is derived from the declared or measured size. [View.applyGlass]
+     * then clips with an oval, which keeps the shipped ripple round too.
+     */
+    fun attachCircle(view: View, tier: GlassTier) {
+        val density = view.resources.displayMetrics.density
+        val declaredSize = view.layoutParams?.width ?: 0
+        val sizePx = view.width.takeIf { it > 0 }
+            ?: declaredSize.takeIf { it > 0 }
+            ?: (48 * density).toInt()
+
+        view.applyGlass(cornerRadiusDp = sizePx / 2f / density, tier = tier, circle = true)
+        view.applyGlassDecorators(tier)
+    }
 }

@@ -27,6 +27,7 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
+import android.widget.ScrollView
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,9 +50,11 @@ import androidx.core.view.forEach
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
+import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.RecyclerView
 import androidx.window.layout.DisplayFeature
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
@@ -190,6 +193,16 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     var ogWidth: Int = Int.MAX_VALUE
     var hingeGapSize = 0
         private set
+
+    /**
+     * Bottom inset (px) reserved by the floating glass nav pill, system navigation
+     * bar inset included. Zero whenever there is no bottom nav (tablet nav rail).
+     *
+     * DESIGN.md §5.1: the pill floats *over* the content, so the router container is
+     * deliberately left unpadded and this value is handed to each screen's scrollable
+     * instead (see [applyFloatingNavInset]).
+     */
+    private var floatingNavInset = 0
 
     val velocityTracker: VelocityTracker by lazy { VelocityTracker.obtain() }
     private val actionButtonSize: Pair<Int, Int> by lazy {
@@ -380,6 +393,14 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         binding.bottomNav?.let { navView ->
             FloatingGlassNavController.attach(navView, 28f, glassTier())
         }
+        // The reference design pairs the capsule with a separate round glass button.
+        // Ours opens global search, which is otherwise buried behind the Browse tab.
+        binding.bottomNavSearch?.let { searchButton ->
+            FloatingGlassNavController.attachCircle(searchButton, glassTier())
+        }
+        binding.bottomNavSearchButton?.setOnClickListener {
+            router.pushController(GlobalSearchController().withFadeTransaction())
+        }
 
         binding.toolbar.overflowIcon?.setTint(getResourceColor(R.attr.actionBarTintColor))
 
@@ -502,13 +523,17 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 bottom = systemInsets.bottom,
             )
 
-            // iOS 27 Liquid Glass: content must scroll under the floating nav pill.
-            // Add the nav total height + system bottom inset as bottom padding to the
-            // router container so list content doesn't get clipped behind the glass nav.
-            val navHeight = resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height)
-            binding.controllerContainer.updatePadding(
-                bottom = navHeight + systemInsets.bottom,
-            )
+            // iOS 27 Liquid Glass: content scrolls UNDER the floating nav pill
+            // (DESIGN.md §5.1). The container must therefore stay unpadded - padding it
+            // would clip content above the pill and the glass would have nothing to
+            // refract. The inset is pushed down to the screens' scrollables instead.
+            binding.controllerContainer.updatePadding(bottom = 0)
+            floatingNavInset = if (binding.bottomNav != null) {
+                resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height) + systemInsets.bottom
+            } else {
+                0
+            }
+            applyFloatingNavInset()
             binding.sideNav?.updatePadding(
                 left = 0,
                 right = 0,
@@ -704,6 +729,9 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 ) {
                     to?.view?.x = 0f
                     nav.translationY = 0f
+                    // The incoming screen's view is attached now, so it is the first moment
+                    // its scrollables can be found and given the floating nav inset.
+                    applyFloatingNavInset()
                     backVelocity = 0f
                     showDLQueueTutorial()
                     if (!(from is DialogController || to is DialogController) && from != null) {
@@ -1218,6 +1246,43 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
     protected val nav: NavigationBarView
         get() = binding.bottomNav ?: binding.sideNav!!
+
+    /**
+     * iOS 27 Liquid Glass, DESIGN.md §5.1 - the "scroll-edge" effect.
+     *
+     * The glass pill overlays the content, so content has to travel underneath it for
+     * the material to read as glass at all. Every scrollable in the attached controller
+     * gets the pill's inset as bottom padding with `clipToPadding = false`: the list still
+     * draws behind the pill (visible through the glass) but the last item remains fully
+     * reachable above it.
+     *
+     * Padding is only ever *increased*, so screens that already reserve their own bottom
+     * space (download bar, FAB, source list) keep their value.
+     */
+    private fun applyFloatingNavInset() {
+        if (floatingNavInset <= 0) return
+
+        binding.controllerContainer.forEach { root -> insetScrollables(root) }
+    }
+
+    /**
+     * Walks [root] (the view tree of the attached controller) and gives every scrollable
+     * the floating nav inset. Hand-rolled recursion rather than `forEachDescendant`, which
+     * this project's core-ktx version does not ship.
+     */
+    private fun insetScrollables(root: View) {
+        if (root is RecyclerView || root is NestedScrollView || root is ScrollView) {
+            root.clipToPadding = false
+            if (root.paddingBottom < floatingNavInset) {
+                root.updatePadding(bottom = floatingNavInset)
+            }
+        }
+        if (root is ViewGroup) {
+            for (index in 0 until root.childCount) {
+                insetScrollables(root.getChildAt(index))
+            }
+        }
+    }
 
     private fun setStartingTab() {
         if (this is SearchActivity || !isBindingInitialized) return

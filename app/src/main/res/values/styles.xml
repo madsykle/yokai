@@ -304,6 +304,32 @@
         <item name="itemTextColor">@color/bottom_nav_text_selector</item>
         <item name="itemRippleColor">@color/ripple_nav</item>
         <item name="labelVisibilityMode">labeled</item>
+
+        <!-- iOS 27 Liquid Glass: the selected tab is a *lighter concentric pill*
+             (DESIGN.md §5.1, ref/Apple Books iOS 7.png), not a tint over the whole
+             item. Material's active indicator is exactly that shape: sized around the
+             24dp icon and fully rounded it reads as concentric with the icon.
+
+             NOTE: since Material 1.13 the indicator is configured through a nested
+             style referenced by `itemActiveIndicatorStyle`; the flat
+             `itemActiveIndicatorWidth`/`...Color` attributes are gone. -->
+        <item name="itemActiveIndicatorStyle">@style/Widget.Tachiyomi.BottomNavigationView.Glass.ActiveIndicator</item>
+    </style>
+
+    <!-- Concentric active-tab pill. Extends the M3 indicator so the Expressive size
+         rules keep working, and only overrides size/shape/colour. -->
+    <style name="Widget.Tachiyomi.BottomNavigationView.Glass.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:width">@dimen/bottom_nav_active_indicator_width</item>
+        <item name="android:height">@dimen/bottom_nav_active_indicator_height</item>
+        <item name="marginHorizontal">0dp</item>
+        <item name="android:color">@color/bottom_nav_active_indicator</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Tachiyomi.GlassActiveIndicator</item>
+    </style>
+
+    <!-- cornerSize = half the indicator height, so the shape is a true capsule. -->
+    <style name="ShapeAppearance.Tachiyomi.GlassActiveIndicator" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/bottom_nav_active_indicator_corner</item>
     </style>
 
     <style name="Widget.Tachiyomi.NavigationRail" parent="Widget.Material3.NavigationRailView">

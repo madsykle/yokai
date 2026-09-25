@@ -145,7 +145,7 @@ fun Color.toArgbCompat(): Int {
  * that blurs the icons/labels INSIDE the view, not what is behind it (HIG: the
  * material layer blurs the backdrop, not the foreground content).
  */
-fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
+fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Boolean = false) {
     val actualTier = tier ?: glassTier()
     val radiusPx = cornerRadiusDp * resources.displayMetrics.density
     val isDark = isNightMode()
@@ -167,10 +167,16 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null) {
         }
     }
 
-    // Apply squircle clip via outline
+    // Apply squircle clip via outline. [circle] is used by the standalone round glass
+    // button beside the nav pill, where the shared corner radius cannot express the
+    // shape (the view is only measured after inflation).
     outlineProvider = object : ViewOutlineProvider() {
         override fun getOutline(view: View, outline: Outline) {
-            outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+            if (circle) {
+                outline.setOval(0, 0, view.width, view.height)
+            } else {
+                outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+            }
         }
     }
     clipToOutline = true
