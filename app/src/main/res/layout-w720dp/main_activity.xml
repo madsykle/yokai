@@ -221,15 +221,55 @@
     </eu.kanade.tachiyomi.ui.base.ExpandedAppBarLayout>
 
 
+    <!-- iOS 27 Liquid Glass: the rail is the tablet counterpart of the floating pill, so it
+         floats too - inset from the screen edges, rounded, and transparent at the background
+         level (`Widget.Tachiyomi.NavigationRail` applies the tier-aware material). The margins
+         are what let the rounded shape read as a surface rather than a docked column. -->
     <com.google.android.material.navigationrail.NavigationRailView
         android:id="@+id/side_nav"
         app:elevation="0dp"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
+        android:layout_marginStart="@dimen/bottom_nav_horizontal_margin"
+        android:layout_marginEnd="@dimen/bottom_nav_bottom_margin"
+        android:layout_marginTop="@dimen/bottom_nav_horizontal_margin"
+        android:layout_marginBottom="@dimen/bottom_nav_bottom_margin"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menuGravity="center"
         app:layout_constraintTop_toTopOf="parent"
         app:menu="@menu/bottom_navigation" />
+
+    <!-- Same separate circular glass button as the portrait layout (`bottom_nav_search`),
+         anchored under the rail's menu instead of beside the pill. Its bottom margin is
+         completed with the navigation bar inset in MainActivity, since the rail takes that
+         inset as padding and the button sits outside it. -->
+    <FrameLayout
+        android:id="@+id/bottom_nav_search"
+        android:layout_width="@dimen/bottom_nav_search_button_size"
+        android:layout_height="@dimen/bottom_nav_search_button_size"
+        android:layout_marginBottom="@dimen/bottom_nav_bottom_margin"
+        app:layout_constraintBottom_toBottomOf="@id/side_nav"
+        app:layout_constraintEnd_toEndOf="@id/side_nav"
+        app:layout_constraintStart_toStartOf="@id/side_nav">
+
+        <FrameLayout
+            android:id="@+id/bottom_nav_search_button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/search"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_search_24dp"
+                app:tint="?attr/tabBarIconColor" />
+        </FrameLayout>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

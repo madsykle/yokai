@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.ui.setting.ThemePreference
 import eu.kanade.tachiyomi.ui.setting.bindTo
 import eu.kanade.tachiyomi.ui.setting.defaultValue
 import eu.kanade.tachiyomi.ui.setting.dropDownPreference
+import eu.kanade.tachiyomi.ui.setting.glassTransparencyPreference
 import eu.kanade.tachiyomi.ui.setting.infoPreference
 import eu.kanade.tachiyomi.ui.setting.intListPreference
 import eu.kanade.tachiyomi.ui.setting.onChange
@@ -177,26 +178,12 @@ class SettingsAppearanceController : SettingsLegacyController() {
                 defaultValue = true
             }
 
-            // iOS 27 Liquid Glass transparency slider (DESIGN.md §2.2):
-            // user-adjustable from ultra clear to fully tinted.
-            intListPreference(activity) {
+            // iOS 27 Liquid Glass transparency slider (DESIGN.md §2.2): user-adjustable
+            // from ultra clear to fully tinted, previewed live on the nav chrome behind
+            // this screen - no Activity recreation, so the drag stays continuous.
+            glassTransparencyPreference {
                 key = GLASS_TRANSPARENCY_PREF_KEY
                 title = "Glass transparency"
-                entries = listOf(
-                    "Ultra clear",
-                    "Clear",
-                    "Frosted",
-                    "Default",
-                    "Milky",
-                    "Fully tinted",
-                )
-                entryValues = listOf(30, 45, 60, 70, 85, 95)
-                defaultValue = 70
-
-                onChange {
-                    activity?.recreate()
-                    true
-                }
             }
 
             intListPreference(activity) {

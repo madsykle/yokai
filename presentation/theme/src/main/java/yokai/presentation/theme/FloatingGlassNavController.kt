@@ -9,12 +9,17 @@ import android.view.View
  * specular highlight) to the [BottomNavigationView]-style pill. Re-invocation is
  * safe (idempotent); the Activity recreates on night-mode changes, which re-runs
  * [attach] from onCreate, so no polling is needed.
+ *
+ * Re-invoking [attach] is also how the §2.2 transparency slider previews itself: the tint
+ * alpha is baked into the background drawable, so the chrome has to be re-attached for a new
+ * value to show without restarting the Activity.
  */
 object FloatingGlassNavController {
 
     fun attach(view: View, cornerRadiusDp: Float, tier: GlassTier) {
         view.applyGlass(cornerRadiusDp, tier)
-        view.applyGlassDecorators(tier)
+        // The rim has to know the radius, or it strokes the bounding box instead of the shape.
+        view.applyGlassDecorators(cornerRadiusDp)
     }
 
     /**
@@ -34,6 +39,6 @@ object FloatingGlassNavController {
             ?: (48 * density).toInt()
 
         view.applyGlass(cornerRadiusDp = sizePx / 2f / density, tier = tier, circle = true)
-        view.applyGlassDecorators(tier)
+        view.applyGlassDecorators(cornerRadiusDp = sizePx / 2f / density, circle = true)
     }
 }

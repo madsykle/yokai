@@ -25,6 +25,7 @@ import eu.kanade.tachiyomi.util.system.getResourceColor
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.widget.preference.AdaptiveTitlePreferenceCategory
 import eu.kanade.tachiyomi.widget.preference.EditTextResetPreference
+import eu.kanade.tachiyomi.widget.preference.GlassTransparencyPreference
 import eu.kanade.tachiyomi.widget.preference.IntListMatPreference
 import eu.kanade.tachiyomi.widget.preference.ListMatPreference
 import eu.kanade.tachiyomi.widget.preference.MultiListMatPreference
@@ -81,6 +82,16 @@ inline fun PreferenceGroup.intListPreference(
     block: (@DSL IntListMatPreference).() -> Unit,
 ): IntListMatPreference {
     return initThenAdd(IntListMatPreference(activity, context), block)
+}
+
+/**
+ * Live-preview slider for the iOS 27 transparency preference (DESIGN.md §1.5, §2.2).
+ * See [GlassTransparencyPreference] for why this is not a list preference.
+ */
+inline fun PreferenceGroup.glassTransparencyPreference(
+    block: (@DSL GlassTransparencyPreference) -> Unit,
+): GlassTransparencyPreference {
+    return initThenAdd(GlassTransparencyPreference(context), block)
 }
 
 inline fun PreferenceGroup.multiSelectListPreferenceMat(

@@ -424,3 +424,64 @@ Compose 1.10.3 — exactly this project's Compose BOM. `haze` is unconstrained b
 
 The XML chrome was already correct in this respect: the container is unpadded and the chrome is
 a later sibling, so content genuinely passes underneath.
+
+---
+
+## 13. Transparency Preview, Tablet Parity and Tier-3 Compliance (2026-09-25)
+
+Third pass: the §2.2 slider became a live preview, the tablet layout caught up with the phone
+one, and tier 3 was brought in line with §3.
+
+**Live transparency preview (§1.5, §2.2).** The six-stop list preference is replaced by a
+`SeekBar` row (`GlassTransparencyPreference`) that writes `glass_transparency_alpha` on every
+progress change. Nothing recreates the Activity any more, so the chrome re-tints *under the
+finger*:
+
+- The preference file is the single source of truth. The slider writes it, `MainActivity`
+  observes it with a `SharedPreferences` listener and re-runs the View-side material, and
+  Compose reads it through the new `glassTintAlphaState()`, which is now `GlassSurface`'s default
+  `tintAlpha`.
+- `glassTintAlpha(context)` (non-composable) is kept for `View.applyGlass`; both paths clamp to
+  the same 30–95 bounds via `glassTransparencyPercent()`.
+- The slider stays continuous during a drag and names the nearest §2.2 stop in its summary, so
+  the spec's vocabulary survives without quantising the interaction.
+
+**Tablet parity.** The `w720dp` layout had no search button and an opaque rail, and its style
+was reachable only through `navigationRailStyle` in `themes.xml`:
+
+- The rail now floats like the pill — transparent background plus
+  `@dimen/bottom_nav_horizontal_margin` / `…bottom_margin` outside it — and gets the same
+  tier-aware material and `28dp` radius, applied from `MainActivity.refreshGlassChrome()`
+  (which is also what the transparency listener calls, so the rail previews too).
+- `Widget.Tachiyomi.NavigationRail` gained `itemActiveIndicatorStyle` →
+  `Widget.Tachiyomi.NavigationRail.ActiveIndicator` (64×56dp, same
+  `ShapeAppearance.Tachiyomi.GlassActiveIndicator`), because a labelled rail item wraps the icon
+  *and* its label, so the pill's 56×32dp capsule is the wrong shape there.
+- The circular glass search button (`bottom_nav_search`) is added to the tablet layout, anchored
+  to the rail's bottom. The rail carries the navigation bar inset as *padding* and the button
+  sits outside it, so `MainActivity` completes the button's margin with
+  `systemInsets.bottom` — only when `bottomNav == null`, since the portrait button is anchored to
+  the pill, which already carries it.
+
+**Tier 3 has no real blur, on purpose (§3, §7.1).** §3's tier 3 is the scrim fallback, not a
+blur tier: refraction needs AGSL (API 33) and `RenderEffect` needs API 31, and RenderScript —
+the only blur available below 31 — is banned outright by §7.1. A blur is also not what "Reduce
+Transparency" means. What *was* non-compliant is that the scrim tier drew a bare flat fill:
+`applyGlassDecorators` returned early for `GlassTier.Scrim`, so §3's "1px light top edge" and
+the §2.1 darkened rim were missing. Every tier now gets both.
+
+**Rim follows the surface, not its bounding box.** The darkened edge is a `GradientDrawable`
+stroke, and it was drawn with no corner radius — a square outline over a rounded pill. It now
+receives the surface's radius, and an oval for the round search button, from
+`FloatingGlassNavController`. `applyGlassDecorators` no longer takes a tier (the treatment is
+the same on all three) and takes `cornerRadiusDp` / `circle` instead; the app-side call sites
+pass the same radius they pass to `applyGlass`.
+
+**Testable geometry.** Two pieces of logic that used to be inline and unverifiable are now pure
+functions with unit tests (`FloatingNavInsetsTest`, `GlassTierTest`): `glassTierFor(sdkInt)`
+(§3's tier boundaries) and `FloatingNavInsets` (the §5.1 floating-nav inset arithmetic, including
+"only ever increase a screen's bottom padding").
+
+Still unverified visually: the sticky-inset scroll behaviour from §12, the slider's live repaint
+on a real frame budget, and the tier-1/tier-2 effects. CI proves compilation and the unit tests
+only.

@@ -332,15 +332,30 @@
         <item name="cornerSize">@dimen/bottom_nav_active_indicator_corner</item>
     </style>
 
+    <!-- iOS 27 Liquid Glass tablet rail (DESIGN.md §5.1, applied to the w720dp rail).
+         The background is transparent so the floating margins in `layout-w720dp/main_activity`
+         read as a glass surface; the tier-aware material is applied programmatically by
+         `FloatingGlassNavController.attach` from MainActivity. -->
     <style name="Widget.Tachiyomi.NavigationRail" parent="Widget.Material3.NavigationRailView">
         <item name="android:minHeight">68dp</item>
         <item name="itemIconTint">@color/bottom_nav_item_selector</item>
         <item name="itemRippleColor">@color/ripple_nav</item>
         <item name="itemTextColor">@color/bottom_nav_text_selector</item>
         <item name="labelVisibilityMode">labeled</item>
-        <item name="android:background">?colorPrimaryVariant</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Tachiyomi.NavigationRail.ActiveIndicator</item>
         <item name="tabBarIconColor">?tabBarIconColor</item>
         <item name="tabRippleColor">?colorControlHighlight</item>
+    </style>
+
+    <!-- Concentric active-item capsule for the rail. Same idea and colour as the bottom-nav
+         pill, but taller and wider: a labeled rail item wraps the icon *and* its label. -->
+    <style name="Widget.Tachiyomi.NavigationRail.ActiveIndicator" parent="Widget.Material3.NavigationRailView.ActiveIndicator">
+        <item name="android:width">@dimen/side_nav_active_indicator_width</item>
+        <item name="android:height">@dimen/side_nav_active_indicator_height</item>
+        <item name="marginHorizontal">0dp</item>
+        <item name="android:color">@color/bottom_nav_active_indicator</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Tachiyomi.GlassActiveIndicator</item>
     </style>
 
     <style name="Widget.Tachiyomi.Button.OutlinedButton.Icon" parent="Widget.Material3.Button.OutlinedButton.Icon">

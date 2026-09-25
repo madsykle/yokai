@@ -9,6 +9,7 @@ import android.app.assist.AssistContent
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
@@ -54,6 +55,7 @@ import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.window.layout.DisplayFeature
 import androidx.window.layout.FoldingFeature
@@ -156,6 +158,7 @@ import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
 import eu.kanade.tachiyomi.util.system.lightImpact
 import yokai.presentation.theme.FloatingGlassNavController
+import yokai.presentation.theme.GLASS_TRANSPARENCY_PREF_KEY
 import yokai.presentation.theme.glassTier
 import android.R as AR
 
@@ -203,6 +206,21 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
      * instead (see [applyFloatingNavInset]).
      */
     private var floatingNavInset = 0
+
+    /** Base margin of the rail's round search button, before the system nav bar inset. */
+    private val bottomNavSearchButtonMargin: Int by lazy {
+        resources.getDimensionPixelSize(R.dimen.bottom_nav_bottom_margin)
+    }
+
+    /**
+     * Live preview of the §2.2 transparency slider: the preference file is the single source
+     * of truth (the slider writes it, Compose reads it through `glassTintAlphaState`), and this
+     * listener is what re-tints the View-based chrome while Settings is still open.
+     */
+    private val glassPreferenceListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == GLASS_TRANSPARENCY_PREF_KEY) refreshGlassChrome()
+        }
 
     val velocityTracker: VelocityTracker by lazy { VelocityTracker.obtain() }
     private val actionButtonSize: Pair<Int, Int> by lazy {
@@ -389,15 +407,14 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         setContentView(binding.root)
 
-        // iOS 27 Liquid Glass: floating glass nav pill (DESIGN.md §5.1).
-        binding.bottomNav?.let { navView ->
-            FloatingGlassNavController.attach(navView, 28f, glassTier())
-        }
+        // iOS 27 Liquid Glass: floating glass nav (DESIGN.md §5.1) - the pill in portrait,
+        // the rail in the w720dp layout. Also (re-)run whenever the §2.2 transparency slider
+        // moves, which is what previews it live in Settings.
+        refreshGlassChrome()
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(glassPreferenceListener)
         // The reference design pairs the capsule with a separate round glass button.
         // Ours opens global search, which is otherwise buried behind the Browse tab.
-        binding.bottomNavSearch?.let { searchButton ->
-            FloatingGlassNavController.attachCircle(searchButton, glassTier())
-        }
         binding.bottomNavSearchButton?.setOnClickListener {
             router.pushController(GlobalSearchController().withFadeTransaction())
         }
@@ -528,11 +545,11 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             // would clip content above the pill and the glass would have nothing to
             // refract. The inset is pushed down to the screens' scrollables instead.
             binding.controllerContainer.updatePadding(bottom = 0)
-            floatingNavInset = if (binding.bottomNav != null) {
-                resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height) + systemInsets.bottom
-            } else {
-                0
-            }
+            floatingNavInset = FloatingNavInsets.insetFor(
+                hasFloatingNav = binding.bottomNav != null,
+                navTotalHeightPx = resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height),
+                systemBottomInsetPx = systemInsets.bottom,
+            )
             applyFloatingNavInset()
             binding.sideNav?.updatePadding(
                 left = 0,
@@ -540,6 +557,15 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 bottom = systemInsets.bottom,
                 top = systemInsets.top,
             )
+            // The rail's round glass search button is positioned next to the rail itself rather
+            // than inside it, so it needs the navigation bar inset as a margin. In the portrait
+            // layout the button is anchored to the pill, which already carries the inset as
+            // padding, so this only applies when the rail is what we are talking to.
+            if (binding.bottomNav == null) {
+                binding.bottomNavSearch?.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                    bottomMargin = bottomNavSearchButtonMargin + systemInsets.bottom
+                }
+            }
             binding.bottomView?.isVisible = systemInsets.bottom > 0
             binding.bottomView?.updateLayoutParams<ViewGroup.LayoutParams> {
                 height = systemInsets.bottom
@@ -1197,6 +1223,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     override fun onDestroy() {
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(glassPreferenceListener)
         super.onDestroy()
         overflowDialog?.dismiss()
         overflowDialog = null
@@ -1266,6 +1294,26 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     /**
+     * iOS 27 Liquid Glass (§5.1): (re-)applies the floating material to the nav chrome.
+     *
+     * Called once on create and again on every §2.2 transparency change. The tint alpha is
+     * baked into the background drawable, so re-attaching is what makes the slider's preview
+     * visible without restarting the Activity; the call is idempotent.
+     */
+    private fun refreshGlassChrome() {
+        val tier = glassTier()
+        binding.bottomNav?.let { pill ->
+            FloatingGlassNavController.attach(pill, NAV_CORNER_RADIUS_DP, tier)
+        }
+        binding.sideNav?.let { rail ->
+            FloatingGlassNavController.attach(rail, NAV_CORNER_RADIUS_DP, tier)
+        }
+        binding.bottomNavSearch?.let { searchButton ->
+            FloatingGlassNavController.attachCircle(searchButton, tier)
+        }
+    }
+
+    /**
      * Walks [root] (the view tree of the attached controller) and gives every scrollable
      * the floating nav inset. Hand-rolled recursion rather than `forEachDescendant`, which
      * this project's core-ktx version does not ship.
@@ -1273,7 +1321,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     private fun insetScrollables(root: View) {
         if (root is RecyclerView || root is NestedScrollView || root is ScrollView) {
             root.clipToPadding = false
-            if (root.paddingBottom < floatingNavInset) {
+            if (FloatingNavInsets.needsBottomPadding(root.paddingBottom, floatingNavInset)) {
                 root.updatePadding(bottom = floatingNavInset)
             }
         }
@@ -1690,6 +1738,9 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         private const val SWIPE_THRESHOLD = 100
         private const val SWIPE_VELOCITY_THRESHOLD = 100
+
+        /** §5.1 pill/rail corner radius (matches `corner_radius_bottom_nav`). */
+        private const val NAV_CORNER_RADIUS_DP = 28f
 
         // Shortcut actions
         const val SHORTCUT_LIBRARY = "eu.kanade.tachiyomi.SHOW_LIBRARY"

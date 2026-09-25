@@ -345,7 +345,7 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 // iOS 27 Liquid Glass: tier-aware tint on the collapsed toolbar (§5.2).
                 // applyGlass/applyGlassDecorators are idempotent now, so no guard flag.
                 mainToolbar?.applyGlass(24f, glassTier())
-                mainToolbar?.applyGlassDecorators(glassTier())
+                mainToolbar?.applyGlassDecorators(24f)
             }
             useSearchToolbarForMenu(compactSearchMode || offset > realHeight - shortH - tabHeight)
             return
@@ -452,7 +452,7 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                 cardFrame?.backgroundColor = null
                 // iOS 27 Liquid Glass: tier-aware tint on the floating search toolbar (§5.2)
                 cardFrame?.applyGlass(24f, glassTier())
-                cardFrame?.applyGlassDecorators(glassTier())
+                cardFrame?.applyGlassDecorators(24f)
             }
         } else {
             if (mainActivity.currentToolbar != mainToolbar) {

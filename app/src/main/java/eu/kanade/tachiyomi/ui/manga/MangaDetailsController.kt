@@ -253,7 +253,7 @@ class MangaDetailsController :
         setRecycler(view)
         // iOS 27 Liquid Glass: apply tier-aware glass to the FAB
         binding.fab.applyGlass(24f, glassTier())
-        binding.fab.applyGlassDecorators(glassTier())
+        binding.fab.applyGlassDecorators(24f)
         ViewCompat.setOnApplyWindowInsetsListener(binding.fab) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 

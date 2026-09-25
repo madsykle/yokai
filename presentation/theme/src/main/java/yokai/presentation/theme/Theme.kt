@@ -1,6 +1,7 @@
 package yokai.presentation.theme
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,6 +10,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.LayoutDirection
@@ -70,9 +76,77 @@ val iOSspring = spring<Float>(
  */
 const val GLASS_TRANSPARENCY_PREF_KEY = "glass_transparency_alpha"
 
-fun glassTintAlpha(context: Context): Float {
-    val prefs = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
-    return prefs.getInt(GLASS_TRANSPARENCY_PREF_KEY, 70).coerceIn(30, 95) / 100f
+/** Transparency slider bounds (DESIGN.md §2.2: ultra clear → fully tinted). */
+const val GLASS_TRANSPARENCY_MIN = 30
+const val GLASS_TRANSPARENCY_MAX = 95
+const val GLASS_TRANSPARENCY_DEFAULT = 70
+
+/**
+ * The app's *default* SharedPreferences file - the one the preference UI writes to
+ * (`PreferenceManager.getDefaultSharedPreferences` uses the same name).
+ */
+fun Context.glassPreferences(): SharedPreferences =
+    getSharedPreferences(packageName + "_preferences", Context.MODE_PRIVATE)
+
+/**
+ * Persisted transparency percent, clamped to the slider's own bounds so a hand-edited
+ * value can never produce an invisible or fully opaque material.
+ */
+fun Context.glassTransparencyPercent(): Int =
+    glassPreferences()
+        .getInt(GLASS_TRANSPARENCY_PREF_KEY, GLASS_TRANSPARENCY_DEFAULT)
+        .coerceIn(GLASS_TRANSPARENCY_MIN, GLASS_TRANSPARENCY_MAX)
+
+/**
+ * Writes the transparency percent straight to the preference file.
+ *
+ * Written directly rather than through the preference screen's own persistence because the
+ * slider has to take effect *while it is dragged* (DESIGN.md §1.5) - the change is published
+ * through the SharedPreferences listeners that [glassTintAlphaState] and the View chrome
+ * already observe, so no Activity recreation is needed.
+ */
+fun Context.setGlassTransparencyPercent(percent: Int) {
+    glassPreferences()
+        .edit()
+        .putInt(
+            GLASS_TRANSPARENCY_PREF_KEY,
+            percent.coerceIn(GLASS_TRANSPARENCY_MIN, GLASS_TRANSPARENCY_MAX),
+        )
+        .apply()
+}
+
+/**
+ * Non-recomposing read of the §2.2 transparency, for the View-based chrome
+ * (`View.applyGlass`). Compose surfaces should use [glassTintAlphaState] instead so a drag in
+ * Settings repaints them immediately.
+ */
+fun glassTintAlpha(context: Context): Float = context.glassTransparencyPercent() / 100f
+
+/**
+ * Transparency as Compose state: recomposes every glass surface when the slider moves.
+ *
+ * The SharedPreferences listener is registered for the lifetime of the composition and the
+ * listener reference is held by this scope (the implementation stores listeners weakly).
+ */
+@Composable
+fun glassTintAlphaState(): Float {
+    val context = LocalContext.current
+    val preferences = remember(context) { context.glassPreferences() }
+    var percent by remember(preferences) {
+        mutableIntStateOf(context.glassTransparencyPercent())
+    }
+
+    DisposableEffect(preferences) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == GLASS_TRANSPARENCY_PREF_KEY) {
+                percent = context.glassTransparencyPercent()
+            }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    return percent / 100f
 }
 
 /**
@@ -84,13 +158,20 @@ sealed interface GlassTier {
     data object Scrim : GlassTier  // API 29–30 — tinted scrim fallback
 }
 
-fun glassTier(): GlassTier {
+/**
+ * Tier selection as a pure function of the API level, so the boundaries are unit-testable
+ * without an emulator. The thresholds are fixed by the platform: AGSL (refraction) needs 33,
+ * `RenderEffect` (blur) needs 31, and below that neither exists (DESIGN.md §3).
+ */
+fun glassTierFor(sdkInt: Int): GlassTier {
     return when {
-        Build.VERSION.SDK_INT >= 33 -> GlassTier.Full
-        Build.VERSION.SDK_INT >= 31 -> GlassTier.Blur
+        sdkInt >= 33 -> GlassTier.Full
+        sdkInt >= 31 -> GlassTier.Blur
         else -> GlassTier.Scrim
     }
 }
+
+fun glassTier(): GlassTier = glassTierFor(Build.VERSION.SDK_INT)
 
 @Composable
 fun glassTierComposable(): GlassTier {

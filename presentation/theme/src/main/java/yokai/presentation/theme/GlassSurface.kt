@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -47,7 +46,7 @@ import androidx.compose.ui.unit.dp
 fun GlassSurface(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 24.dp,
-    tintAlpha: Float = glassTintAlpha(LocalContext.current),
+    tintAlpha: Float = glassTintAlphaState(),
     backdrop: GlassBackdropState? = null,
     darkenedEdge: Boolean = true,
     specularHighlight: Boolean = true,
@@ -152,6 +151,10 @@ fun Color.toArgbCompat(): Int {
  * A View must NEVER blur its own content via [android.view.View.setRenderEffect] —
  * that blurs the icons/labels INSIDE the view, not what is behind it (HIG: the
  * material layer blurs the backdrop, not the foreground content).
+ *
+ * The tint alpha is read from the §2.2 preference on every call, so re-invoking this after
+ * the user moves the transparency slider is what re-paints the chrome. See
+ * [glassTintAlphaState] for the Compose side of the same preference.
  */
 fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Boolean = false) {
     val actualTier = tier ?: glassTier()
@@ -166,8 +169,11 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Bool
         is GlassTier.Scrim -> {
             // DESIGN.md §3 Tier 3: deliberate near-opaque scrim (mirrors Reduce
             // Transparency) in the exact §3 colors (#F2F2F7 / #1C1C1E @ 90%).
+            // Real blur is impossible here - AGSL needs API 33, RenderEffect needs 31, and
+            // RenderScript is banned outright by §7.1 - so the tier is differentiated by
+            // its edge treatment instead (see applyGlassDecorators).
             GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
+                shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
                 cornerRadius = radiusPx
                 setColor((if (isDark) GlassColors.ScrimDark else GlassColors.ScrimLight).toArgbCompat())
                 alpha = (GlassColors.ScrimFallbackAlpha * 255).toInt()
@@ -197,10 +203,10 @@ private fun View.isNightMode(): Boolean =
  * Rounded translucent material-tint drawable used as the glass background.
  * Light mode tints white (§4.1 GlassTintLight), dark mode tints black (GlassTintDark).
  */
-private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean): GradientDrawable {
+private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean, circle: Boolean = false): GradientDrawable {
     val baseColor = if (isDark) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     return GradientDrawable().apply {
-        shape = GradientDrawable.RECTANGLE
+        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
         cornerRadius = radiusPx
         setColor(baseColor)
         this.alpha = (alpha.coerceIn(0f, 1f) * 255).toInt()
@@ -208,21 +214,21 @@ private fun glassTintDrawable(radiusPx: Float, alpha: Float, isDark: Boolean): G
 }
 
 /**
- * Applies iOS 27 Liquid Glass decorators (darkened edge + specular highlight)
- * to a View by setting its `foreground` to a layered gradient drawable.
- * Idempotent: re-assignment replaces the previous decorators (§2.2).
- * Mirrors [GlassSurfaceDecorators] for the Compose side.
+ * Applies iOS 27 Liquid Glass decorators (darkened edge + specular highlight) to a View by
+ * setting its `foreground` to a layered gradient drawable. Idempotent: re-assignment replaces
+ * the previous decorators (§2.2). Mirrors [GlassSurfaceDecorators] for the Compose side.
+ *
+ * Deliberately tier-independent: the rim and the specular ramp are the same treatment on every
+ * tier, including [GlassTier.Scrim], where §3 asks the fallback for a "1px light top edge" so
+ * it still reads as a deliberate material rather than a plain opaque bar.
+ *
+ * [cornerRadiusDp] must match the radius passed to [applyGlass] - the stroke is drawn as a
+ * GradientDrawable, and without the radius the rim would render as a square outline over a
+ * rounded surface. [circle] switches it to an oval, for the round sibling of the nav pill.
  */
-fun View.applyGlassDecorators(tier: GlassTier? = null) {
-    val actualTier = tier ?: glassTier()
-
-    // Only apply decorators for blur/glass tiers (not scrim)
-    if (actualTier is GlassTier.Scrim) {
-        foreground = null
-        return
-    }
-
+fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = false) {
     val d = resources.displayMetrics.density
+    val radiusPx = cornerRadiusDp * d
     val specularShader = LinearGradient(
         0f, 0f, 0f, 24 * d,
         intArrayOf(GlassColors.SpecularHighlight.toArgbCompat(), android.graphics.Color.TRANSPARENT),
@@ -241,9 +247,11 @@ fun View.applyGlassDecorators(tier: GlassTier? = null) {
         override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 
-    // Darkened edge: 1px border per DESIGN.md §2.2 (rim on all sides)
+    // Darkened edge: 1px border per DESIGN.md §2.2 (rim on all sides), following the shape
+    // of the surface it outlines rather than its bounding box.
     val border = GradientDrawable().apply {
-        shape = GradientDrawable.RECTANGLE
+        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+        cornerRadius = radiusPx
         setStroke(1.coerceAtLeast((0.5 * d).toInt()), GlassColors.DarkenedEdge.toArgbCompat())
     }
 

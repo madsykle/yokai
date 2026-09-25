@@ -169,6 +169,9 @@
     <!-- Separate circular glass search button next to the pill (ref/Apple Books). -->
     <dimen name="bottom_nav_search_button_size">48dp</dimen>
     <dimen name="bottom_nav_search_button_margin">8dp</dimen>
+    <!-- Same concentric capsule for the w720dp rail (see values/colors.xml). -->
+    <dimen name="side_nav_active_indicator_width">64dp</dimen>
+    <dimen name="side_nav_active_indicator_height">56dp</dimen>
 
     <!-- Bottom Nav Glass Selectors (Dark) -->
     <color name="bottom_nav_item_selected">@color/accent_blue</color>
