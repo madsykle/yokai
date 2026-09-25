@@ -261,21 +261,30 @@ fun View.applyGlassDecorators(cornerRadiusDp: Float = 24f, circle: Boolean = fal
 
     // §2.1 brighter specular: a top-edge highlight ramp over the full height so the surface
     // reads as a lit material instead of a flat wash. The ramp is subtler in light mode, where
-    // white-on-white needs less help.
-    val highlightTop = if (isDark) 0x40 else GlassColors.SpecularHighlight.alpha
-    val sheenShader = LinearGradient(
-        0f, 0f, 0f, bounds.height().coerceAtLeast(1).toFloat(),
-        intArrayOf(
-            (highlightTop shl 24) or 0x00FFFFFF,
-            android.graphics.Color.TRANSPARENT,
-        ),
-        null,
-        Shader.TileMode.CLAMP,
-    )
+    // white-on-white needs less help. (Alpha values: 0x40 = 25%, 0x1F = 12% =
+    // GlassColors.SpecularHighlight.) The shader is built on first draw, when the bounds -
+    // and with them the ramp height - are actually known.
+    val highlightTop = if (isDark) 0x40 else 0x1F
     val sheen = object : Drawable() {
         private val paint = Paint().apply { isAntiAlias = true }
+        private var cachedShader: LinearGradient? = null
+        private var cachedHeight = -1
+
         override fun draw(canvas: Canvas) {
-            paint.shader = sheenShader
+            val height = bounds.height()
+            if (height != cachedHeight) {
+                cachedHeight = height
+                cachedShader = LinearGradient(
+                    0f, 0f, 0f, height.coerceAtLeast(1).toFloat(),
+                    intArrayOf(
+                        (highlightTop shl 24) or 0x00FFFFFF,
+                        android.graphics.Color.TRANSPARENT,
+                    ),
+                    null,
+                    Shader.TileMode.CLAMP,
+                )
+            }
+            paint.shader = cachedShader
             canvas.drawRect(
                 bounds.left.toFloat(), bounds.top.toFloat(),
                 bounds.right.toFloat(), bounds.bottom.toFloat(),
