@@ -81,8 +81,8 @@ class MorphingNavIndicatorTest {
     @Test
     fun `mid-speed stretch sits between rest and peak`() {
         val (scaleX, scaleY) = MorphingNavIndicator.stretchScalesFor(4500f)
-        scaleX.shouldBeBetween(1f, MorphingNavIndicator.MAX_STRETCH_X)
-        scaleY.shouldBeBetween(MorphingNavIndicator.MIN_STRETCH_Y, 1f)
+        scaleX.shouldBeBetween(1f, MorphingNavIndicator.MAX_STRETCH_X, TOLERANCE)
+        scaleY.shouldBeBetween(MorphingNavIndicator.MIN_STRETCH_Y, 1f, TOLERANCE)
     }
 
     @Test
@@ -105,5 +105,9 @@ class MorphingNavIndicatorTest {
     fun `zero-width nav is not usable for placement`() {
         MorphingNavIndicator.isLayoutUsable(0) shouldBe false
         MorphingNavIndicator.isLayoutUsable(1080) shouldBe true
+    }
+
+    private companion object {
+        const val TOLERANCE = 0.0001f
     }
 }
