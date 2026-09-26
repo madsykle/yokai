@@ -375,8 +375,8 @@ APK/mapping, then *skips* sign/cleanup/publish because the fork has no signing s
   `NavigationBarActiveIndicator` reads `android:width`/`android:height`/`marginHorizontal`/
   `android:color`/`shapeAppearance`.
 - **Separate circular glass button.** `bottom_nav_search` + `bottom_nav_search_button` in
-  `main_activity.xml`, tier-aware via the new `FloatingGlassNavController.attachCircle`
-  (`applyGlass(…, circle = true)` clips with an oval so the ripple stays round). Opens
+  `main_activity.xml`, styled with the oval-clipping glass path (`applyGlass(…, circle = true)`,
+  so the ripple stays round; later superseded by the §16 blur pane). Opens
   `GlobalSearchController`, which was otherwise reachable only through the Browse long-press.
 - **Content scrolls under the pill (§5.1).** `controller_container` is no longer padded; the nav
   inset is pushed to each screen's scrollables via `MainActivity.insetScrollables`, which sets
@@ -472,8 +472,8 @@ the §2.1 darkened rim were missing. Every tier now gets both.
 
 **Rim follows the surface, not its bounding box.** The darkened edge is a `GradientDrawable`
 stroke, and it was drawn with no corner radius — a square outline over a rounded pill. It now
-receives the surface's radius, and an oval for the round search button, from
-`FloatingGlassNavController`. `applyGlassDecorators` no longer takes a tier (the treatment is
+receives the surface's radius, and an oval for the round search button, from the nav-chrome
+styling call sites. `applyGlassDecorators` no longer takes a tier (the treatment is
 the same on all three) and takes `cornerRadiusDp` / `circle` instead; the app-side call sites
 pass the same radius they pass to `applyGlass`.
 
@@ -554,3 +554,54 @@ one pure helper, `FloatingNavInsets.topInsetFor(systemTop, appBarHeight, margin)
 Deliberately untouched in this phase: no blur, no BlurView dependency, no morphing indicator, no
 translucent flat-black fills. Phases 2 (real backdrop blur on the top bar + bottom nav only) and 3
 (morphing spring tab indicator) are next and are each gated on on-device confirmation.
+
+## 16. Phase 2: Real Backdrop Blur on the Floating Chrome (2026-09-26)
+
+The floating top card, the bottom nav pill, the round search button and the w720dp rail now sit on
+a real backdrop blur (Dimezis BlurView) instead of a flat translucent fill. Only these four
+*floating* surfaces get it: list items, cards, sheets and the reader page are content, not
+material, and are deliberately left untouched.
+
+**BlurView pinned at `version-2.0.6`.** 3.x moved to a `BlurTarget` wrapper (breaking API);
+2.0.6 is the last line with the non-breaking `setupWith(ViewGroup)` that auto-picks
+`RenderEffectBlur` on API 31+ and `RenderScriptBlur` below. Committed through the existing
+Jitpack repository.
+
+**The blur source is `controller_container`, not the decor view.** The chrome must never be
+sampled into its own backdrop — the pill's icons and the top card's text are drawn on top of the
+BlurView, never inside its snapshot — and a smaller snapshot is cheaper on the Snapdragon 720G.
+Each frame is cleared with the window background (`setFrameClearDrawable`) because the container
+is mostly transparent and a transparent snapshot blurs to a washed-out veil.
+
+**Panes and shapes.** Four BlurViews, all transparent rounded panes (`applyGlassBackdropPane`:
+transparent `GradientDrawable` + outline provider + `clipToOutline`) carrying only the §2.1 rim
+and sheen on top (`applyGlassDecorators`): `card_blur` (24dp), `bottom_nav_blur` (28dp),
+`bottom_nav_search_blur` (24dp, circle) and `side_nav_blur` (28dp, w720dp only). Each BlurView is
+a **sibling drawn behind** its surface, not its parent — nesting would sample the surface's own
+drawing. Radius is `@dimen/glass_blur_radius` (14dp); the downsample factor stays at the library
+default (6) per the phase brief.
+
+**Legibility veil, not a tint fill.** `setOverlayColor` paints a black veil over the blur,
+mapped from the §2.2 transparency slider into a fixed 40–55% band
+(`glassBlurTintColor`: more transparent ⇒ stronger veil). This is the only "tint" the material
+has; the slider's live preview re-tints via `refreshGlassChrome()` instead of rebuilding
+anything.
+
+**The pill moves; its blur must follow.** Nav hide-on-scroll animates `bottom_nav.translationY`,
+and a sibling BlurView does not track that. A `ViewTreeObserver.OnPreDrawListener`
+(`GlassBlurChrome`) copies `translationY`/`alpha`/`isVisible` from the pill onto its blur every
+frame, and `alpha`/`isVisible` for the search button (which never translates). Detached in
+`onDestroy`.
+
+**Flat fills removed so the blur is what you see.** `ExpandedAppBarLayout` no longer paints
+`applyGlass` on `card_frame`; `setAppBarBG` no longer fills `card_view` (both branches — the
+scroll-blend had no card colour left to animate); `card_view` is transparent in both layouts.
+`FloatingGlassNavController` is deleted: its `applyGlass` fill was the "fake glass" the brief
+bans. The *collapsed main toolbar's* own glass (not floating chrome) is untouched.
+
+**Tier note.** On the target device (API 30) this blur is RenderScript — §7.1 bans RenderScript,
+and the Phase 2 brief explicitly overrides that for the floating chrome. The perf lever on this
+device is the downsample factor, never a lower radius.
+
+Status: CI green (compile + unit tests + lint). Not yet device-verified; Phase 3 (morphing spring
+tab indicator) is gated on that confirmation.
