@@ -157,9 +157,7 @@ import yokai.presentation.extension.repo.ExtensionRepoController
 import yokai.presentation.onboarding.OnboardingController
 import yokai.util.lang.getString
 import eu.kanade.tachiyomi.util.system.lightImpact
-import yokai.presentation.theme.FloatingGlassNavController
 import yokai.presentation.theme.GLASS_TRANSPARENCY_PREF_KEY
-import yokai.presentation.theme.glassTier
 import android.R as AR
 
 @SuppressLint("ResourceType")
@@ -211,6 +209,13 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     private val bottomNavSearchButtonMargin: Int by lazy {
         resources.getDimensionPixelSize(R.dimen.bottom_nav_bottom_margin)
     }
+
+    /**
+     * Phase 2 (DESIGN.md §16): the real backdrop-blur material for the floating chrome. Built
+     * as soon as the binding exists; `null` before that and harmless on a layout with no
+     * BlurView at all.
+     */
+    private var glassBlurChrome: GlassBlurChrome? = null
 
     /**
      * Live preview of the §2.2 transparency slider: the preference file is the single source
@@ -406,6 +411,17 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         binding = MainActivityBinding.inflate(layoutInflater)
 
         setContentView(binding.root)
+
+        // Phase 2 (DESIGN.md §16): give the floating chrome a real backdrop blur. The controller
+        // container is the blur source, so content is what gets blurred - the pill's own icons
+        // (drawn on top, never inside the blur root) can never smear into their own backdrop.
+        glassBlurChrome = GlassBlurChrome(binding).also { chrome ->
+            chrome.attach(
+                root = binding.controllerContainer,
+                windowBackground = window?.decorView?.background,
+                blurRadiusPx = resources.getDimensionPixelSize(R.dimen.glass_blur_radius).toFloat(),
+            )
+        }
 
         // iOS 27 Liquid Glass: floating glass nav (DESIGN.md §5.1) - the pill in portrait,
         // the rail in the w720dp layout. Also (re-)run whenever the §2.2 transparency slider
@@ -1226,6 +1242,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     override fun onDestroy() {
+        glassBlurChrome?.detach()
+        glassBlurChrome = null
         PreferenceManager.getDefaultSharedPreferences(this)
             .unregisterOnSharedPreferenceChangeListener(glassPreferenceListener)
         super.onDestroy()
@@ -1297,23 +1315,15 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     /**
-     * iOS 27 Liquid Glass (§5.1): (re-)applies the floating material to the nav chrome.
+     * iOS 27 Liquid Glass (§5.1, Phase 2 §16): (re-)applies the floating material to the nav
+     * chrome.
      *
-     * Called once on create and again on every §2.2 transparency change. The tint alpha is
-     * baked into the background drawable, so re-attaching is what makes the slider's preview
-     * visible without restarting the Activity; the call is idempotent.
+     * The material is a real backdrop blur owned by [glassBlurChrome]; the §2.2 transparency
+     * slider only moves the legibility veil drawn over that blur, so a live preview is a re-tint
+     * rather than a rebuild. Called once on create and again on every transparency change.
      */
     private fun refreshGlassChrome() {
-        val tier = glassTier()
-        binding.bottomNav?.let { pill ->
-            FloatingGlassNavController.attach(pill, NAV_CORNER_RADIUS_DP, tier)
-        }
-        binding.sideNav?.let { rail ->
-            FloatingGlassNavController.attach(rail, NAV_CORNER_RADIUS_DP, tier)
-        }
-        binding.bottomNavSearch?.let { searchButton ->
-            FloatingGlassNavController.attachCircle(searchButton, tier)
-        }
+        glassBlurChrome?.updateTint()
     }
 
     /**
@@ -1743,9 +1753,6 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         private const val SWIPE_THRESHOLD = 100
         private const val SWIPE_VELOCITY_THRESHOLD = 100
-
-        /** §5.1 pill/rail corner radius (matches `corner_radius_bottom_nav`). */
-        private const val NAV_CORNER_RADIUS_DP = 28f
 
         // Shortcut actions
         const val SHORTCUT_LIBRARY = "eu.kanade.tachiyomi.SHOW_LIBRARY"

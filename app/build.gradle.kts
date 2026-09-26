@@ -159,6 +159,11 @@ dependencies {
     // Spring animations for iOS 27 Liquid Glass motion (Phase 5)
     implementation(libs.dynamicanimation)
 
+    // Real backdrop blur for the floating top bar / bottom nav (DESIGN.md §16). API 30 has no
+    // RenderEffect and no AGSL, so the View chrome cannot blur itself - BlurView snapshots the
+    // content underneath and blurs it, picking RenderScriptBlur or RenderEffectBlur by API.
+    implementation(libs.blurview)
+
     // Compose
     implementation(platform(compose.bom))
     implementation(compose.bundles.compose)

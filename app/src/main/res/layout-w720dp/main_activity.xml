@@ -116,11 +116,23 @@
             android:layout_width="match_parent"
             android:layout_height="?mainActionBarSize" >
 
+            <!-- iOS 27 Liquid Glass (DESIGN.md §16): real backdrop blur under the floating top
+                 card, mirrored from the default layout so the tablet gets the same material
+                 instead of a flat translucent fill. Set up in code by GlassBlurChrome. -->
+            <eightbitlab.com.blurview.BlurView
+                android:id="@+id/card_blur"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="10dp"
+                android:layout_marginBottom="4dp" />
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_view"
                 android:layout_width="match_parent"
                 android:layout_marginTop="4dp"
-                app:cardBackgroundColor="?colorPrimaryVariant"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="4dp"
                 app:strokeWidth="0dp"
                 android:layout_marginStart="10dp"
@@ -225,6 +237,18 @@
          floats too - inset from the screen edges, rounded, and transparent at the background
          level (`Widget.Tachiyomi.NavigationRail` applies the tier-aware material). The margins
          are what let the rounded shape read as a surface rather than a docked column. -->
+    <!-- DESIGN.md §16: the rail's material is a real blur behind it, exactly like the portrait
+         pill's. Its own background stays transparent (`Widget.Tachiyomi.NavigationRail`); this
+         BlurView is what you actually see through the floating margins. -->
+    <eightbitlab.com.blurview.BlurView
+        android:id="@+id/side_nav_blur"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="@id/side_nav"
+        app:layout_constraintBottom_toBottomOf="@id/side_nav"
+        app:layout_constraintStart_toStartOf="@id/side_nav"
+        app:layout_constraintEnd_toEndOf="@id/side_nav" />
+
     <com.google.android.material.navigationrail.NavigationRailView
         android:id="@+id/side_nav"
         app:elevation="0dp"
@@ -252,6 +276,12 @@
         app:layout_constraintBottom_toBottomOf="@id/side_nav"
         app:layout_constraintEnd_toEndOf="@id/side_nav"
         app:layout_constraintStart_toStartOf="@id/side_nav">
+
+        <!-- Same real material as the rail: the round companion blurs too (DESIGN.md §16). -->
+        <eightbitlab.com.blurview.BlurView
+            android:id="@+id/bottom_nav_search_blur"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <FrameLayout
             android:id="@+id/bottom_nav_search_button"

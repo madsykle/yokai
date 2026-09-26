@@ -73,6 +73,13 @@ object GlassColors {
      */
     const val GLASS_DARK_BASE_ALPHA = 0.50f   // white @ 50% over dark content
     const val GLASS_LIGHT_BASE_ALPHA = 0.72f  // white @ 72% over light content
+
+    // Legibility veil drawn *over* a real backdrop blur (DESIGN.md §16). Apple's glass over
+    // media keeps its labels readable with a dark tint, not with a flatter material; the brief
+    // pins the band to 40–55% black, and the §2.2 slider moves inside that band rather than
+    // switching the veil off (blur alone over a busy manga cover is unreadable).
+    const val GLASS_BLUR_TINT_MIN_ALPHA = 0.40f
+    const val GLASS_BLUR_TINT_MAX_ALPHA = 0.55f
 }
 
 /**
@@ -136,6 +143,23 @@ fun Context.setGlassTransparencyPercent(percent: Int) {
  * Settings repaints them immediately.
  */
 fun glassTintAlpha(context: Context): Float = context.glassTransparencyPercent() / 100f
+
+/**
+ * ARGB black veil drawn on top of a BlurView's blur (DESIGN.md §16).
+ *
+ * Maps the §2.2 transparency slider into the 40–55% band: a more transparent setting lets more
+ * content through the blur, so it earns a slightly stronger veil to keep icons and labels
+ * legible over it. The slider stays live and meaningful without ever leaving the band.
+ */
+fun glassBlurTintColor(context: Context): Int {
+    val percent = context.glassTransparencyPercent()
+    val span = (GLASS_TRANSPARENCY_MAX - GLASS_TRANSPARENCY_MIN).toFloat()
+    val transparency = (percent - GLASS_TRANSPARENCY_MIN) / span
+    val alpha = GlassColors.GLASS_BLUR_TINT_MIN_ALPHA +
+        (GlassColors.GLASS_BLUR_TINT_MAX_ALPHA - GlassColors.GLASS_BLUR_TINT_MIN_ALPHA) * transparency
+    val alphaByte = (alpha.coerceIn(0f, 1f) * 255).toInt()
+    return android.graphics.Color.argb(alphaByte, 0, 0, 0)
+}
 
 /**
  * Transparency as Compose state: recomposes every glass surface when the slider moves.

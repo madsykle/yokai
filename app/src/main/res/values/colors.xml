@@ -239,6 +239,10 @@
     <!-- Fixed margin a screen's scrolling content reserves below its top bar, so the gap after
          the title is identical everywhere regardless of how tall a screen's bar has to be. -->
     <dimen name="content_top_margin">12dp</dimen>
+    <!-- Backdrop blur radius for the floating chrome (DESIGN.md §16). 12-16dp is the band that
+         reads as glass without smearing; the downsample factor stays at the library default (6),
+         which is what keeps the cost sane on the Snapdragon 720G. -->
+    <dimen name="glass_blur_radius">14dp</dimen>
     <!-- Bottom Nav Floating Margins -->
     <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
     <dimen name="bottom_nav_bottom_margin">8dp</dimen>

@@ -24,6 +24,11 @@ voyager = "1.1.0-beta03"
 backdrop = "1.0.6"
 haze = "1.6.10"
 dynamicanimation = "1.1.0-alpha03"
+# Real backdrop blur for the View-based floating chrome (DESIGN.md §16). 2.x is the last line
+# whose `setupWith(rootView)` convenience picks RenderScriptBlur below API 31 and
+# RenderEffectBlur at 31+, which is exactly the automatic upgrade we want; 3.x replaces that
+# with a BlurTarget restructure. Jitpack tags are named `version-<semver>`.
+blurview = "version-2.0.6"
 
 [libraries]
 aboutlibraries = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
@@ -41,6 +46,7 @@ compose-theme-adapter3 = { module = "com.google.accompanist:accompanist-themeada
 backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 dynamicanimation = { module = "androidx.dynamicanimation:dynamicanimation", version.ref = "dynamicanimation" }
+blurview = { module = "com.github.Dimezis:BlurView", version.ref = "blurview" }
 conductor = { module = "com.bluelinelabs:conductor", version = "4.0.0-preview-4" }
 conductor-support-preference = { module = "com.github.tachiyomiorg:conductor-support-preference", version = "3.0.0" }
 conscrypt = { module = "org.conscrypt:conscrypt-android", version = "2.5.2" }

@@ -211,6 +211,34 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Bool
     clipToOutline = true
 }
 
+/**
+ * Phase 2 (DESIGN.md §16): makes a View a *transparent* rounded pane.
+ *
+ * This is what [View.applyGlass] is replaced by wherever a real backdrop blur (BlurView) sits
+ * behind the surface. Nothing is tinted here: the whole point of the real material is that the
+ * backdrop shows through, and an extra tint would just be the flat "fake glass" fill again.
+ * The rounded background exists only to give the view an outline, so `clipToOutline` can round
+ * off the blurred backdrop behind it.
+ */
+fun View.applyGlassBackdropPane(cornerRadiusDp: Float, circle: Boolean = false) {
+    val radiusPx = cornerRadiusDp * resources.displayMetrics.density
+    background = GradientDrawable().apply {
+        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+        cornerRadius = radiusPx
+        setColor(android.graphics.Color.TRANSPARENT)
+    }
+    outlineProvider = object : ViewOutlineProvider() {
+        override fun getOutline(view: View, outline: Outline) {
+            if (circle) {
+                outline.setOval(0, 0, view.width, view.height)
+            } else {
+                outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+            }
+        }
+    }
+    clipToOutline = true
+}
+
 private fun View.isNightMode(): Boolean =
     (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 

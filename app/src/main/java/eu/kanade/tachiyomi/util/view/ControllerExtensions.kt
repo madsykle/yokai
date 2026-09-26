@@ -7,7 +7,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
 import android.view.Gravity
@@ -742,7 +741,10 @@ fun Controller.setAppBarBG(value: Float, includeTabView: Boolean = false) {
         (this as? FloatingSearchInterface)?.showFloatingBar() == true && !includeTabView
     if (!isControllerVisible) return
     if (floatingBar) {
-        (activityBinding?.cardView as? CardView)?.setCardBackgroundColor(context.getResourceColor(R.attr.colorPrimaryVariant))
+        // DESIGN.md §16: the floating top card is a transparent pane over the `card_blur`
+        // BlurView - a real backdrop blur. Filling it here would hide the blur and bring back
+        // the flat translucent "fake glass" look.
+        (activityBinding?.cardView as? CardView)?.setCardBackgroundColor(Color.TRANSPARENT)
         if (this !is SmallToolbarInterface && activityBinding?.appBar?.useLargeToolbar == true &&
             activityBinding?.appBar?.compactSearchMode != true
         ) {
@@ -772,16 +774,9 @@ fun Controller.setAppBarBG(value: Float, includeTabView: Boolean = false) {
                 ColorUtils.setAlphaComponent(color, (0.87f * 255).roundToInt())
         }
         if ((this as? FloatingSearchInterface)?.showFloatingBar() == true) {
-            val invColor = ColorUtils.blendARGB(
-                context.getResourceColor(R.attr.colorSurface),
-                context.getResourceColor(R.attr.colorPrimaryVariant),
-                1 - value,
-            )
-            (activityBinding?.cardView as? CardView)?.setCardBackgroundColor(
-                ColorStateList.valueOf(
-                    invColor,
-                ),
-            )
+            // §16: same transparent pane. The blur supplies the material at every scroll
+            // offset, so there is no card colour left to animate.
+            (activityBinding?.cardView as? CardView)?.setCardBackgroundColor(Color.TRANSPARENT)
         }
     }
 }
