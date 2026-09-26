@@ -47,6 +47,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.children
+import androidx.core.view.doOnLayout
 import androidx.core.view.forEach
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
@@ -216,6 +217,13 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
      * BlurView at all.
      */
     private var glassBlurChrome: GlassBlurChrome? = null
+
+    /**
+     * Phase 3 (DESIGN.md §17): the spring-driven morphing tab indicator. Created lazily by
+     * [attachMorphingIndicator] once the nav is laid out (the pill's position is nav geometry);
+     * `null` on the w720dp rail layout, which keeps Material's static indicator.
+     */
+    private var morphingNavIndicator: MorphingNavIndicatorController? = null
 
     /**
      * Live preview of the §2.2 transparency slider: the preference file is the single source
@@ -427,6 +435,13 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         // the rail in the w720dp layout. Also (re-)run whenever the §2.2 transparency slider
         // moves, which is what previews it live in Settings.
         refreshGlassChrome()
+
+        // Phase 3 (DESIGN.md §17): swap Material's static per-item indicator for one shared pill
+        // that springs between items. The indicator view sits behind the nav's blur pane, so it
+        // is only meaningful when the blur chrome exists (portrait layout).
+        binding.navTabIndicator?.let { indicator ->
+            attachMorphingIndicator(indicator)
+        }
         PreferenceManager.getDefaultSharedPreferences(this)
             .registerOnSharedPreferenceChangeListener(glassPreferenceListener)
         // The reference design pairs the capsule with a separate round glass button.
@@ -607,6 +622,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         nav.setOnItemSelectedListener { item ->
             val id = item.itemId
+            morphingNavIndicator?.onItemSelected(id)
             val currentController = router.backstack.lastOrNull()?.controller
             if (!continueSwitchingTabs && currentController is BottomNavBarInterface) {
                 if (!currentController.canChangeTabs {
@@ -1244,6 +1260,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     override fun onDestroy() {
         glassBlurChrome?.detach()
         glassBlurChrome = null
+        morphingNavIndicator?.detach()
+        morphingNavIndicator = null
         PreferenceManager.getDefaultSharedPreferences(this)
             .unregisterOnSharedPreferenceChangeListener(glassPreferenceListener)
         super.onDestroy()
@@ -1324,6 +1342,19 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
      */
     private fun refreshGlassChrome() {
         glassBlurChrome?.updateTint()
+    }
+
+    /**
+     * Phase 3 (DESIGN.md §17): binds the spring pill to the nav. Deferring to the first layout
+     * pass is what makes the cold start land as a placement instead of a cross-screen spring:
+     * by then `nav.width` and `indicator.width` are real, so `hasBeenPlaced` flips inside the
+     * snap and the first real tab tap animates from the right position.
+     */
+    private fun attachMorphingIndicator(indicator: View) {
+        val navView = binding.bottomNav ?: return
+        morphingNavIndicator = MorphingNavIndicatorController(navView, indicator).also { controller ->
+            navView.doOnLayout { controller.snapToSelection() }
+        }
     }
 
     /**

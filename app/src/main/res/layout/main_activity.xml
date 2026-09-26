@@ -242,6 +242,21 @@
         android:layout_height="0dp"
         tools:ignore="KeyboardInaccessibleWidget" />
 
+    <!-- Phase 3 (DESIGN.md §17): the ONE selection pill for the whole nav. A single view that
+         springs between items (MorphingNavIndicator) instead of Material's per-item static
+         indicator, which is emptied out for this nav (Widget.Tachiyomi.EmptyIndicator). Placed
+         behind bottom_nav_blur so the blur veil sits over it, exactly as it sits over content. -->
+    <View
+        android:id="@+id/nav_tab_indicator"
+        android:layout_width="@dimen/bottom_nav_active_indicator_width"
+        android:layout_height="@dimen/bottom_nav_active_indicator_height"
+        android:background="@drawable/glass_active_indicator"
+        app:layout_constraintTop_toTopOf="@id/bottom_nav"
+        app:layout_constraintBottom_toBottomOf="@id/bottom_nav"
+        app:layout_constraintStart_toStartOf="@id/bottom_nav"
+        android:visibility="invisible"
+        tools:visibility="visible" />
+
     <!-- DESIGN.md §16: the pill itself stays fully transparent - the material you see is this
          BlurView, sampling the controller container, plus the legibility veil painted over it in
          GlassBlurChrome. The pill is drawn on top so its icons are never blurred. -->

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 3 (DESIGN.md §17): the single morphing selection pill that springs between the
+     bottom nav's items. A capsule (corner = half the height), lit in dark mode and darkened in
+     light mode for the same reason the §2.1 rim is mode-aware: on a dark page a dark pill
+     cannot separate from the backdrop. Tint follows the §4 active-indicator token. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="@dimen/bottom_nav_active_indicator_corner" />
+    <solid android:color="@color/bottom_nav_active_indicator" />
+</shape>

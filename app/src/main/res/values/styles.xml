@@ -314,6 +314,23 @@
              style referenced by `itemActiveIndicatorStyle`; the flat
              `itemActiveIndicatorWidth`/`...Color` attributes are gone. -->
         <item name="itemActiveIndicatorStyle">@style/Widget.Tachiyomi.BottomNavigationView.Glass.ActiveIndicator</item>
+
+        <!-- Phase 3 (DESIGN.md §17): the selection pill is NOT this per-item Material indicator
+             anymore - it is the single shared `nav_tab_indicator` view behind the whole nav
+             (MainActivity attaches MorphingNavIndicator to it), which springs between items and
+             squash-stretches with the spring's velocity. Material's own indicator would draw a
+             second, static pill on top of it, so it is emptied out. The w720dp rail still uses
+             the real style, since the spring pill is bottom-nav geometry only. -->
+        <item name="itemActiveIndicatorStyle">@style/Widget.Tachiyomi.EmptyIndicator</item>
+    </style>
+
+    <!-- Zero-sized, transparent stand-in for the M3 active indicator (see the Glass nav style).
+         Width/height are explicitly 0 because the M3 defaults in the ActiveIndicator parent
+         style are not zero and would still paint. -->
+    <style name="Widget.Tachiyomi.EmptyIndicator" parent="">
+        <item name="android:width">0dp</item>
+        <item name="android:height">0dp</item>
+        <item name="android:color">@android:color/transparent</item>
     </style>
 
     <!-- Concentric active-tab pill. Extends the M3 indicator so the Expressive size
