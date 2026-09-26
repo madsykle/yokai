@@ -160,6 +160,7 @@
     <dimen name="space_6">24dp</dimen>
     <dimen name="space_8">32dp</dimen>
     <!-- Bottom Nav Floating Margins -->
+    <dimen name="content_top_margin">12dp</dimen>
     <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
     <dimen name="bottom_nav_bottom_margin">8dp</dimen>
     <dimen name="bottom_nav_bottom_padding">8dp</dimen>

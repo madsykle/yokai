@@ -36,6 +36,27 @@ class FloatingNavInsetsTest {
         ) shouldBe 200
     }
 
+    // The top inset is the other half of the same problem: the gap between the top bar and the
+    // content has to be the *same* number on every screen, even though the bar itself is taller
+    // on screens that draw a large title and a search pill.
+    @Test
+    fun `top inset is the bar height plus the fixed margin`() {
+        FloatingNavInsets.topInsetFor(
+            systemTopInsetPx = 144,
+            appBarHeightPx = 600,
+            marginPx = 33,
+        ) shouldBe 777
+    }
+
+    @Test
+    fun `top inset keeps the margin when there is no top system inset`() {
+        FloatingNavInsets.topInsetFor(
+            systemTopInsetPx = 0,
+            appBarHeightPx = 180,
+            marginPx = 33,
+        ) shouldBe 213
+    }
+
     @Test
     fun `padding is added where the screen reserves nothing`() {
         FloatingNavInsets.needsBottomPadding(currentPaddingPx = 0, insetPx = 344) shouldBe true

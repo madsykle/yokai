@@ -58,6 +58,7 @@ import eu.kanade.tachiyomi.ui.base.controller.CrossFadeChangeHandler
 import eu.kanade.tachiyomi.ui.base.controller.DialogController
 import eu.kanade.tachiyomi.ui.base.controller.FadeChangeHandler
 import eu.kanade.tachiyomi.ui.base.controller.OneWayFadeChangeHandler
+import eu.kanade.tachiyomi.ui.main.FloatingNavInsets
 import eu.kanade.tachiyomi.ui.main.FloatingSearchInterface
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.main.TabbedInterface
@@ -324,12 +325,17 @@ fun Controller.scrollViewWith(
     var fakeToolbarView: View? = null
     val preferences: PreferencesHelper by injectLazy()
     var fakeBottomNavView: View? = null
+    // Fixed margin, shared by every screen: the bar height varies with the layout a screen
+    // needs, the gap below it must not (DESIGN.md §5.1).
+    val topContentMargin = resources?.getDimensionPixelSize(R.dimen.content_top_margin) ?: 0
     if (!customPadding) {
         recycler.updatePaddingRelative(
-            top = (
-                activity?.window?.decorView?.rootWindowInsetsCompat?.getInsets(systemBars())?.top
-                    ?: 0
-                ) + appBarHeight,
+            top = FloatingNavInsets.topInsetFor(
+                systemTopInsetPx = activity?.window?.decorView?.rootWindowInsetsCompat
+                    ?.getInsets(systemBars())?.top ?: 0,
+                appBarHeightPx = appBarHeight,
+                marginPx = topContentMargin,
+            ),
         )
     }
     val atTopOfRecyclerView: () -> Boolean = f@{
@@ -344,7 +350,11 @@ fun Controller.scrollViewWith(
     recycler.doOnApplyWindowInsetsCompat { view, insets, _ ->
         appBarHeight = fullAppBarHeight ?: 0
         val systemInsets = if (ignoreInsetVisibility) insets.ignoredSystemInsets else insets.getInsets(systemBars())
-        val headerHeight = systemInsets.top + appBarHeight
+        val headerHeight = FloatingNavInsets.topInsetFor(
+            systemTopInsetPx = systemInsets.top,
+            appBarHeightPx = appBarHeight,
+            marginPx = topContentMargin,
+        )
         if (!customPadding) {
             view.updatePaddingRelative(
                 top = headerHeight,

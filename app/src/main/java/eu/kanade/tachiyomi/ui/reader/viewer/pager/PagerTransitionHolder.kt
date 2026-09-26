@@ -13,6 +13,7 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.core.view.doOnLayout
 import androidx.core.view.updatePaddingRelative
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
@@ -71,6 +72,7 @@ class PagerTransitionHolder(
         transitionView.bind(viewer.config.readerTheme, transition, viewer.downloadManager, viewer.activity.viewModel.manga)
 
         transition.to?.let { observeStatus(it) }
+        reserveBottomChrome()
 
         if (viewer.config.hingeGapSize > 0) {
             val fullWidth = (context as? Activity)?.window?.decorView?.width
@@ -85,6 +87,21 @@ class PagerTransitionHolder(
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         stateJob?.cancel()
+    }
+
+    /**
+     * The reader's bottom chrome (the page-seekbar pill / chapter nav) floats over the page. On a
+     * chapter transition it was drawn on top of the centred transition text, so the transition
+     * reserves the chrome's height and lays its content out above it instead of letting the
+     * chrome float over the text (DESIGN.md §5.1).
+     */
+    private fun reserveBottomChrome() {
+        doOnLayout {
+            val chromeHeight = viewer.activity.binding.readerNav.root.height
+            if (chromeHeight > 0) {
+                updatePaddingRelative(bottom = chromeHeight)
+            }
+        }
     }
 
     /**

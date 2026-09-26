@@ -1,9 +1,10 @@
 package eu.kanade.tachiyomi.ui.main
 
 /**
- * Floating glass nav geometry (DESIGN.md §5.1), kept as pure functions so the arithmetic can be
+ * Floating glass chrome geometry (DESIGN.md §5.1), kept as pure functions so the arithmetic can be
  * unit-tested: the parts that are wrong when they are wrong (a list that cannot be scrolled to
- * its last row, a pill that eats a tap) are very hard to catch by eye.
+ * its last row, a pill that eats a tap, a title with a different gap on every screen) are very
+ * hard to catch by eye.
  */
 internal object FloatingNavInsets {
 
@@ -16,6 +17,18 @@ internal object FloatingNavInsets {
      */
     fun insetFor(hasFloatingNav: Boolean, navTotalHeightPx: Int, systemBottomInsetPx: Int): Int {
         return if (hasFloatingNav) navTotalHeightPx + systemBottomInsetPx else 0
+    }
+
+    /**
+     * Top padding a screen's scrolling content reserves below its (floating) top bar.
+     *
+     * The *bar height* legitimately varies per screen - some screens need a large title and a
+     * search pill, some only a toolbar - but the *margin* between the bar and the content must
+     * not (DESIGN.md §5.1, §12). Funnelling every screen through this function is what keeps the
+     * gap after the title identical everywhere.
+     */
+    fun topInsetFor(systemTopInsetPx: Int, appBarHeightPx: Int, marginPx: Int): Int {
+        return systemTopInsetPx + appBarHeightPx + marginPx
     }
 
     /**

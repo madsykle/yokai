@@ -517,3 +517,40 @@ indicator and accent icons, which is what iOS light glass does.
 
 New open question for the next device pass: whether the lifted dark veil is *too* present at the
 "Fully tinted" stop (95% × 0.50 ≈ 48% white).
+
+## 15. Phase 1: Layout Overlap Pass (2026-09-26)
+
+Three-phase UI fix, phase 1 only (layout bugs, flat colours, no blur yet). On-device screenshots
+(`currentappss/`, 9 shots, 1080×2400, dark mode, Realme RMX2001 / API 30) confirmed the concrete
+overlaps; two were fixed blind from code + screenshots.
+
+**AllManga catalogue: the Popular/Latest/Filter bar floated ~76dp too high, over the cover grid.**
+The screenshots proved the bottom nav is *not* on screen here: every measured nav bar in the set
+sits at the screen bottom, and the catalogue has none. A `BrowseSourceController` is always pushed
+onto the back stack, and `MainActivity` hides the pill for pushed controllers
+(`nav.isVisible = !hideBottomNav`), so the `bottom_nav_total_height` clearance added in §14 was
+pure extra offset — the bar's bottom margin was ~255px, putting its top edge in the middle of the
+grid. `BrowseSourceController` now reserves only the 8dp + system-inset margin the bar genuinely
+needs; `insetScrollables` already gives the grid the bottom padding that keeps the last row clear.
+
+**Library filter sheet: the read-progress segmented control ("Not started"/"In progress") sat under
+the pill's top edge.** The sheet reserved exactly the pill's *height* (`bottomBar.height`), but the
+floating pill also carries an 8dp bottom margin (`bottom_nav_bottom_margin`), so its top edge lands
+8dp *below* the reserved line. `LibraryController.updateFilterSheetY()` now reserves height +
+margin.
+
+**Reader: the page-seekbar pill overlaid the chapter-transition page text.** The transition page is
+centred in the full page while the reader's bottom chrome (seekbar / chapter nav) floats over it, so
+a tall transition card landed underneath. `PagerTransitionHolder` and `WebtoonTransitionHolder` now
+reserve the chrome's height as bottom padding, so the transition lays out above it instead of under
+it (`readerNav.root.height`).
+
+**Top bar gap normalised.** Screens had drifted: some added an ad-hoc margin (Library's category row
++12dp, Recents +48dp), the `scrollViewWith` content padding had none. Everything now goes through
+one pure helper, `FloatingNavInsets.topInsetFor(systemTop, appBarHeight, margin)`, with a single
+`@dimen/content_top_margin` (12dp). The *bar height* still varies with the layout a screen needs
+(large title + search pill vs toolbar-only); the *margin* no longer does.
+
+Deliberately untouched in this phase: no blur, no BlurView dependency, no morphing indicator, no
+translucent flat-black fills. Phases 2 (real backdrop blur on the top bar + bottom nav only) and 3
+(morphing spring tab indicator) are next and are each gated on on-device confirmation.

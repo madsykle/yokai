@@ -10,8 +10,10 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.core.view.doOnLayout
 import androidx.core.view.isNotEmpty
 import androidx.core.view.isVisible
+import androidx.core.view.updatePaddingRelative
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
@@ -63,6 +65,21 @@ class WebtoonTransitionHolder(
 
         layout.addView(transitionView)
         layout.addView(pagesContainer, childParams)
+        reserveBottomChrome()
+    }
+
+    /**
+     * The reader's bottom chrome (the page-seekbar pill / chapter nav) floats over the page. The
+     * transition reserves the chrome's height so the chrome does not sit on top of the transition
+     * text (DESIGN.md §5.1).
+     */
+    private fun reserveBottomChrome() {
+        layout.doOnLayout {
+            val chromeHeight = viewer.activity.binding.readerNav.root.height
+            if (chromeHeight > 0) {
+                layout.updatePaddingRelative(bottom = chromeHeight)
+            }
+        }
     }
 
     /**

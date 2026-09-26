@@ -236,6 +236,9 @@
     <dimen name="space_5">20dp</dimen>
     <dimen name="space_6">24dp</dimen>
     <dimen name="space_8">32dp</dimen>
+    <!-- Fixed margin a screen's scrolling content reserves below its top bar, so the gap after
+         the title is identical everywhere regardless of how tall a screen's bar has to be. -->
+    <dimen name="content_top_margin">12dp</dimen>
     <!-- Bottom Nav Floating Margins -->
     <dimen name="bottom_nav_horizontal_margin">16dp</dimen>
     <dimen name="bottom_nav_bottom_margin">8dp</dimen>

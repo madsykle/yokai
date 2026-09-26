@@ -86,6 +86,7 @@ import eu.kanade.tachiyomi.ui.library.LibraryGroup.UNGROUPED
 import eu.kanade.tachiyomi.ui.library.display.TabbedLibraryDisplaySheet
 import eu.kanade.tachiyomi.ui.library.filter.FilterBottomSheet
 import eu.kanade.tachiyomi.ui.main.BottomSheetController
+import eu.kanade.tachiyomi.ui.main.FloatingNavInsets
 import eu.kanade.tachiyomi.ui.main.FloatingSearchInterface
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.main.RootSearchInterface
@@ -393,7 +394,11 @@ open class LibraryController(
                 0f
             }
             val pad = bottomBar.translationY - bottomBar.height
-            val padding = max((-pad).toInt(), systemInsets?.bottom ?: 0)
+            // Reserve the pill's height *plus* its bottom margin, not just its centre line: the
+            // peek row holds the read-progress segmented control ("Not started"/"In progress"),
+            // and it was rendering under the top edge of the floating pill (DESIGN.md §5.1).
+            val navMargin = resources?.getDimensionPixelSize(R.dimen.bottom_nav_bottom_margin) ?: 0
+            val padding = max((-pad).toInt() + navMargin, systemInsets?.bottom ?: 0)
             bottomSheet.updatePaddingRelative(bottom = padding)
 
             bottomSheet.sheetBehavior?.peekHeight = 60.dpToPx + padding
@@ -632,8 +637,15 @@ open class LibraryController(
                 ignoreInsetVisibility = true,
                 afterInsets = { insets ->
                     val systemInsets = insets.ignoredSystemInsets
+                    // Same top-bar height + fixed margin formula as every other screen
+                    // (DESIGN.md §5.1): the category row used to add its own hardcoded margin.
+                    val topContentMargin = resources?.getDimensionPixelSize(R.dimen.content_top_margin) ?: 0
                     binding.categoryRecycler.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                        topMargin = systemInsets.top + (activityBinding?.searchToolbar?.height ?: 0) + 12.dpToPx
+                        topMargin = FloatingNavInsets.topInsetFor(
+                            systemTopInsetPx = systemInsets.top,
+                            appBarHeightPx = activityBinding?.searchToolbar?.height ?: 0,
+                            marginPx = topContentMargin,
+                        )
                     }
                     updateSmallerViewsTopMargins()
                     binding.headerCard.updateLayoutParams<ViewGroup.MarginLayoutParams> {

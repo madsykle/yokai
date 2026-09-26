@@ -190,16 +190,6 @@ open class BrowseSourceController(bundle: Bundle) :
 
     override fun createBinding(inflater: LayoutInflater) = BrowseSourceControllerBinding.inflate(inflater)
 
-    /**
-     * Clearance (px) needed above the floating glass nav pill, so screens that float their
-     * own bottom chrome (the Popular/Latest/Filter bar) stack above the pill instead of under
-     * it. Zero when there is no floating pill (tablet rail).
-     */
-    private fun floatingNavClearance(): Int {
-        val activity = activity as? MainActivity ?: return 0
-        return activity.resources.getDimensionPixelSize(R.dimen.bottom_nav_total_height)
-    }
-
     override fun onViewCreated(view: View) {
         super.onViewCreated(view)
 
@@ -318,11 +308,13 @@ open class BrowseSourceController(bundle: Bundle) :
                 )
             },
         )
-        // The floating browse bar (Popular / Latest / Filter) would otherwise sit at
-        // bottom|center - exactly under the floating glass nav pill (DESIGN.md §5.1). Above
-        // the pill there is only 8dp of clearance (pill margin 8 + bar inset 8), so the bar
-        // rides just above the pill instead of stacking two floating surfaces on one spot.
-        binding.floatingBrowseBar.applyBottomAnimatedInsets(8.dpToPx + floatingNavClearance())
+        // The Popular / Latest / Filter bar floats at the bottom, above the system navigation
+        // bar only. The bottom nav pill is *never* visible on this screen: a
+        // BrowseSourceController is always pushed onto the back stack, and MainActivity hides
+        // the pill for pushed controllers. Reserving the pill's clearance here (done in an
+        // earlier pass) therefore pushed the bar ~76dp up into the cover grid instead of
+        // leaving it at the bottom (DESIGN.md §5.1).
+        binding.floatingBrowseBar.applyBottomAnimatedInsets(8.dpToPx)
 
         if (oldPosition != RecyclerView.NO_POSITION) {
             (recycler.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(oldPosition, oldOffset.roundToInt())
