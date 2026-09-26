@@ -20,8 +20,11 @@ internal object MorphingNavIndicator {
      */
     fun translationXFor(index: Int, itemCount: Int, navWidth: Int, indicatorWidth: Int): Float {
         if (itemCount <= 0) return 0f
-        val clampedIndex = index.coerceIn(0, itemCount - 1)
+        // An unmeasured nav has no geometry to distribute over: the only sane position is the
+        // start edge (the caller's `isLayoutUsable` guard normally prevents getting here).
         val navWidthF = max(navWidth, 0).toFloat()
+        if (navWidthF == 0f) return 0f
+        val clampedIndex = index.coerceIn(0, itemCount - 1)
         val itemCenter = (clampedIndex + 0.5f) / itemCount * navWidthF
         return itemCenter - indicatorWidth / 2f
     }
@@ -54,6 +57,7 @@ internal object MorphingNavIndicator {
     fun indexFor(translationX: Float, itemCount: Int, navWidth: Int, indicatorWidth: Int): Int {
         if (itemCount <= 0) return 0
         val navWidthF = max(navWidth, 0).toFloat()
+        if (navWidthF == 0f) return 0
         val center = translationX + indicatorWidth / 2f
         val index = (center / navWidthF * itemCount - 0.5f).toInt()
         return index.coerceIn(0, itemCount - 1)
