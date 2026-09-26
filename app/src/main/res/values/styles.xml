@@ -332,10 +332,10 @@
         <item name="cornerSize">@dimen/bottom_nav_active_indicator_corner</item>
     </style>
 
-    <!-- iOS 27 Liquid Glass tablet rail (DESIGN.md §5.1, applied to the w720dp rail).
+    <!-- iOS 27 Liquid Glass tablet rail (DESIGN.md §5.1/§16, applied to the w720dp rail).
          The background is transparent so the floating margins in `layout-w720dp/main_activity`
-         read as a glass surface; the tier-aware material is applied programmatically by
-         `FloatingGlassNavController.attach` from MainActivity. -->
+         read as a glass surface; the real material is the `side_nav_blur` BlurView behind it,
+         set up programmatically by `GlassBlurChrome` from MainActivity. -->
     <style name="Widget.Tachiyomi.NavigationRail" parent="Widget.Material3.NavigationRailView">
         <item name="android:minHeight">68dp</item>
         <item name="itemIconTint">@color/bottom_nav_item_selector</item>
