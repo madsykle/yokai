@@ -25,9 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -95,7 +93,7 @@ fun GlassSurface(
             .drawWithCache {
                 val surface = Path().apply {
                     addRoundRect(
-                        RoundRect(Offset.Zero, Size(size.width, size.height), CornerRadius(cornerPx)),
+                        RoundRect(0f, 0f, size.width, size.height, CornerRadius(cornerPx)),
                     )
                 }
                 // The ramp and the rim are the shared recipe, not a local approximation, so an
