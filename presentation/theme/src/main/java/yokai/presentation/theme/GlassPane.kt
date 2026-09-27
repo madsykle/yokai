@@ -13,6 +13,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+
 import android.graphics.Shader
 import android.os.Build
 import android.util.AttributeSet
@@ -122,6 +123,27 @@ class GlassPane @JvmOverloads constructor(
     }
 
     /**
+     * Debug isolation (2026-09-27 device pass): when enabled, the pane draws ONLY the base fill,
+     * the ramp and the rim - the shadow/glow bitmap and the noise are skipped entirely - so the
+     * ramp and rim can be confirmed in isolation from everything that composites over them.
+     *
+     * Reads `debug.glass.ramp_only` once per material build; flip it with
+     * `adb shell setprop debug.glass.ramp_only 1` and restart the app (system properties are
+     * readable only at process start for non-shell uids, so a restart is the reliable trigger).
+     * Ship-time behaviour is unaffected: the flag defaults to false and never persists.
+     */
+    private val rampOnly: Boolean
+        get() = try {
+            Class
+                .forName("android.os.SystemProperties")
+                .getMethod("getBoolean", String::class.java, Boolean::class.javaPrimitiveType)
+                .invoke(null, "debug.glass.ramp_only", false) as Boolean
+        } catch (_: Throwable) {
+            // Not a debuggable build or the API moved: isolation simply stays off.
+            false
+        }
+
+    /**
      * Fires the specular sweep once: a diagonal highlight band crosses the surface and settles.
      * Called on tab switch, sheet open and screen transition - a beat marking the change, not a
      * continuous effect (DESIGN.md §18).
@@ -159,6 +181,19 @@ class GlassPane @JvmOverloads constructor(
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
         if (materialDirty) buildMaterial(w, h)
+
+        // Layer 0 (composited LAST of the surface layers, but rendered into its own bitmap
+        // first): the shadow. It must never darken the face - see renderEdgeBitmap. Skipped
+        // entirely in ramp-only isolation so the ramp and rim can be judged alone.
+        if (!rampOnly) {
+            edgeBitmap?.let {
+                // The bitmap is (w+2·pad)x(h+2·pad) with the shape at (pad,pad): the blit offset
+                // puts the edge ring back where the view actually is. The first device pass had
+                // this blitted at (0,0), which slid the whole ring 16dp down-right.
+                canvas.drawBitmap(it, -edgePad, -edgePad, null)
+            }
+        }
+
         val save = canvas.save()
         canvas.clipPath(shapePath)
 
@@ -173,22 +208,32 @@ class GlassPane @JvmOverloads constructor(
         }
 
         // 3. Tiled noise, blended so it breaks the ramp's banding instead of greying it out.
-        if (noisePaint.shader != null) canvas.drawPath(shapePath, noisePaint)
+        //    Skipped in ramp-only isolation: the goal there is ramp + rim and nothing else.
+        if (!rampOnly && noisePaint.shader != null) canvas.drawPath(shapePath, noisePaint)
         canvas.restore()
 
-        // 4. Soft glow on the shape's own edge + the shadow below it, rasterised off-screen
-        //    because setMaskFilter/setShadowLayer do not exist on a hardware canvas.
-        edgeBitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
-
-        // 5. The lit rim: near-white, on the top part of the edge only.
+        // 4. The lit rim: near-white, on the top part of the edge only. Above the ramp and the
+        //    noise, and above the shadow, so nothing can wash it out (the first device pass
+        //    composited the edge bitmap here and it flattened both ramp and rim into a slab).
         canvas.drawPath(rimPath, rimPaint)
 
-        // 6. The one-shot specular sweep.
+        // 5. The one-shot specular sweep.
         if (sweepProgress > 0f && sweepProgress < 1f) drawSweep(canvas, w, h)
     }
 
     /** Rim path: the shape's outline, but only the top [GlassRecipe.RIM_SWEEP_FRACTION]. */
     private val rimPath = Path()
+
+    /**
+     * Bitmap padding, in px: the blur extents plus a margin, so the glow and the shadow have
+     * room and the blit can put the ring exactly on the view's edge.
+     */
+    private val edgePad: Float
+        get() {
+            val d = resources.displayMetrics.density
+            return (GlassRecipe.EDGE_GLOW_RADIUS_DP + GlassRecipe.SHADOW_RADIUS_DP +
+                kotlin.math.abs(GlassRecipe.SHADOW_DY_DP) + 2f) * d
+        }
 
     private fun drawSweep(canvas: Canvas, w: Float, h: Float) {
         val alpha = GlassRecipe.sweepBandAlpha(sweepProgress)
@@ -246,7 +291,7 @@ class GlassPane @JvmOverloads constructor(
 
         buildRimPath(w, h, strokePx / 2f)
         edgeBitmap?.recycle()
-        edgeBitmap = renderEdgeBitmap(w, h, isDark)
+        edgeBitmap = if (rampOnly) null else renderEdgeBitmap(w, h, isDark)
 
         materialDirty = false
     }
@@ -312,20 +357,28 @@ class GlassPane @JvmOverloads constructor(
     }
 
     /**
-     * Rasterises the edge glow and the drop shadow into a software bitmap.
+     * Rasterises the drop shadow and the edge glow into a software bitmap.
      *
      * `Paint.setMaskFilter()` is not supported with hardware acceleration at any API level
      * (platform support table, "Support for drawing operations"), so a [BlurMaskFilter] stroke
      * is drawn here into an ordinary `Bitmap` canvas - where it does work - and the result is
      * blitted by [onDraw]. The bitmap is padded by the blur extent on every side so the glow is
-     * not clipped off at the bounds.
+     * not clipped off at the bounds; [onDraw] blits it back at `(-edgePad, -edgePad)`.
+     *
+     * The shadow is drawn **outside the shape only**: the path is subtracted from the bitmap
+     * with `CLEAR` after the shadow pass, so what is left of the shadow is the ring around the
+     * glass and nothing else. The first device pass (2026-09-27) filled the path with the shadow
+     * paint instead, which put a 45%-black wash over the whole face - the glass measured
+     * luminance 21-22 where the fill+ramp put 55-60, i.e. a slab, not a material. The shadow
+     * paint's own `color` is also fully transparent now, so `drawPath` itself adds nothing
+     * inside the shape; the visible shadow comes entirely from `setShadowLayer` (API 28+).
      */
     private fun renderEdgeBitmap(w: Float, h: Float, isDark: Boolean): Bitmap {
         val d = resources.displayMetrics.density
         val glowRadius = GlassRecipe.EDGE_GLOW_RADIUS_DP * d
         val shadowRadius = GlassRecipe.SHADOW_RADIUS_DP * d
         val shadowDy = GlassRecipe.SHADOW_DY_DP * d
-        val pad = (glowRadius + shadowRadius + kotlin.math.abs(shadowDy) + 2f * d)
+        val pad = edgePad
         val width = (w + pad * 2f).toInt().coerceAtLeast(1)
         val height = (h + pad * 2f).toInt().coerceAtLeast(1)
 
@@ -335,13 +388,12 @@ class GlassPane @JvmOverloads constructor(
 
         val path = Superellipse.path(w, h, circle = circle)
         val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            isAntiAlias = true
-            // setShadowLayer for non-text needs API 28; below that the platform ignores it and
-            // the surface simply renders without a cast shadow rather than crashing.
+            // Nothing inside the path: the face is drawn by onDraw, not here. The shadow layer
+            // (API 28+) is the whole shadow; below API 28 this bitmap simply stays empty.
+            color = Color.TRANSPARENT
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 setShadowLayer(shadowRadius, 0f, shadowDy, blackAt(GlassRecipe.shadowAlpha(isDark)))
             }
-            color = blackAt(GlassRecipe.shadowAlpha(isDark))
         }
         canvas.drawPath(path, shadow)
 
@@ -352,6 +404,14 @@ class GlassPane @JvmOverloads constructor(
             maskFilter = BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.NORMAL)
         }
         canvas.drawPath(path, glow)
+
+        // Cut the shape itself back out so only the ring OUTSIDE the glass survives. The glow
+        // stroke straddles the edge, so this trims its inner half too - the rim the user sees
+        // is rimPath (drawn in onDraw, above the ramp), not this bitmap.
+        val cut = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        }
+        canvas.drawPath(path, cut)
         return bitmap
     }
 

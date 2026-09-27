@@ -47,14 +47,23 @@ object GlassRecipe {
     const val RIM_WHITE_ALPHA_LIGHT = 0.40f
     const val RIM_SWEEP_FRACTION = 0.60f
 
-    /** Soft glow along the shape's own edge, and the shadow the surface casts below it. */
+    /**
+     * Soft glow along the shape's own edge, and the shadow the surface casts below it.
+     *
+     * Shadow values are an ambient *lift*, not a cast shadow: the first device pass (2026-09-27)
+     * measured the original 45%-dark, 6dp shadow as a slab that buried the ramp and the rim, so
+     * both the alpha (45% → 8% dark, 30% → 5% light, i.e. the requested 15–20% of the old value)
+     * and the extent (6dp/2dp → 4dp/1dp) were cut. The shadow is also drawn *outside the shape
+     * only* - see [GlassPane.renderEdgeBitmap] - because a shadow paint that fills its own path
+     * darkens the glass face itself, which is exactly what the slab was.
+     */
     const val EDGE_GLOW_RADIUS_DP = 6f
     const val EDGE_GLOW_ALPHA_DARK = 0.18f
     const val EDGE_GLOW_ALPHA_LIGHT = 0.22f
-    const val SHADOW_RADIUS_DP = 6f
-    const val SHADOW_DY_DP = 2f
-    const val SHADOW_ALPHA_DARK = 0.45f
-    const val SHADOW_ALPHA_LIGHT = 0.30f
+    const val SHADOW_RADIUS_DP = 4f
+    const val SHADOW_DY_DP = 1f
+    const val SHADOW_ALPHA_DARK = 0.08f
+    const val SHADOW_ALPHA_LIGHT = 0.05f
 
     /** The one-shot specular sweep. It fires once per interaction and settles. */
     const val SWEEP_DURATION_MS = 650L

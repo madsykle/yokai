@@ -138,4 +138,15 @@ class GlassRecipeTest {
     fun `the rim covers a strict minority of the edge`() {
         GlassRecipe.rimSweepFraction().shouldBeBetween(0.5f, 0.7f, tolerance)
     }
+
+    @Test
+    fun `the shadow is an ambient lift, not the slab the first device pass measured`() {
+        // 2026-09-27 device pass: 45%-dark shadow filled the whole face and buried ramp and rim
+        // (face measured 21-22 where fill+ramp put 55-60). Both alphas are pinned well under a
+        // tenth, and the extent is small enough to read as soft lift rather than an underside.
+        GlassRecipe.SHADOW_ALPHA_DARK.shouldBeBetween(0.05f, 0.10f, tolerance)
+        GlassRecipe.SHADOW_ALPHA_LIGHT.shouldBeBetween(0.03f, 0.08f, tolerance)
+        GlassRecipe.SHADOW_RADIUS_DP.shouldBeBetween(3f, 5f, tolerance)
+        GlassRecipe.SHADOW_DY_DP.shouldBeBetween(0.5f, 1.5f, tolerance)
+    }
 }
