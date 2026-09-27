@@ -605,3 +605,55 @@ device is the downsample factor, never a lower radius.
 
 Status: CI green (compile + unit tests + lint). Not yet device-verified; Phase 3 (morphing spring
 tab indicator) is gated on that confirmation.
+
+## 17. Phase 3: Morphing Spring Tab Indicator (2026-09-26)
+
+The bottom nav's selection is now one pill that springs between items, instead of Material's
+static per-item indicator fading in place. Geometry only: this phase touches no blur, tint or
+tier code, and changes nothing about the w720dp rail.
+
+**One indicator, not two.** `Widget.Tachiyomi.BottomNavigationView.Glass` sets
+`itemActiveIndicatorStyle` to the new `Widget.Tachiyomi.EmptyIndicator` (parent `""`, 0dp, fully
+transparent) so Material draws no indicator of its own underneath ours. The rail keeps the real
+Material `ActiveIndicator` style - a horizontal pill that springs between columns of a vertical
+menu reads worse than the static one, so it is deliberately left alone.
+
+**The pill is a sibling, drawn behind the blur.** `nav_tab_indicator` is a 56×32dp `View`
+constrained top/bottom/start to `bottom_nav` and declared *before* `bottom_nav_blur`, so the §16
+blur veil sits over it and the pill reads as lit glass rather than a flat swatch. Its shape is
+`glass_active_indicator` (a capsule, corner = half the height, 16dp) tinted by the §4
+active-indicator token (`#59FFFFFF` day / `#42FFFFFF` night): on a dark page a dark pill cannot
+separate from the backdrop. It starts `invisible` so a cold start never flashes it at the start
+edge.
+
+**Spring, not tween.** `MorphingNavIndicatorController` drives the pill with a single
+`SpringAnimation` (`androidx.dynamicanimation`) over a `FloatValueHolder`: `dampingRatio = 0.6`
+(a visible-but-not-wobbly overshoot, mid of the 0.55–0.65 band) and
+`SpringForce.STIFFNESS_MEDIUM` (settles in roughly 300–400ms). Mid-flight retargets keep the
+current velocity, so tapping across tabs in quick succession reads as one continuous spring
+rather than a restart.
+
+**The holder is the source of truth, not the view.** `skipToEnd()` is a no-op on a non-running
+spring and a running one only *requests* an end, so "snap" writes the holder **and** the view
+(`placeWithoutAnimation`). Anything that does not do both leaves the next spring taking off from
+a stale position.
+
+**Squash and stretch from the spring's own velocity.** `addUpdateListener` reads the reported
+`velocity` (px/s) and feeds it to the pure `stretchScalesFor`: below a 350 px/s deadband the pill
+is exactly undeformed, ramping to `scaleX = 1.15` / `scaleY = 0.9` at 9000 px/s and capped
+there. Because the deformation is a pure function of the *current* velocity, a settling spring
+relaxes back to a round capsule on its own; at rest the pill is never a stretched rectangle.
+
+**It follows the nav it belongs to.** Hide-on-scroll animates `bottom_nav.translationY` and the
+pushed-controller flow animates its `alpha`, and a sibling follows neither. A pre-draw listener
+copies `translationY`/`alpha`/`isVisible` onto the pill every frame - the same pattern the §16
+blur pane uses, for the same reason. On layout change (rotation, inset changes) the pill re-seats
+onto the current selection, and a cold start snaps rather than animating from zero.
+
+**Pure geometry is the tested part.** `MorphingNavIndicator` holds the distribution and mapping
+maths (`translationXFor`, inverse `indexFor`, `stretchScalesFor`, `isLayoutUsable`) with no
+Android types, covered by 12 unit tests including degenerate cases: zero items, zero indicator,
+and a zero-width nav, which falls back to the start edge rather than half a pill before it.
+
+Status: CI green (compile + unit tests + lint, commit `760b05942f`). Not yet device-verified -
+Phases 2 and 3 are each gated on on-device confirmation of the one before.
