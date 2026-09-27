@@ -606,6 +606,9 @@ device is the downsample factor, never a lower radius.
 Status: CI green (compile + unit tests + lint). Not yet device-verified; Phase 3 (morphing spring
 tab indicator) is gated on that confirmation.
 
+**Superseded by §18.** The backdrop capture described above was replaced: the phase brief for
+Phase 2 is the custom-drawn glass recipe, with no backdrop capture and no BlurView dependency.
+
 ## 17. Phase 3: Morphing Spring Tab Indicator (2026-09-26)
 
 The bottom nav's selection is now one pill that springs between items, instead of Material's
@@ -657,3 +660,66 @@ and a zero-width nav, which falls back to the start edge rather than half a pill
 
 Status: CI green (compile + unit tests + lint, commit `760b05942f`). Not yet device-verified -
 Phases 2 and 3 are each gated on on-device confirmation of the one before.
+
+## 18. Phase 2 Rebuilt: The Drawn Glass Recipe (2026-09-27)
+
+§16's backdrop capture is gone. The phase brief for Phase 2 is the *custom-drawn* glass recipe -
+"no backdrop capture, no BlurView, no RenderEffect" - and it replaces the Dimezis dependency with
+one component the app draws itself. Nothing about the tier model changes: tier 1 still refracts and
+tier 2 still blurs through their own sampling paths, and tier 3 still has no blur at all.
+
+**One component, two hosts.** `GlassPane` is a `FrameLayout` that draws the material in `onDraw`;
+Compose screens keep `GlassSurface`, which now draws the same recipe through `drawWithCache`. Both
+read every number and every piece of geometry from `GlassRecipe` and `Superellipse`, so the material
+cannot drift between an XML screen and a Compose one.
+
+**The recipe.** A vertical white ramp - 18%/8% in dark mode, 14%/6% in light - over the tier's base
+fill; a tiled noise layer at 4%, blended `SOFT_LIGHT` (API 29+), else `OVERLAY` (28+), else plain;
+a near-white stroke limited to the top 60% of the edge; a soft `BlurMaskFilter` ring along the
+shape's own edge plus a drop shadow below it; and a one-shot specular sweep on state change.
+
+**Two platform constraints decide how that is drawn.** The platform's hardware-acceleration support
+table lists `Paint.setMaskFilter()` - which is what `BlurMaskFilter` is - as unsupported at *every*
+API level, and `setShadowLayer()` for non-text as supported only from API 28. minSdk here is 26, so
+neither can be relied on to draw on a GPU-accelerated canvas; they are silently dropped, which is
+how glass ends up correct on one device and flat on another. The documented workaround is used:
+the glow and the shadow are rasterised into one cached software `Bitmap` (rebuilt only when the size
+or shape changes) and blitted from the hardware path. Everything that *is* accelerated - the ramp,
+the noise, the rim, the animated sweep, the clip - stays on the GPU.
+
+**The shape is a squircle; the outline is not.** The drawn shape is a `Superellipse` at exponent 4,
+because a rounded rectangle built from circular arcs has a curvature discontinuity where the arc
+meets the straight edge, and that discontinuity is exactly what reads as "rectangle with the corners
+knocked off" instead of an iOS continuous curve. The `clipToOutline` outline, which is what clips
+children such as the toolbar, stays a plain rounded rectangle: `Outline.setConvexPath` is silently
+ignored when the platform disagrees about convexity, and a child that quietly stops being clipped is
+a worse failure than a ~1px difference between the clip and the paint.
+
+**The base fill is not a light wash, and that is deliberate.** With no backdrop capture there is
+nothing blurred behind the chrome on the target device, so legibility over a busy manga cover has
+to come from the fill itself. On tier `Scrim` the base is therefore §3's near-opaque fallback at
+`ScrimFallbackAlpha`, with the ramp, noise and rim painted over it; the §2.2 slider cannot thin it,
+which is the point - the slider is a look control, not a "make the labels unreadable" control. On
+the blur tiers the slider sets the base and the §14 dark-mode lift applies.
+
+**The sweep is a beat, not a shine.** `sweepBandAlpha` is a single `sin` pass whose ends are exactly
+transparent, so the band fades in, crosses, and leaves nothing behind; a `ValueAnimator` drives the
+gradient's position once per interaction (tab switch, and the nav's item-selected path in
+`MainActivity`). It is deliberately not a persistent effect.
+
+**What replaced what.** `GlassBlurChrome` (BlurView setup, RenderScript context, overlay veil,
+pre-draw mirroring of four panes) is replaced by `GlassChrome`, which now only assigns each pane's
+radius/shape, re-reads the transparency preference on a repaint, fires the sweep and mirrors the
+nav's position. The `BlurView` dependency, the `glass_blur_radius` dimen, the `GLASS_BLUR_TINT_*`
+band, `glassBlurTintColor` and `View.applyGlassBackdropPane` are all removed; the layout ids
+`card_blur` / `bottom_nav_blur` / `side_nav_blur` / `bottom_nav_search_blur` become
+`*_glass`.
+
+**Compose's outer shadow comes from the platform.** A Compose surface cannot draw outside its own
+bounds, so `GlassSurface` uses `Modifier.shadow` for the drop shadow rather than rasterising a ring
+the way `GlassPane` does; its edge glow is drawn inside the shape. That is the one intentional
+difference between the two hosts.
+
+Status: CI green on the rebuild commit. Not yet device-verified, and the remaining surfaces the
+Phase 2 brief names - sheets, dialogs/popups, the search bar and the reader's page-slider - are not
+yet migrated to the component; `RESTYLE_PROGRESS.md` tracks them as outstanding.

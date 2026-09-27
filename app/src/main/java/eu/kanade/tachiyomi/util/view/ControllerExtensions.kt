@@ -741,8 +741,8 @@ fun Controller.setAppBarBG(value: Float, includeTabView: Boolean = false) {
         (this as? FloatingSearchInterface)?.showFloatingBar() == true && !includeTabView
     if (!isControllerVisible) return
     if (floatingBar) {
-        // DESIGN.md §16: the floating top card is a transparent pane over the `card_blur`
-        // BlurView - a real backdrop blur. Filling it here would hide the blur and bring back
+        // DESIGN.md §18: the floating top card is a transparent pane over the `card_glass`
+        // GlassPane, which draws the material. Filling it here would hide that and bring back
         // the flat translucent "fake glass" look.
         (activityBinding?.cardView as? CardView)?.setCardBackgroundColor(Color.TRANSPARENT)
         if (this !is SmallToolbarInterface && activityBinding?.appBar?.useLargeToolbar == true &&

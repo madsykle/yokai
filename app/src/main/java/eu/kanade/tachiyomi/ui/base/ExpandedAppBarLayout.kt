@@ -449,10 +449,10 @@ class ExpandedAppBarLayout@JvmOverloads constructor(context: Context, attrs: Att
                     mainToolbar?.isInvisible = true
                 }
                 mainToolbar?.backgroundColor = null
-                // iOS 27 Liquid Glass (DESIGN.md §16): the floating top card is a real backdrop
-                // blur now, so card_frame stays fully transparent. The material comes from the
-                // `card_blur` BlurView behind it (GlassBlurChrome); painting a flat translucent
-                // fill here would hide it and reintroduce the "fake glass" look.
+                // iOS 27 Liquid Glass (DESIGN.md §18): the floating top card draws its own
+                // material, so card_frame stays fully transparent. The material comes from the
+                // `card_glass` GlassPane behind it; painting a flat translucent fill here would
+                // hide it and reintroduce the "fake glass" look.
                 cardFrame?.backgroundColor = null
             }
         } else {

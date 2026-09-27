@@ -23,8 +23,10 @@ Target device: **Realme 6 (`RMX2001_11.C.18`), Android 11, API 30** — tier `Sc
 
 - **Phase 0 — tokens: BUILT, `CI ✓`, `DEVICE ✗`.**
 - **Phase 1 — layout overlaps: BUILT, `CI ✓`, `DEVICE ✗`.** Commit `dad1d91494`.
-- **Phase 2 — floating-chrome blur: BUILT, `CI ✓`, `DEVICE ✗`.** Commits `60c8aff606`,
-  `e22abd1e2a`, docs `81f960ce55`.
+- **Phase 2 — floating-chrome blur: BUILT, `CI ✓`, `DEVICE ✗`, then REBUILT as the drawn glass
+  recipe** (the user ruled the original brief authoritative: no backdrop capture, no BlurView).
+  First build was commits `60c8aff606`, `e22abd1e2a`, docs `81f960ce55`; the rebuild supersedes all
+  three - see "Phase 2 (rebuilt)" below. **The rebuild is the current state of the tree.**
 - **Phase 3 — morphing nav indicator: BUILT, `CI ✓`, `DEVICE ✗`.** Commits `3cd390a34d`,
   `fbdc3413fe`, `760b05942f`, docs `22f4465df0`.
 - **Phase 4 — motion pass: NOT STARTED.**
@@ -82,15 +84,10 @@ Applies to the four floating surfaces only: top card, bottom nav pill, circular 
 the w720dp rail. List items, cover cards, sheets and the reader page are content and stay flat —
 per the brief's own rule. Full rationale in `DESIGN.md` §16.
 
-> **⚠ Deviation from the original Phase 2 wording — read this before "fixing" it.**
-> The original brief for Phase 2 says *"no backdrop capture, no BlurView, no RenderEffect"*.
-> The as-built implementation **does** use BlurView (`com.github.Dimezis:BlurView:version-2.0.6`).
-> This was not a unilateral choice: a later revision of the Phase 2 brief replaced the
-> custom-drawn-glass approach with real backdrop blur on the floating chrome and explicitly
-> overrode `DESIGN.md` §7.1's blanket RenderScript ban for these four surfaces (below API 31
-> BlurView falls back to RenderScript, which §7.1 otherwise forbids). §16 records that override.
-> If the original wording is the spec of record after all, this phase needs re-doing — **ask the
-> user before ripping it out**, because it is currently CI-green and shipped in the branch.
+> **✅ Resolved 2026-09-27.** The original brief (no backdrop capture, no BlurView, no RenderEffect)
+> was confirmed as the spec of record, so the BlurView build below was **replaced** by the drawn
+> glass recipe. The table is kept as the record of what §16 described and why; do not restore it.
+> `DESIGN.md` §16 now carries a "superseded by §18" note and §18 documents the rebuild.
 
 | File | Change | Why | Verified |
 |---|---|---|---|
@@ -113,7 +110,45 @@ per the brief's own rule. Full rationale in `DESIGN.md` §16.
 lower radius. If frames drop on scroll, raise the downsample factor first.
 
 **Also unresolved in §16:** whether `fakeBottomNavView` (a solid `colorPrimaryVariant` View drawn
-during `PUSH_EXIT`, `ControllerExtensions.kt` ~470–484) fights the new blur. Unverified.
+during `PUSH_EXIT`, `ControllerExtensions.kt` ~470–484) fights the material. Unverified.
+
+---
+
+## Phase 2 (rebuilt) — the drawn glass recipe
+
+The user ruled the original Phase 2 wording authoritative, so the BlurView build above was ripped
+out and replaced by a component the app draws itself. Rationale and platform constraints are in
+`DESIGN.md` §18; this is the ledger.
+
+| File | Change | Why | Verified |
+|---|---|---|---|
+| `presentation/theme/.../GlassRecipe.kt` | **New.** The single recipe: ramp alphas (18/8 dark, 14/6 light), noise (4%, 64px tile, fixed seed), rim (55/40% white, top 60%), glow/shadow params, sweep params, `baseFillAlpha` / `baseFillColor`, `fillGradientColors`, `sweepBandAlpha`, `noisePixels` | One set of numbers for both the View and Compose hosts. Deliberately **free of `android.*` types** and packs ARGB by hand: the JVM unit tests have no Robolectric and no `returnDefaultValues`, so a single `android.graphics.Color.argb` call would make the whole file untestable | CI ✓ (13 unit tests) / DEVICE ✗ |
+| `presentation/theme/.../Superellipse.kt` | **New.** `points` (parametric superellipse, exponent 4), `path`, and `rimPoints` — the contiguous top-edge run | A rounded rect built from arcs has a curvature discontinuity where the arc meets the edge; the iOS continuous curve does not. `rimPoints` exists as a pure function because the naive "filter the outline by `y`" bug makes the rim stroke jump across the surface | CI ✓ (8 unit tests) / DEVICE ✗ |
+| `presentation/theme/.../GlassPane.kt` | **New.** `FrameLayout` custom view drawing the whole recipe in `onDraw`; assigns `circularCornerRadiusDp` / `circle` at runtime; `refreshMaterial()`, `playSpecularSweep()` | This *is* the Phase 2 component. The glow and the drop shadow are rasterised into one cached software `Bitmap` because `setMaskFilter()` is unsupported with hardware acceleration at **every** API level and `setShadowLayer()` (non-text) only from API 28, while minSdk is 26 — they are silently dropped otherwise, which is how glass renders correct on one device and flat on another | CI ✓ / DEVICE ✗ |
+| `presentation/theme/.../GlassSurface.kt` | Compose host now draws the same recipe via `drawWithCache` (base fill, ramp, noise `BlendMode.Softlight`, shared rim path, `Modifier.shadow`); `applyGlassBackdropPane` deleted; the private `View.isNightMode()` made public | One recipe, two hosts — an XML screen and a Compose screen cannot drift. The outer shadow uses the platform because a Compose surface cannot draw outside its own bounds | CI ✓ / DEVICE ✗ |
+| `presentation/theme/.../Theme.kt` | `GLASS_BLUR_TINT_MIN/MAX_ALPHA` and `glassBlurTintColor` **deleted** | The 40–55% veil existed only to make a blur legible; there is no blur now, and the fill carries legibility instead | CI ✓ / DEVICE ✗ |
+| `app/src/main/java/.../ui/main/GlassChrome.kt` | **New**, replacing the deleted `GlassBlurChrome.kt`. Assigns radius/shape per pane, registers the nav-mirror pre-draw listener, `updateTint()`, `playSpecularSweep()`, `detach()` | The capture, the RenderScript context, the overlay veil and three of the four BlurView setups are gone; only what XML cannot express is left | CI ✓ / DEVICE ✗ |
+| `app/src/main/res/layout/main_activity.xml`, `layout-w720dp/main_activity.xml` | `card_blur` → `card_glass`, `bottom_nav_blur` → `bottom_nav_glass`, `side_nav_blur` → `side_nav_glass`, `bottom_nav_search_blur` → `bottom_nav_search_glass`, all `BlurView` → `yokai.presentation.theme.GlassPane` | Same geometry and same z-order (each pane stays a sibling *behind* its surface); only the class and the name change | CI ✓ / DEVICE ✗ |
+| `app/src/main/java/.../ui/main/MainActivity.kt` | `glassBlurChrome` → `glassChrome`, `attach()` with no arguments; `playSpecularSweep()` on nav item select | Wiring; the sweep is the beat that acknowledges a tab switch | CI ✓ / DEVICE ✗ |
+| `gradle/libs.versions.toml`, `app/build.gradle.kts` | `blurview` version + library **removed** | No backdrop capture and no new dependency (the brief's whole point). Jitpack stays in `settings.gradle.kts` — other deps use it | CI ✓ / DEVICE ✗ |
+| `app/src/main/res/values{,-night}/colors.xml` | `glass_blur_radius` **removed** | Nothing references it | CI ✓ / DEVICE ✗ |
+| `app/src/main/res/values/styles.xml`, `ControllerExtensions.kt`, `ExpandedAppBarLayout.kt` | Comment/doc references repointed from the BlurView ids and `GlassBlurChrome` to `*_glass` and `GlassPane` | Stale references | CI ✓ / DEVICE ✗ |
+| `app/src/test/java/yokai/presentation/theme/GlassRecipeTest.kt`, `SuperellipseTest.kt` | **New**, 13 + 8 tests | The ramp direction, the sweep reaching exactly zero at both ends, the scrim ignoring the slider, the noise being deterministic, the points lying on the superellipse, and the rim being one contiguous run — all invisible in CI and all "looks almost right" on a screenshot when wrong | CI ✓ / DEVICE ✗ |
+
+**Deliberate behaviour change to flag on device:** the material is now *more opaque* than the
+BlurView build was. That is §3's tier-3 rule plus the brief's legibility requirement, and it is a
+visible difference, not a bug — check it over a bright cover before deciding to thin it.
+
+**Still outstanding from the Phase 2 brief (not yet migrated to the component):**
+- Bottom sheets — `GlassBottomSheetContainer` still paints an *opaque* container colour.
+- Dialogs / popup menus — `GlassAlertDialog`, `GlassAlertDialogBuilder`,
+  `MaterialAlertDialogExtensions` still paint opaque containers with a manual rim.
+- The search bar — the `search_toolbar` inside the top card sits on the card's glass but is not
+  itself a glass surface; the global-search screen's own bar is untouched.
+- The reader's page-slider control — still the old treatment.
+- The collapsed `mainToolbar` and the manga-details FAB still use `applyGlass` /
+  `applyGlassDecorators` (the *older* fill path), not `GlassPane`. They look consistent today
+  because both read the same tier and rim tokens, but they are two implementations of one recipe.
 
 ---
 
@@ -196,9 +231,13 @@ listing screens confirmed on-device and explicitly flagging anything untouched.
 
 ## Verification queue (the user's next two device checks)
 
-**Phase 2** — on a library scroll: is there live blur on the top card and the pill, is text/is it
-legible over busy covers, does the blur stay glued to the pill through hide/show, and are there
-frame drops (raise the downsample factor from 6 if so)?
+**Phase 2 (rebuilt)** — on a library scroll over a bright cover: does the top card and the pill
+read as a *material* (ramp, lit top rim, a glow on its own edge, a shadow under it) rather than as a
+flat translucent fill; are the labels legible over the busiest cover in the library; does the glass
+stay glued to the pill through hide/show; and does the surface look smooth rather than banded (which
+is what the noise layer is for)? Also check the sweep fires once on a tab switch and leaves nothing
+behind. The material is deliberately more opaque than the BlurView build was — judge it, don't
+assume it is a regression.
 
 **Phase 3** — tap across tabs: does a single pill spring with a visible overshoot, stretch while
 fast and relax to round, is there any second pill, and does it survive rotation and inset changes?
@@ -217,3 +256,5 @@ Only after both are confirmed may Phase 4 begin.
 | `fbdc3413fe` | Fix: Kotest `shouldBeBetween` tolerance |
 | `760b05942f` | Fix: zero-width nav falls back to the start edge |
 | `22f4465df0` | `DESIGN.md` §17 (Phase 3 as-built) |
+| `215ebd4134` | Added this ledger |
+| *(rebuild)* | Phase 2 rebuilt as the drawn glass recipe (`GlassPane`/`GlassRecipe`/`Superellipse`, BlurView removed) — `DESIGN.md` §18; sha in `git log` |

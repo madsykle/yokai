@@ -13,18 +13,33 @@ import android.view.ViewOutlineProvider
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
-import androidx.compose.foundation.background
+import android.graphics.Bitmap
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -57,73 +72,104 @@ fun GlassSurface(
     val tier = glassTier()
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(cornerRadius)
-    val tintColor = glassTintColor(tintAlpha, isDark)
-
-    // All tiers use the same simple implementation for compatibility
-    val backgroundColor = when (tier) {
-        is GlassTier.Scrim -> if (isDark) {
-            // §3 near-opaque scrim, but LIFTED: a #1C1C1E fill on a #1C1C1C page is a
-            // invisible bar. The scrim stays deliberate by being plainly lighter.
-            Color(0xFF2C2C2E).copy(alpha = GlassColors.ScrimFallbackAlpha)
-        } else {
-            GlassColors.ScrimLight.copy(alpha = GlassColors.ScrimFallbackAlpha)
-        }
-        else -> tintColor
-    }
+    val baseColor = Color(GlassRecipe.baseFillColor(tier, isDark))
+    val baseAlpha = GlassRecipe.baseFillAlpha(tier, tintAlpha, isDark)
+    val rimColor = Color(GlassRecipe.rimColor(isDark))
+    val edgeColor = if (isDark) GlassColors.DarkenedEdgeDark else GlassColors.DarkenedEdge
+    val shadowColor = Color.Black.copy(alpha = GlassRecipe.shadowAlpha(isDark))
+    val cornerPx = with(LocalDensity.current) { cornerRadius.toPx() }
+    val rimInset = with(LocalDensity.current) { 0.5.dp.toPx() }
+    // The same noise tile on every surface, built once per composition.
+    val noise = rememberGlassNoiseTile()
 
     Box(
         modifier = modifier
-            // Blur/refraction first, then the tint on top of it: that ordering is what makes
-            // the material read as glass instead of just a translucent panel.
+            // Soft outer shadow below the surface. Compose's own shadow is used rather than the
+            // BlurMaskFilter ring [GlassPane] rasterises: a Compose surface cannot draw outside
+            // its own bounds, so an outer glow has to come from the platform's elevation shadow.
+            .shadow(elevation = 8.dp, shape = shape, clip = false, ambientColor = shadowColor, spotColor = shadowColor)
+            // The tier's own backdrop effect first (tier 1/2 only), then the drawn material on
+            // top of it: that ordering is what makes the surface read as glass rather than as a
+            // translucent panel.
             .glassBackdrop(state = backdrop, shape = shape)
-            .background(backgroundColor, shape),
+            .drawWithCache {
+                val surface = Path().apply {
+                    addRoundRect(
+                        RoundRect(Offset.Zero, Size(size.width, size.height), CornerRadius(cornerPx)),
+                    )
+                }
+                // The ramp and the rim are the shared recipe, not a local approximation, so an
+                // XML screen and a Compose one cannot drift apart.
+                val ramp = Brush.verticalGradient(
+                    GlassRecipe.fillGradientColors(isDark).map { Color(it) },
+                )
+                val noiseBrush = noise?.let {
+                    ShaderBrush(ImageShader(it, TileMode.Repeated, TileMode.Repeated))
+                }
+                val rimPath = if (specularHighlight) {
+                    rimPathOf(
+                        Superellipse.rimPoints(
+                            width = size.width,
+                            height = size.height,
+                            inset = rimInset,
+                            fraction = GlassRecipe.rimSweepFraction(),
+                        ),
+                    )
+                } else {
+                    null
+                }
+                val rimStroke = Stroke(width = 1.dp.toPx())
+                onDrawBehind {
+                    // 1. Base fill: the tier's legibility floor. On the scrim tier there is no
+                    //    blur behind this, so the fill is what keeps labels readable.
+                    drawPath(surface, baseColor.copy(alpha = baseAlpha))
+                    // 2. The vertical ramp: lighter at the top, darker at the bottom.
+                    drawPath(surface, ramp)
+                    // 3. Tiled noise, blended so it breaks the ramp's banding rather than
+                    //    greying the surface out.
+                    if (noiseBrush != null) {
+                        drawPath(
+                            surface,
+                            noiseBrush,
+                            alpha = GlassRecipe.NOISE_ALPHA,
+                            blendMode = BlendMode.Softlight,
+                        )
+                    }
+                    // 4. The lit rim: near-white, on the top part of the edge only.
+                    if (rimPath != null) drawPath(rimPath, rimColor, style = rimStroke)
+                }
+            },
     ) {
-        GlassSurfaceDecorators(
-            shape = shape,
-            darkenedEdge = darkenedEdge,
-            specularHighlight = specularHighlight,
-        )
+        if (darkenedEdge) {
+            // Mode-aware rim (see View.applyGlassDecorators): dark mode rims light, because a
+            // black rim cannot separate a dark surface from a dark page.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(width = 1.dp, brush = SolidColor(edgeColor), shape = shape),
+            )
+        }
         content()
     }
 }
 
-/**
- * Internal: draws the darkened-edge border and specular highlight gradients.
- */
+/** One tile of [GlassRecipe]'s noise, as a Compose image. */
 @Composable
-private fun GlassSurfaceDecorators(
-    shape: RoundedCornerShape,
-    darkenedEdge: Boolean,
-    specularHighlight: Boolean,
-) {
-    val isDark = isSystemInDarkTheme()
-    if (darkenedEdge) {
-        // Mode-aware rim (see View.applyGlassDecorators): dark mode rims light, because a
-        // black rim cannot separate a dark surface from a dark page.
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .border(
-                    width = 1.dp,
-                    brush = SolidColor(if (isDark) GlassColors.DarkenedEdgeDark else GlassColors.DarkenedEdge),
-                    shape = shape,
-                ),
-        )
-    }
-    if (specularHighlight) {
-        // §2.1 brighter specular: a THIN lit band at the top edge, then nothing - a full-height
-        // wash read as a wedge on device (see applyGlassDecorators).
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = if (isDark) 0.25f else 0.12f),
-                        0.25f to Color.Transparent,
-                    ),
-                    shape = shape,
-                ),
-        )
+private fun rememberGlassNoiseTile(): ImageBitmap? = remember {
+    runCatching {
+        val size = GlassRecipe.NOISE_TILE_PX
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        bitmap.setPixels(GlassRecipe.noisePixels(size), 0, size, 0, 0, size, size)
+        bitmap.asImageBitmap()
+    }.getOrNull()
+}
+
+/** Converts a flat `x, y, ...` run of [Superellipse] samples into a Compose [Path]. */
+private fun rimPathOf(samples: FloatArray): Path? {
+    if (samples.size < 4) return null
+    return Path().apply {
+        moveTo(samples[0], samples[1])
+        for (i in 2 until samples.size step 2) lineTo(samples[i], samples[i + 1])
     }
 }
 
@@ -211,35 +257,7 @@ fun View.applyGlass(cornerRadiusDp: Float, tier: GlassTier? = null, circle: Bool
     clipToOutline = true
 }
 
-/**
- * Phase 2 (DESIGN.md §16): makes a View a *transparent* rounded pane.
- *
- * This is what [View.applyGlass] is replaced by wherever a real backdrop blur (BlurView) sits
- * behind the surface. Nothing is tinted here: the whole point of the real material is that the
- * backdrop shows through, and an extra tint would just be the flat "fake glass" fill again.
- * The rounded background exists only to give the view an outline, so `clipToOutline` can round
- * off the blurred backdrop behind it.
- */
-fun View.applyGlassBackdropPane(cornerRadiusDp: Float, circle: Boolean = false) {
-    val radiusPx = cornerRadiusDp * resources.displayMetrics.density
-    background = GradientDrawable().apply {
-        shape = if (circle) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
-        cornerRadius = radiusPx
-        setColor(android.graphics.Color.TRANSPARENT)
-    }
-    outlineProvider = object : ViewOutlineProvider() {
-        override fun getOutline(view: View, outline: Outline) {
-            if (circle) {
-                outline.setOval(0, 0, view.width, view.height)
-            } else {
-                outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
-            }
-        }
-    }
-    clipToOutline = true
-}
-
-private fun View.isNightMode(): Boolean =
+fun View.isNightMode(): Boolean =
     (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
 /**

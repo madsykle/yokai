@@ -212,11 +212,11 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     /**
-     * Phase 2 (DESIGN.md §16): the real backdrop-blur material for the floating chrome. Built
-     * as soon as the binding exists; `null` before that and harmless on a layout with no
-     * BlurView at all.
+     * Phase 2, rebuilt (DESIGN.md §18): the drawn glass material for the floating chrome. Built
+     * as soon as the binding exists; `null` before that, and harmless on a layout that has no
+     * glass pane at all (the w720dp rail has one, the search activity does not).
      */
-    private var glassBlurChrome: GlassBlurChrome? = null
+    private var glassChrome: GlassChrome? = null
 
     /**
      * Phase 3 (DESIGN.md §17): the spring-driven morphing tab indicator. Created lazily by
@@ -420,16 +420,10 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
         setContentView(binding.root)
 
-        // Phase 2 (DESIGN.md §16): give the floating chrome a real backdrop blur. The controller
-        // container is the blur source, so content is what gets blurred - the pill's own icons
-        // (drawn on top, never inside the blur root) can never smear into their own backdrop.
-        glassBlurChrome = GlassBlurChrome(binding).also { chrome ->
-            chrome.attach(
-                root = binding.controllerContainer,
-                windowBackground = window?.decorView?.background,
-                blurRadiusPx = resources.getDimensionPixelSize(R.dimen.glass_blur_radius).toFloat(),
-            )
-        }
+        // Phase 2, rebuilt (DESIGN.md §18): the floating chrome draws its own glass. Nothing is
+        // captured from the backdrop - on this device that would mean RenderScript (§7.1) - so
+        // the material is the gradient/noise/rim/glow recipe the GlassPane draws itself.
+        glassChrome = GlassChrome(binding).also { it.attach() }
 
         // iOS 27 Liquid Glass: floating glass nav (DESIGN.md §5.1) - the pill in portrait,
         // the rail in the w720dp layout. Also (re-)run whenever the §2.2 transparency slider
@@ -437,8 +431,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         refreshGlassChrome()
 
         // Phase 3 (DESIGN.md §17): swap Material's static per-item indicator for one shared pill
-        // that springs between items. The indicator view sits behind the nav's blur pane, so it
-        // is only meaningful when the blur chrome exists (portrait layout).
+        // that springs between items. The indicator view sits behind the nav's glass pane, so it
+        // is only meaningful where that pane exists (portrait layout).
         binding.navTabIndicator?.let { indicator ->
             attachMorphingIndicator(indicator)
         }
@@ -623,6 +617,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         nav.setOnItemSelectedListener { item ->
             val id = item.itemId
             morphingNavIndicator?.onItemSelected(id)
+            // The sweep is the beat that acknowledges the change (§18): one pass, then settles.
+            glassChrome?.playSpecularSweep()
             val currentController = router.backstack.lastOrNull()?.controller
             if (!continueSwitchingTabs && currentController is BottomNavBarInterface) {
                 if (!currentController.canChangeTabs {
@@ -1258,8 +1254,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     override fun onDestroy() {
-        glassBlurChrome?.detach()
-        glassBlurChrome = null
+        glassChrome?.detach()
+        glassChrome = null
         morphingNavIndicator?.detach()
         morphingNavIndicator = null
         PreferenceManager.getDefaultSharedPreferences(this)
@@ -1333,15 +1329,15 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     /**
-     * iOS 27 Liquid Glass (§5.1, Phase 2 §16): (re-)applies the floating material to the nav
+     * iOS 27 Liquid Glass (§5.1, Phase 2 §18): (re-)applies the floating material to the nav
      * chrome.
      *
-     * The material is a real backdrop blur owned by [glassBlurChrome]; the §2.2 transparency
-     * slider only moves the legibility veil drawn over that blur, so a live preview is a re-tint
-     * rather than a rebuild. Called once on create and again on every transparency change.
+     * The material is drawn by [glassChrome]'s panes; the §2.2 transparency slider changes how
+     * strong the fill is, so a live preview is a repaint rather than a rebuild. Called once on
+     * create and again on every transparency change.
      */
     private fun refreshGlassChrome() {
-        glassBlurChrome?.updateTint()
+        glassChrome?.updateTint()
     }
 
     /**
