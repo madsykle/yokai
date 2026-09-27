@@ -32,9 +32,17 @@ Target device: **Realme 6 (`RMX2001_11.C.18`), Android 11, API 30** — tier `Sc
 - **Phase 4 — motion pass: NOT STARTED.**
 - **Phase 5 — final consistency pass: NOT STARTED.**
 
-**The pipeline is stopped here, on purpose.** Phases 2 and 3 are each gated on the user confirming
-the previous phase *on device*; neither has been confirmed. Do not start Phase 4 until both are
-confirmed, per "each phase must be visibly correct before starting the next".
+**⚠ HARD HOLD, set by the user (2026-09-27): no new code until the device pass.** The rebuilt
+Phase 2 material and Phase 3's pill are both unconfirmed; the user chose to hold everything —
+including Phase 4 — until the Realme 6 confirms what is on the branch now. The only permitted
+changes before that are docs, and the two device checks below are the gate.
+
+**Sheets/dialogs decision (2026-09-27): `DESIGN.md` §1.2/§5.3 win — they stay OPAQUE.** The user
+ruled that the "never stack glass on glass" rule and the opaque-sheet-over-scrim design beat the
+brief's mention of glass on those surfaces. Bottom sheets, dialogs and popup menus are therefore
+**resolved by design, not outstanding** — do not migrate them. The remaining genuinely-open Phase 2
+items are only: the search bar check, and the collapsed `mainToolbar` / manga-details FAB still
+being on the older `applyGlass` fill path.
 
 ---
 
@@ -140,21 +148,16 @@ out and replaced by a component the app draws itself. Rationale and platform con
 BlurView build was. That is §3's tier-3 rule plus the brief's legibility requirement, and it is a
 visible difference, not a bug — check it over a bright cover before deciding to thin it.
 
-**Still outstanding from the Phase 2 brief (not yet migrated to the component):**
-- Bottom sheets — `GlassBottomSheetContainer` still paints an *opaque* container colour.
-- Dialogs / popup menus — `GlassAlertDialog` (Compose, 3 call sites), `GlassAlertDialogBuilder`
-  and `MaterialAlertDialogExtensions` (View) still paint opaque containers with a manual rim.
+**Open items remaining from the Phase 2 brief (all deferred behind the device hold):**
+- Bottom sheets, dialogs and popup menus — **resolved by design (user, 2026-09-27): they stay
+  opaque** per `DESIGN.md` §1.2 (never glass on glass) and §5.3 (sheets are opaque over the dim
+  scrim). `GlassAlertDialog` / `GlassAlertDialogBuilder` / `GlassBottomSheetContainer` are correct
+  as they are; do not migrate them.
 - The search bar — the `search_toolbar` inside the top card sits on the card's glass but is not
   itself a surface; the global-search screen's own bar has not been checked.
 - The collapsed `mainToolbar` and the manga-details FAB still use `applyGlass` /
   `applyGlassDecorators` (the *older* fill path), not `GlassPane`. They look consistent today
   because both read the same tier and rim tokens, but they are two implementations of one recipe.
-
-> **⚠ Unresolved conflict for those three, do not just pick one.** The Phase 2 brief lists bottom
-> sheets, dialogs and popup menus as glass surfaces, but `DESIGN.md` §1.2 says *never stack glass
-> on glass* and §5.3 says sheets are **opaque** surfaces over the dim scrim (the §11 audit removed
-> glass from them for exactly that reason). Applying the material to a sheet over a dimmed backdrop
-> is a visible, opinionated change — settle it with the user before implementing.
 
 ---
 

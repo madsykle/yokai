@@ -723,6 +723,12 @@ difference between the two hosts.
 Status: CI green (compile + 21 new unit tests + lint, commit `c88b4f0ac4`). Four CI rounds were
 needed and three of them found real bugs rather than test noise: an unpinned `sin(PI)` in Float
 left a trace of the sweep behind after every pass, and the rim run was assembled right-to-left, so
-the lit edge started on the wrong side. Not yet device-verified, and the remaining surfaces the
-Phase 2 brief names - sheets, dialogs/popups, the search bar and the reader's page-slider - are not
-yet migrated to the component; `RESTYLE_PROGRESS.md` tracks them as outstanding.
+the lit edge started on the wrong side. Not yet device-verified.
+
+**Scope notes (decided with the user, 2026-09-27):** the reader's page-slider control was migrated
+off its flat fill (`chapter_nav`) onto the shared component (`dda9084d69`). Bottom sheets, dialogs
+and popup menus deliberately stay **opaque**: the Phase 2 brief lists them as glass surfaces, but
+§1.2 (never stack glass on glass) and §5.3 (a sheet is an opaque surface over the dim scrim) were
+ruled to take precedence, matching what §11 already did. Still on the older `applyGlass` fill path:
+the collapsed `mainToolbar` and the manga-details FAB; the search bar check is also open. All of it
+is gated behind the on-device confirmation of this rebuild.
