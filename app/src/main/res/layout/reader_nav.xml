@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/reader_nav"
-    android:background="@drawable/chapter_nav"
+    android:background="@android:color/transparent"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingStart="12dp"
@@ -16,6 +16,20 @@
     android:gravity="center"
     android:layoutDirection="ltr"
     android:orientation="horizontal">
+
+    <!-- DESIGN.md §18: the reader's page-slider control is a functional layer floating over the
+         page, so it gets the same drawn glass material as the rest of the chrome - previously a
+         flat `@drawable/chapter_nav` fill. Declared first so it draws behind the icons and the
+         seekbar; the nav's own background is transparent now. Its capsule radius (half the bar's
+         height) is set by ReaderNavView. -->
+    <yokai.presentation.theme.GlassPane
+        android:id="@+id/reader_nav_glass"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/left_progress"
