@@ -1,7 +1,6 @@
 package yokai.presentation.theme
 
 import io.kotest.matchers.floats.shouldBeBetween
-import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -57,7 +56,7 @@ class GlassRecipeTest {
             val colors = GlassRecipe.fillGradientColors(isDark)
             val topAlpha = colors[0] ushr 24
             val bottomAlpha = colors[1] ushr 24
-            topAlpha shouldBeGreaterThan bottomAlpha
+            (topAlpha > bottomAlpha) shouldBe true
             // Both ends tint white: colouring the ramp anything but neutral makes the surface
             // read as a coloured panel rather than glass.
             (colors[0] and 0x00FFFFFF) shouldBe 0x00FFFFFF
@@ -77,7 +76,7 @@ class GlassRecipeTest {
     fun `the rim is white and brighter in dark mode`() {
         val darkRim = GlassRecipe.rimColor(true)
         (darkRim and 0x00FFFFFF) shouldBe 0x00FFFFFF
-        (darkRim ushr 24) shouldBeGreaterThan (GlassRecipe.rimColor(false) ushr 24)
+        ((darkRim ushr 24) > (GlassRecipe.rimColor(false) ushr 24)) shouldBe true
     }
 
     @Test
@@ -123,10 +122,12 @@ class GlassRecipeTest {
     @Test
     fun `every noise pixel carries the faint recipe alpha and a near-neutral grey`() {
         val expectedAlpha = (GlassRecipe.NOISE_ALPHA * 255f).toInt()
+        val low = 128 - GlassRecipe.NOISE_SPREAD
+        val high = 128 + GlassRecipe.NOISE_SPREAD
         GlassRecipe.noisePixels(16).forEach { pixel ->
             (pixel ushr 24) shouldBe expectedAlpha
             val grey = pixel and 0xFF
-            grey.shouldBeBetween(128 - GlassRecipe.NOISE_SPREAD, 128 + GlassRecipe.NOISE_SPREAD)
+            (grey in low..high) shouldBe true
             // Grey, not tinted: a coloured noise layer would tint the whole surface.
             ((pixel shr 16) and 0xFF) shouldBe grey
             ((pixel shr 8) and 0xFF) shouldBe grey

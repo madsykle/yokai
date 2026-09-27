@@ -1,7 +1,6 @@
 package yokai.presentation.theme
 
 import io.kotest.matchers.floats.shouldBeBetween
-import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
@@ -102,7 +101,7 @@ class SuperellipseTest {
             fraction = 0.6f,
             circle = true,
         )
-        rim.size shouldBeGreaterThan 4
+        (rim.size > 4) shouldBe true
         // A 60% arc of a 100px circle is 0.6 * pi * 100 ≈ 188px of travel.
         var length = 0f
         for (i in 2 until rim.size step 2) {
