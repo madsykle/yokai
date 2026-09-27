@@ -31,11 +31,11 @@ Target device: **Realme 6 (`RMX2001_11.C.18`), Android 11, API 30** — tier `Sc
   `fbdc3413fe`, `760b05942f`, docs `22f4465df0`.
 - **Phase 4 — motion pass: NOT STARTED.**
 - **Phase 5 — final consistency pass: NOT STARTED.**
-
-**⚠ HARD HOLD, set by the user (2026-09-27): no new code until the device pass.** The rebuilt
-Phase 2 material and Phase 3's pill are both unconfirmed; the user chose to hold everything —
-including Phase 4 — until the Realme 6 confirms what is on the branch now. The only permitted
-changes before that are docs, and the two device checks below are the gate.
+- **Phase 2 device pass #1 FAILED (2026-09-27 12:59 screenshots) — both defects fixed in
+  `254d579e96`, `CI ✓`, awaiting device pass #2.** Every floating surface read as a heavy beveled
+  slab. Pixel measurement on the nav pill (see "Device pass #1" below) proved both defects and
+  their root causes; the fixes are exact-value logged there. **Still holding Phase 4** until
+  device pass #2 confirms the fix with before/after screenshots (bottom nav + one top bar).
 
 **Sheets/dialogs decision (2026-09-27): `DESIGN.md` §1.2/§5.3 win — they stay OPAQUE.** The user
 ruled that the "never stack glass on glass" rule and the opaque-sheet-over-scrim design beat the
@@ -43,6 +43,64 @@ brief's mention of glass on those surfaces. Bottom sheets, dialogs and popup men
 **resolved by design, not outstanding** — do not migrate them. The remaining genuinely-open Phase 2
 items are only: the search bar check, and the collapsed `mainToolbar` / manga-details FAB still
 being on the older `applyGlass` fill path.
+
+---
+
+## Device pass #1 (2026-09-27, screenshots in `currentappss/`, 12:58–12:59)
+
+Every floating pill read as a heavy beveled slab. Measured, not eyeballed — vertical strip at
+x=400 through the bottom nav pill, and x=900 through the top card:
+
+| What | Measured | Should have been | Verdict |
+|---|---|---|---|
+| Page behind the pill | 28 | 28 (`#1C1C1C`) | correct |
+| Glass face (mid-pill) | **21–22** | **42** (scrim 0x2C @ 90%) | ✗ slab |
+| Ramp top band | **79–80** | 80 (fill+ramp top) | ✓ actually correct |
+| Ramp bottom | (invisible, face was 21–22) | 59 | ✗ buried |
+| Rim stroke | **80** | ~176 (55% white over face) | ✗ buried |
+| Bright cap at pill bottom | 199 | — | the §17 morphing indicator, not glass |
+
+**Root cause of both defects (one bug, two symptoms):** the shadow `Paint` in
+`GlassPane.renderEdgeBitmap` carried `color = black@45%`, and `canvas.drawPath(path, shadow)`
+filled the *entire shape* with it. That 45%-black rectangle was blitted over the finished glass
+(42 → 0.55×42 = 23 ✓ matches the measured 21–22), flattening the ramp (80→59 became 80→22) and
+dimming the rim (176→87, landing at the measured 80). So the ramp and rim **were** drawn and in
+the right order — the shadow simply composited over them. Second bug in the same bitmap: it is
+`(w+2·pad)×(h+2·pad)` with the shape at `(pad,pad)` but was blitted at `(0,0)`, so the whole edge
+ring sat 16dp down-right of the view, leaving its own right/bottom edge cut off. Reference check:
+`ref/Apple Books iOS 7.png` bar face is 232–253 over a 22–26 backdrop (≈10× lift, no dark
+underside) — the 21–22 face was unambiguously wrong.
+
+### Fix `254d579e96` — exact values changed
+
+| Parameter | Before | After | Note |
+|---|---|---|---|
+| `SHADOW_ALPHA_DARK` | **0.45** | **0.08** | 17.8% of the old value (brief asked 15–20%) |
+| `SHADOW_ALPHA_LIGHT` | **0.30** | **0.05** | 16.7% of the old value |
+| `SHADOW_RADIUS_DP` | **6** | **4** | spread reduced |
+| `SHADOW_DY_DP` | **2** | **1** | spread reduced |
+| `EDGE_GLOW_RADIUS_DP` | 6 | 6 | unchanged |
+| `EDGE_GLOW_ALPHA_DARK/LIGHT` | 0.18 / 0.22 | 0.18 / 0.22 | unchanged |
+| Ramp alphas (18/8 dark, 14/6 light) | — | unchanged | the ramp was never the bug |
+| Rim alpha (55% dark / 40% light) | — | unchanged | ditto |
+| Shadow paint `color` | `black@45%` | `Color.TRANSPARENT` | the actual fix: nothing inside the path |
+| Shape in the edge bitmap | left filled | cut back out with `PorterDuff.Mode.CLEAR` | only the ring **outside** the glass survives |
+| Edge bitmap blit | `(0, 0)` | `(-edgePad, -edgePad)` | ring lands on the view edge |
+| Rim draw order | under the edge bitmap | above ramp, noise and shadow | nothing can bury it |
+| Noise draw order | under the edge bitmap | unchanged position, now above nothing new | — |
+
+Expected on-device result (computed): face top **80**, face bottom **59**, rim **176**, shadow
+under the bottom edge **26 vs page 28** — a barely-visible lift.
+
+### Debug flag for defect 2 (ramp/rim isolation)
+
+`adb shell setprop debug.glass.ramp_only 1` then restart the app: every `GlassPane` draws only
+base fill + ramp + rim — the shadow/glow bitmap is never built and the noise is skipped. If ramp
+and rim show correctly in this mode but vanish when the property is off, the compositing is at
+fault; if they are missing in this mode too, the shader/rim path itself is. Reset with
+`adb shell setprop debug.glass.ramp_only 0` (or `setprop` persists across reboots otherwise).
+`RESTYLE_PROGRESS.md` Device pass #2 checklist: before/after screenshot pair for the bottom nav
+and one top bar, plus one `ramp_only` shot, before this is called confirmed.
 
 ---
 
@@ -272,6 +330,7 @@ Only after both are confirmed may Phase 4 begin.
 | `c88b4f0ac4` | Fix: pin the sweep's ends to exactly zero; walk the rim left-to-right |
 | `b9decf2f29` | `DESIGN.md` §18 status + this ledger |
 | `dda9084d69` | Reader page-slider control drawn with the shared glass component |
+| `254d579e96` | Fix device pass #1: shadow no longer paints the face; values cut to 8%/5% @ 4dp/1dp; `debug.glass.ramp_only` |
 
 **Phase 2 rebuild status: `CI ✓` on `c88b4f0ac4`** (Build Debug APK incl. 21 new unit tests, and
 Lint & Type Check). Four CI rounds were needed, and three of the four failures were real bugs the
