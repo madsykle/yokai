@@ -133,6 +133,7 @@ out and replaced by a component the app draws itself. Rationale and platform con
 | `gradle/libs.versions.toml`, `app/build.gradle.kts` | `blurview` version + library **removed** | No backdrop capture and no new dependency (the brief's whole point). Jitpack stays in `settings.gradle.kts` — other deps use it | CI ✓ / DEVICE ✗ |
 | `app/src/main/res/values{,-night}/colors.xml` | `glass_blur_radius` **removed** | Nothing references it | CI ✓ / DEVICE ✗ |
 | `app/src/main/res/values/styles.xml`, `ControllerExtensions.kt`, `ExpandedAppBarLayout.kt` | Comment/doc references repointed from the BlurView ids and `GlassBlurChrome` to `*_glass` and `GlassPane` | Stale references | CI ✓ / DEVICE ✗ |
+| `app/src/main/res/layout/reader_nav.xml`, `app/src/main/java/.../ui/reader/ReaderNavView.kt`, `res/drawable/chapter_nav.xml` (**deleted**) | The reader's page-slider control got a `GlassPane` (`reader_nav_glass`) declared as the nav's first child; the nav's own background became transparent and the flat `chapter_nav` fill is gone. `ReaderNavView.onLayout` sets the capsule radius to half the measured bar height | The brief names the reader's page-slider as one of the functional layers that get the material, and it was a flat `?attr/colorSurface` fill | CI ✓ / DEVICE ✗ |
 | `app/src/test/java/yokai/presentation/theme/GlassRecipeTest.kt`, `SuperellipseTest.kt` | **New**, 13 + 8 tests | The ramp direction, the sweep reaching exactly zero at both ends, the scrim ignoring the slider, the noise being deterministic, the points lying on the superellipse, and the rim being one contiguous run — all invisible in CI and all "looks almost right" on a screenshot when wrong | CI ✓ / DEVICE ✗ |
 
 **Deliberate behaviour change to flag on device:** the material is now *more opaque* than the
@@ -141,14 +142,19 @@ visible difference, not a bug — check it over a bright cover before deciding t
 
 **Still outstanding from the Phase 2 brief (not yet migrated to the component):**
 - Bottom sheets — `GlassBottomSheetContainer` still paints an *opaque* container colour.
-- Dialogs / popup menus — `GlassAlertDialog`, `GlassAlertDialogBuilder`,
-  `MaterialAlertDialogExtensions` still paint opaque containers with a manual rim.
+- Dialogs / popup menus — `GlassAlertDialog` (Compose, 3 call sites), `GlassAlertDialogBuilder`
+  and `MaterialAlertDialogExtensions` (View) still paint opaque containers with a manual rim.
 - The search bar — the `search_toolbar` inside the top card sits on the card's glass but is not
-  itself a glass surface; the global-search screen's own bar is untouched.
-- The reader's page-slider control — still the old treatment.
+  itself a surface; the global-search screen's own bar has not been checked.
 - The collapsed `mainToolbar` and the manga-details FAB still use `applyGlass` /
   `applyGlassDecorators` (the *older* fill path), not `GlassPane`. They look consistent today
   because both read the same tier and rim tokens, but they are two implementations of one recipe.
+
+> **⚠ Unresolved conflict for those three, do not just pick one.** The Phase 2 brief lists bottom
+> sheets, dialogs and popup menus as glass surfaces, but `DESIGN.md` §1.2 says *never stack glass
+> on glass* and §5.3 says sheets are **opaque** surfaces over the dim scrim (the §11 audit removed
+> glass from them for exactly that reason). Applying the material to a sheet over a dimmed backdrop
+> is a visible, opinionated change — settle it with the user before implementing.
 
 ---
 
@@ -261,6 +267,8 @@ Only after both are confirmed may Phase 4 begin.
 | `43ddff2ff9` | Fix: import `BitmapShader`; use `RoundRect`'s four-coordinate constructor |
 | `74039e8d4d` | Fix: assert the noise grey with a range check (no Int matcher imported) |
 | `c88b4f0ac4` | Fix: pin the sweep's ends to exactly zero; walk the rim left-to-right |
+| `b9decf2f29` | `DESIGN.md` §18 status + this ledger |
+| `dda9084d69` | Reader page-slider control drawn with the shared glass component |
 
 **Phase 2 rebuild status: `CI ✓` on `c88b4f0ac4`** (Build Debug APK incl. 21 new unit tests, and
 Lint & Type Check). Four CI rounds were needed, and three of the four failures were real bugs the
