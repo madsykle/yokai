@@ -50,9 +50,10 @@ class SuperellipseTest {
         // Sample 0 is the right extreme, and the top is a quarter turn further round.
         assertAbout(points[0], 50f)
         assertAbout(points[1], 0f)
+        // The flat array interleaves x and y, so sample `i` lives at `2 * i`.
         val topIndex = (64 * 3) / 4
-        assertAbout(points[topIndex], 0f)
-        assertAbout(points[topIndex + 1], -20f)
+        assertAbout(points[topIndex * 2], 0f)
+        assertAbout(points[topIndex * 2 + 1], -20f)
     }
 
     @Test

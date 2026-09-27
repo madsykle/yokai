@@ -136,7 +136,11 @@ object GlassRecipe {
      */
     fun sweepBandAlpha(progress: Float): Float {
         val p = progress.coerceIn(0f, 1f)
-        return (sin(PI * p).toFloat()) * SWEEP_MAX_WHITE_ALPHA
+        // The ends are pinned to exactly zero rather than trusted to `sin`: `sin(PI)` in Float
+        // is a hair off zero (-1.2e-7), and a texel of leftover alpha at the end of the sweep is
+        // a permanent sheen on the surface that never washes out.
+        if (p <= 0f || p >= 1f) return 0f
+        return sin(PI * p).toFloat() * SWEEP_MAX_WHITE_ALPHA
     }
 
     /**

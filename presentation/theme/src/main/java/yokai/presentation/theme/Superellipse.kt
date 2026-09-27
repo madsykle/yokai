@@ -114,7 +114,9 @@ object Superellipse {
 
         val out = FloatArray((reach * 2 + 1) * 2)
         var i = 0
-        for (k in reach downTo -reach) {
+        // Walked left-to-right across the top, so the returned run reads the same way the
+        // shape does: -reach is the left side, 0 is the top, +reach is the right side.
+        for (k in -reach..reach) {
             val index = ((topIndex + k) % segments + segments) % segments
             out[i++] = width / 2f + samples[index * 2]
             out[i++] = height / 2f + samples[index * 2 + 1]
