@@ -257,4 +257,20 @@ Only after both are confirmed may Phase 4 begin.
 | `760b05942f` | Fix: zero-width nav falls back to the start edge |
 | `22f4465df0` | `DESIGN.md` §17 (Phase 3 as-built) |
 | `215ebd4134` | Added this ledger |
-| *(rebuild)* | Phase 2 rebuilt as the drawn glass recipe (`GlassPane`/`GlassRecipe`/`Superellipse`, BlurView removed) — `DESIGN.md` §18; sha in `git log` |
+| `abc0b8688e` | Phase 2 rebuilt as the drawn glass recipe (`GlassPane`/`GlassRecipe`/`Superellipse`, BlurView removed) — `DESIGN.md` §18 |
+| `43ddff2ff9` | Fix: import `BitmapShader`; use `RoundRect`'s four-coordinate constructor |
+| `74039e8d4d` | Fix: assert the noise grey with a range check (no Int matcher imported) |
+| `c88b4f0ac4` | Fix: pin the sweep's ends to exactly zero; walk the rim left-to-right |
+
+**Phase 2 rebuild status: `CI ✓` on `c88b4f0ac4`** (Build Debug APK incl. 21 new unit tests, and
+Lint & Type Check). Four CI rounds were needed, and three of the four failures were real bugs the
+tests caught rather than test-only noise:
+1. `BitmapShader` was not imported (compile).
+2. Compose has no `RoundRect(Offset, Size, CornerRadius)` constructor (compile).
+3. `sin(PI)` in Float is `-1.2e-7`, not zero, so the specular band left a permanent trace of
+   alpha behind after its pass — `sweepBandAlpha` now pins both ends to exactly `0f`.
+4. `rimPoints` assembled the run right-to-left, so the lit rim started on the right-hand side.
+   The "starts left of the middle" test caught it; the run is now walked `-reach..reach`.
+
+One failure was a test bug: the superellipse test indexed the flat interleaved `x,y` array with a
+*sample* index, so it read sample 24 instead of the topmost sample.

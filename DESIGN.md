@@ -720,6 +720,9 @@ bounds, so `GlassSurface` uses `Modifier.shadow` for the drop shadow rather than
 the way `GlassPane` does; its edge glow is drawn inside the shape. That is the one intentional
 difference between the two hosts.
 
-Status: CI green on the rebuild commit. Not yet device-verified, and the remaining surfaces the
+Status: CI green (compile + 21 new unit tests + lint, commit `c88b4f0ac4`). Four CI rounds were
+needed and three of them found real bugs rather than test noise: an unpinned `sin(PI)` in Float
+left a trace of the sweep behind after every pass, and the rim run was assembled right-to-left, so
+the lit edge started on the wrong side. Not yet device-verified, and the remaining surfaces the
 Phase 2 brief names - sheets, dialogs/popups, the search bar and the reader's page-slider - are not
 yet migrated to the component; `RESTYLE_PROGRESS.md` tracks them as outstanding.
