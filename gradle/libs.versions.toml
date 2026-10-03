@@ -13,6 +13,9 @@ junit = "5.11.3"
 kermit = "2.0.5"
 koin = "4.0.4"
 leakcanary = "2.14"
+hilt = "2.56.2"
+androidx-hilt = "1.4.0"
+ksp = "2.3.10"
 voyager = "2.2.21-1.10.3"
 # Liquid Glass tier libraries
 # backdrop is deliberately pinned to 1.x. 2.0.1 is a Compose Multiplatform build that
@@ -61,6 +64,9 @@ image-decoder = { module = "com.github.tachiyomiorg:image-decoder", version = "4
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidx-hilt" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-injekt = { module = "com.github.null2264:injekt-koin", version = "aad18b6148" }
 
@@ -121,6 +127,8 @@ voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", vers
 voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
 
 [plugins]
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlibraries" }
 aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutlibraries" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.3" }
