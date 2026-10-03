@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
+import eu.kanade.tachiyomi.util.runAsObservable
 import rx.Observable
 
 /**
@@ -131,21 +132,21 @@ interface Source {
         ReplaceWith("getMangaUpdate"),
     )
     fun fetchMangaDetails(manga: SManga): Observable<SManga> =
-        throw IllegalStateException("Not used")
+        runAsObservable { getMangaDetails(manga) }
 
     @Deprecated(
         "Use the combined suspend API instead",
         ReplaceWith("getMangaUpdate"),
     )
     fun fetchChapterList(manga: SManga): Observable<List<SChapter>> =
-        throw IllegalStateException("Not used")
+        runAsObservable { getChapterList(manga) }
 
     @Deprecated(
         "Use the non-RxJava API instead",
         ReplaceWith("getPageList"),
     )
     fun fetchPageList(chapter: SChapter): Observable<List<Page>> =
-        throw IllegalStateException("Not used")
+        runAsObservable { getPageList(chapter) }
 }
 
 fun Source.preferenceKey(): String = "source_$id"
