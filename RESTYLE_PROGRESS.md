@@ -277,8 +277,11 @@ listing screens confirmed on-device and explicitly flagging anything untouched.
 
 - **CI cannot prove visuals.** Compile + unit tests + lint only. Every visual claim above is
   `DEVICE ✗`.
-- **Local Gradle is not a usable build oracle** in this Termux/proot environment. Verification is
-  GitHub Actions only. `gh` is **not** authenticated; the token can be recovered with
+- **Build & device loop:** builds run on **GitHub Actions**, not locally — local Gradle is not a
+  usable build oracle in this Termux/proot environment. Push to `master` (or open a PR, or dispatch
+  the workflow manually) → `CI Build` → download the `yokai-madsykle-debug` artifact →
+  `adb install -r`. Full recipe in `docs/agents/device-loop.md`.
+- `gh` is **not** authenticated; the token can be recovered with
   `TOKEN=$(git remote get-url origin | sed -n 's|https://[^:]*:\([^@]*\)@github.com/.*|\1|p')`.
   `jq` is at `/data/data/com.termux/files/usr/bin/jq`. CI logs need `tr '\r' '\n'` + `grep -a`.
 - **CI shape:** `ci.yml` → `CI Build` with jobs `Build Debug APK` (`assembleStandardDebug` +
