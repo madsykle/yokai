@@ -39,6 +39,7 @@ import coil3.util.DebugLogger
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.ktx.Firebase
 import com.hippo.unifile.UniFile
+import dagger.hilt.android.HiltAndroidApp
 import eu.kanade.tachiyomi.appwidget.TachiyomiWidgetManager
 import eu.kanade.tachiyomi.core.preference.Preference
 import eu.kanade.tachiyomi.core.preference.PreferenceStore
@@ -86,6 +87,7 @@ import yokai.domain.storage.StorageManager
 import yokai.i18n.MR
 import yokai.util.lang.getString
 
+@HiltAndroidApp
 open class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factory {
 
     val preferences: PreferencesHelper by injectLazy()

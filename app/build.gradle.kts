@@ -11,6 +11,8 @@ plugins {
     kotlin("android")
     alias(kotlinx.plugins.serialization)
     alias(kotlinx.plugins.parcelize)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.firebase.crashlytics) apply false
@@ -179,10 +181,9 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
-    // ReactiveX
-    implementation(libs.rxandroid)
-    implementation(libs.rxjava)
-    implementation(libs.rxrelay)
+    // Hilt (Phase 2, :app only — KMP library modules stay on Koin)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 
     // Chucker
     debugImplementation(libs.chucker.library)
