@@ -184,7 +184,6 @@ dependencies {
     // Hilt (Phase 2, :app only — KMP library modules stay on Koin)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
 
     // Chucker
     debugImplementation(libs.chucker.library)
