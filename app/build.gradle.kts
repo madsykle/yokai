@@ -179,11 +179,6 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
-    // ReactiveX
-    implementation(libs.rxandroid)
-    implementation(libs.rxjava)
-    implementation(libs.rxrelay)
-
     // Chucker
     debugImplementation(libs.chucker.library)
     releaseImplementation(libs.chucker.library.no.op)
