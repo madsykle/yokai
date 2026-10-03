@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Clone repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "build-tools;35.0.0"
 
       - name: Setup Gradle
-        uses: null2264/actions/gradle-java-setup@363cb9cf3d66bd9c72ed6860142c6b2c121d7e94
+        uses: null2264/actions/gradle-java-setup@240857a3fa6e2667311da86417c637d4f59e8d75
         with:
           java: 21
           distro: temurin
@@ -141,21 +141,21 @@ jobs:
         run: ./gradlew testReleaseUnitTest test${{ env.BUILD_TYPE }}UnitTest
 
       - name: Upload R8 APK to artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: env.VERSION_TAG != ''
         with:
           name: arm64-v8a-${{ github.sha }}
           path: app/build/outputs/apk/standard/*/app*-arm64-v8a-*.apk
 
       - name: Upload R8 mapping
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: env.VERSION_TAG != ''
         with:
           name: mapping-${{ github.sha }}
           path: app/build/outputs/mapping/standard*
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
           include_passed: true
@@ -217,7 +217,7 @@ jobs:
 
       - name: Create Release
         if: startsWith(env.VERSION_TAG, 'v') && steps.release_secrets.outputs.sign_enabled == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.VERSION_TAG }}
           name: Yōkai ${{ env.VERSION_TAG }}
@@ -253,7 +253,7 @@ jobs:
 
       - name: Create Nightly
         if: startsWith(env.VERSION_TAG, 'r') && steps.release_secrets.outputs.sign_enabled == 'true' && steps.release_secrets.outputs.publish_enabled == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: madsykle/yokai-nightly
           tag_name: ${{ env.VERSION_TAG }}
