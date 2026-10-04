@@ -8,9 +8,14 @@ import android.text.Spanned
 import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.TextView
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.transitions.CrossfadeTransition
+import androidx.navigation3.runtime.NavDisplay
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import eu.kanade.tachiyomi.data.updater.AppDownloadInstallJob
 import eu.kanade.tachiyomi.ui.base.controller.BaseComposeController
 import eu.kanade.tachiyomi.ui.base.controller.DialogController
@@ -20,17 +25,68 @@ import eu.kanade.tachiyomi.util.view.setPositiveButton
 import eu.kanade.tachiyomi.util.view.setTitle
 import io.noties.markwon.Markwon
 import yokai.i18n.MR
+import yokai.presentation.settings.screen.about.AboutLibraryLicenseRoute
+import yokai.presentation.settings.screen.about.AboutLibraryLicenseScreen
+import yokai.presentation.settings.screen.about.AboutLicenseRoute
+import yokai.presentation.settings.screen.about.AboutLicenseScreen
+import yokai.presentation.settings.screen.about.AboutRoute
 import yokai.presentation.settings.screen.about.AboutScreen
 import android.R as AR
 
+/**
+ * Transitional Conductor shell for the About island (Phase 3).
+ *
+ * [AboutController] stays on Conductor for now — per the Phase 3 ruling it is only here because
+ * `MainActivity` pushes it, and it is removed when the last Conductor caller is migrated. The
+ * island itself (About -> Licenses -> Library license) is Navigation 3: a single `NavBackStack`
+ * hosted by a [NavDisplay] here.
+ */
 class AboutController : BaseComposeController() {
 
     @Composable
     override fun ScreenContent() {
-        Navigator(
-            screen = AboutScreen(),
-            content = {
-                CrossfadeTransition(navigator = it)
+        val backStack = rememberNavBackStack(AboutRoute)
+
+        // Back pops the Nav3 stack first; only once it is at the root do we hand back to Conductor
+        // so the controller that pushed us (MainActivity / SettingsMainController) is popped.
+        val onBack: () -> Unit = {
+            if (backStack.size > 1) backStack.removeLastOrNull() else router.handleBack()
+        }
+
+        NavDisplay(
+            backStack = backStack,
+            onBack = onBack,
+            // Keeps the crossfade look this island had under Voyager's CrossfadeTransition.
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            popTransitionSpec = { fadeIn() togetherWith fadeOut() },
+            predictivePopTransitionSpec = { fadeIn() togetherWith fadeOut() },
+            entryProvider = entryProvider<NavKey> {
+                entry<AboutRoute> {
+                    AboutScreen(onOpenLicenses = { backStack.add(AboutLicenseRoute) })
+                }
+                entry<AboutLicenseRoute> {
+                    AboutLicenseScreen(
+                        onNavigateUp = onBack,
+                        onOpenLibraryLicense = { name, website, license ->
+                            backStack.add(
+                                AboutLibraryLicenseRoute(name = name, website = website, license = license),
+                            )
+                        },
+                    )
+                }
+                // clazzContentKey is set explicitly on purpose: the default is
+                // `Pair("$key", "$key::class")`, which would bake the entire license HTML string
+                // into the saveable-state registry key.
+                entry<AboutLibraryLicenseRoute>(
+                    clazzContentKey = { "${it.name}|${it.website}" },
+                ) {
+                    AboutLibraryLicenseScreen(
+                        name = it.name,
+                        website = it.website,
+                        license = it.license,
+                        onNavigateUp = onBack,
+                    )
+                }
             },
         )
     }

@@ -16,6 +16,10 @@ leakcanary = "2.14"
 hilt = "2.58"
 ksp = "2.3.10"
 voyager = "2.2.21-1.10.3"
+# Phase 3 Navigation 3. PINNED: 1.2.0+ requires compileSdk 37 + AGP 9.1.0 (repo is 36 + 8.12.2).
+# Verified via aar-metadata.properties in the 1.1.7 artifacts (minCompileSdk 36, minAGP 8.9.1).
+# Do not bump past 1.1.7 without a dedicated AGP 9 migration phase.
+navigation3 = "1.1.7"
 # Liquid Glass tier libraries
 # backdrop is deliberately pinned to 1.x. 2.0.1 is a Compose Multiplatform build that
 # depends on Compose 1.12.0, and Compose >= 1.12 requires compileSdk 37 - more than AGP
@@ -123,6 +127,10 @@ viewtooltip = { module = "com.github.CarlosEsco:ViewTooltip", version = "f79a895
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
 voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
+
+# Navigation 3 (Phase 3 Voyager replacement)
+navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 
 [plugins]
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

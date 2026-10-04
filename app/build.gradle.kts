@@ -181,6 +181,10 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    // Navigation 3 (Phase 3 — Voyager replacement). Pinned at 1.1.7: 1.2.0+ needs compileSdk 37 + AGP 9.1.0.
+    implementation(libs.navigation3.runtime)
+    implementation(libs.navigation3.ui)
+
     // Hilt (Phase 2, :app only — KMP library modules stay on Koin)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
