@@ -184,6 +184,10 @@ dependencies {
     // Hilt (Phase 2, :app only — KMP library modules stay on Koin)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    // kotlin-metadata-jvm 2.4.0 override for Kotlin 2.4 metadata (Hilt 2.58 bundles 2.2.20,
+    // which supports metadata 2.3 max). Highest version wins on the processor classpath.
+    // Temporary — remove when Hilt bundles kotlin-metadata-jvm 2.4.x (google/dagger#5177).
+    ksp("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.0")
 
     // Chucker
     debugImplementation(libs.chucker.library)
