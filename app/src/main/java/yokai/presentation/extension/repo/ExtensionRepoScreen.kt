@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,7 +60,7 @@ fun ExtensionRepoScreen(
 
     val scope = rememberCoroutineScope()
     val screenModel = remember(scope) { ExtensionRepoScreenModel(scope) }
-    val state by screenModel.state.collectAsState()
+    val state = screenModel.state
 
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()

@@ -1,8 +1,9 @@
 package yokai.presentation.extension.repo
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.State as SnapshotState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.util.system.launchIO
@@ -40,11 +41,12 @@ class ExtensionRepoScreenModel(private val scope: CoroutineScope) {
     private val replaceExtensionRepo: ReplaceExtensionRepo by injectLazy()
     private val updateExtensionRepo: UpdateExtensionRepo by injectLazy()
 
-    // `State` inside this class body resolves to the nested sealed interface below, not to
-    // androidx.compose.runtime.State, so both the type argument and the property type are written
-    // out explicitly. Do not "simplify" these back to `State`.
-    private val mutableState = mutableStateOf<ExtensionRepoScreenModel.State>(State.Loading)
-    val state: SnapshotState<ExtensionRepoScreenModel.State> get() = mutableState.value
+    // Compose-native snapshot state, exposed as the domain value directly. `State` inside this
+    // class body resolves to the nested sealed interface below, never to
+    // androidx.compose.runtime.State, so the type argument on mutableStateOf is always written out.
+    // Do not "simplify" it back to `mutableStateOf(State.Loading)`.
+    var state: ExtensionRepoScreenModel.State by mutableStateOf(State.Loading)
+        private set
 
     private val eventChannel = Channel<ExtensionRepoEvent>(Channel.BUFFERED)
     val event: Flow<ExtensionRepoEvent> = eventChannel.receiveAsFlow()
@@ -52,7 +54,7 @@ class ExtensionRepoScreenModel(private val scope: CoroutineScope) {
     init {
         scope.launchIO {
             getExtensionRepo.subscribeAll().collectLatest { repos ->
-                mutableState.value = State.Success(repos = repos.toImmutableList())
+                state = State.Success(repos = repos.toImmutableList())
                 extensionManager.refreshTrust()
             }
         }
@@ -86,7 +88,7 @@ class ExtensionRepoScreenModel(private val scope: CoroutineScope) {
     }
 
     fun refreshRepos() {
-        val status = state.value
+        val status = state
 
         if (status is State.Success) {
             scope.launchIO {
