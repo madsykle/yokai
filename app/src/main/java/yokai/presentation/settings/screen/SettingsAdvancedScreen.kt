@@ -12,7 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
-import cafe.adriel.voyager.navigator.LocalNavigator
+import androidx.navigation3.runtime.NavKey
 import co.touchlab.kermit.Logger
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -61,17 +61,19 @@ import yokai.domain.simple
 import yokai.i18n.MR
 import yokai.presentation.component.preference.Preference
 import yokai.presentation.settings.ComposableSettings
-import yokai.presentation.settings.screen.advanced.StoryBookScreen
+import yokai.presentation.settings.screen.SettingsAdvancedRoute
 
 object SettingsAdvancedScreen : ComposableSettings() {
 
     private fun readResolve() = SettingsAdvancedScreen
 
+    override val route: NavKey get() = SettingsAdvancedRoute
+
     @Composable
     override fun getTitleRes(): StringResource = MR.strings.advanced
 
     @Composable
-    override fun getPreferences(): List<Preference> {
+    override fun getPreferences(onOpenStorybook: () -> Unit): List<Preference> {
         val preferences: PreferencesHelper by injectLazy()
         val basePreferences: BasePreferences by injectLazy()
         val networkPreferences: NetworkPreferences by injectLazy()
@@ -98,7 +100,7 @@ object SettingsAdvancedScreen : ComposableSettings() {
             add(getNetworkGroup(networkPreferences))
             add(getExtensionGroup(basePreferences))
             add(getLibraryGroup(basePreferences))
-            add(getDeveloperGroup())
+            add(getDeveloperGroup(onOpenStorybook))
         }.toPersistentList()
     }
 
@@ -409,13 +411,11 @@ object SettingsAdvancedScreen : ComposableSettings() {
     }
 
     @Composable
-    private fun getDeveloperGroup(): Preference.PreferenceGroup {
-        val navigator = LocalNavigator.currentOrThrow
-
+    private fun getDeveloperGroup(onOpenStorybook: () -> Unit): Preference.PreferenceGroup {
         val children = buildList {
             add(Preference.PreferenceItem.TextPreference(
                 title = "Storybook",
-                onClick = { navigator.push(StoryBookScreen()) },
+                onClick = onOpenStorybook,
             ))
         }.toPersistentList()
 
