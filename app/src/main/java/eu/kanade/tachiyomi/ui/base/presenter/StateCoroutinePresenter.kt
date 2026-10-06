@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Presenter that mimic [cafe.adriel.voyager.core.model.StateScreenModel] for easier migration.
+ * Presenter that mimic the shape of Voyager's `StateScreenModel` for easier migration.
  * Temporary class while we're migrating to Compose.
  */
 abstract class StateCoroutinePresenter<S, C>(initialState: S) : BaseCoroutinePresenter<C>() {

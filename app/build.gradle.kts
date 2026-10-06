@@ -250,9 +250,6 @@ dependencies {
     implementation(libs.viewtooltip)
     implementation(libs.taptargetview)
 
-    // Navigation
-    implementation(libs.bundles.voyager)
-
     // Shizuku
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
