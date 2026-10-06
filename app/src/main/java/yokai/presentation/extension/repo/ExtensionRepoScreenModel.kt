@@ -1,6 +1,7 @@
 package yokai.presentation.extension.repo
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.State as SnapshotState
 import androidx.compose.runtime.mutableStateOf
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.extension.ExtensionManager
@@ -39,8 +40,11 @@ class ExtensionRepoScreenModel(private val scope: CoroutineScope) {
     private val replaceExtensionRepo: ReplaceExtensionRepo by injectLazy()
     private val updateExtensionRepo: UpdateExtensionRepo by injectLazy()
 
-    private val mutableState = mutableStateOf(State.Loading)
-    val state: State<ExtensionRepoScreenModel.State> get() = mutableState.value
+    // `State` inside this class body resolves to the nested sealed interface below, not to
+    // androidx.compose.runtime.State, so both the type argument and the property type are written
+    // out explicitly. Do not "simplify" these back to `State`.
+    private val mutableState = mutableStateOf<ExtensionRepoScreenModel.State>(State.Loading)
+    val state: SnapshotState<ExtensionRepoScreenModel.State> get() = mutableState.value
 
     private val eventChannel = Channel<ExtensionRepoEvent>(Channel.BUFFERED)
     val event: Flow<ExtensionRepoEvent> = eventChannel.receiveAsFlow()

@@ -31,6 +31,7 @@ import eu.kanade.tachiyomi.util.compose.currentOrThrow
 import eu.kanade.tachiyomi.util.isTablet
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import yokai.domain.DialogHostState
 import yokai.domain.extension.repo.model.ExtensionRepo
 import yokai.i18n.MR
