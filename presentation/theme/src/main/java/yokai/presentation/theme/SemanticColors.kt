@@ -26,18 +26,20 @@ import androidx.compose.ui.graphics.Color
  * |---|---|
  * | surfaces, `labelPrimary`, `labelSecondary`, accents, `separator` | `DESIGN_CUPERTINO.md` §3, from `DESIGN.md` §4.1 / iOS system palette |
  * | `surface`, `surfaceRaised` | §3.2; `surface` matches `GlassColors.GlassLightBase` / `GlassDarkBase` |
- * | **`labelTertiary`, `labelOnAccent`, `separatorOpaque`, `warning`** | **PROVISIONAL — see below** |
+ * | **`labelTertiary`, `labelOnAccent`, `separatorOpaque`, `warning`** | **Apple system colour — INTERIM, see below** |
  *
- * The four provisional tokens are real gaps in the brief: §3.3 introduces `labelTertiary` and
+ * The four interim tokens were gaps in the brief: §3.3 introduces `labelTertiary` and
  * `labelOnAccent` as "NEW" without giving hexes, §3.5 introduces `warning` without one, and
- * `separatorOpaque` appears in §3.4 as a name only. Apple's HIG publishes no hexes (the page is
- * JS-rendered and carries none), so there was no primary source to cite.
+ * `separatorOpaque` appears in §3.4 as a name only.
  *
- * Rather than invent values or leave the tokens out — §3.5 notes the download-queue and migration
- * screens "reach for orange by hex" today, which is the problem being fixed — they ship marked
- * provisional. **Verify all four against a primary source before Phase 4 exit.** Each carries
- * its own marker below, and they are collected in [PROVISIONAL_TOKENS] so a future grep finds
- * them all at once.
+ * They are filled from Apple's standard system palette (the values UIKit uses), on the ruling
+ * that they are **interim and must be verified against a primary source before Phase 4 exit.**
+ * Apple's own HIG was not usable as that source here: the page is JS-rendered and a direct
+ * fetch of `developer.apple.com/design/human-interface-guidelines/color` returned 17,807 bytes
+ * containing zero hex literals.
+ *
+ * The marker is the audit trail and it stays. These remain in [PROVISIONAL_TOKENS] — not
+ * promoted — until that verification happens, so a grep finds all four at once.
  */
 data class CupertinoColorScheme(
     // ---- Surfaces: a strict three-step ladder (§3.2) -------------------------
@@ -55,7 +57,15 @@ data class CupertinoColorScheme(
     val labelSecondary: Color,
     /** PROVISIONAL — timestamps, counts, disabled. */
     val labelTertiary: Color,
-    /** PROVISIONAL — text on a filled accent. */
+
+    /**
+     * PROVISIONAL — text on a filled accent.
+     *
+     * **Known limitation:** one token, not per-accent. It is `#FFFFFF` in both schemes because
+     * the current accent family (`#007AFF` / `#0A84FF`) is always dark enough to carry white
+     * text. A lighter accent — `systemYellow`, say — would need an override here, and nothing
+     * in the type system will catch the mistake: it would simply render white-on-yellow.
+     */
     val labelOnAccent: Color,
 
     // ---- Separators (§3.4) ---------------------------------------------------
@@ -81,11 +91,11 @@ val LightCupertinoColors: CupertinoColorScheme = CupertinoColorScheme(
 
     labelPrimary = Color(0xFF000000),
     labelSecondary = Color(0x613C3C43),
-    labelTertiary = Color(0x3D3C3C43),
+    labelTertiary = Color(0x4D3C3C43),
     labelOnAccent = Color(0xFFFFFFFF),
 
     separator = Color(0x4A3C3C43),
-    separatorOpaque = Color(0x993C3C43),
+    separatorOpaque = Color(0xFFC6C6C8),
 
     accent = Color(0xFF007AFF),
     success = Color(0xFF34C759),
@@ -107,11 +117,11 @@ val DarkCupertinoColors: CupertinoColorScheme = CupertinoColorScheme(
 
     labelPrimary = Color(0xFFFFFFFF),
     labelSecondary = Color(0x99EBEBF5),
-    labelTertiary = Color(0x61EBEBF5),
+    labelTertiary = Color(0x4DEBEBF5),
     labelOnAccent = Color(0xFFFFFFFF),
 
     separator = Color(0x4AEBEBF5),
-    separatorOpaque = Color(0x99EBEBF5),
+    separatorOpaque = Color(0xFF38383A),
 
     accent = Color(0xFF0A84FF),
     success = Color(0xFF30D158),
@@ -129,10 +139,20 @@ val DarkCupertinoColors: CupertinoColorScheme = CupertinoColorScheme(
  */
 val LocalCupertinoColors = staticCompositionLocalOf { LightCupertinoColors }
 
-/** Names of the four tokens whose values are provisional. See [CupertinoColorScheme]. */
+/** Names of the four tokens whose values are interim. See [CupertinoColorScheme]. */
 val PROVISIONAL_TOKENS: List<String> = listOf(
     "labelTertiary",
     "labelOnAccent",
     "separatorOpaque",
     "warning",
 )
+
+/**
+ * Standing note on [PROVISIONAL_TOKENS].
+ *
+ * Apple system colour (interim). **Primary-source verification required before Phase 4 exit.**
+ */
+const val PROVISIONAL_TOKENS_NOTE: String =
+    "PROVISIONAL TOKENS: 4 (labelTertiary, labelOnAccent, separatorOpaque, warning). " +
+        "Interim values from Apple system palette. " +
+        "Primary source verification required before Phase 4 exit."

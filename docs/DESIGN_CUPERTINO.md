@@ -162,12 +162,21 @@ Haptics are scattered calls today. This is a **table**, so each interaction has 
 | Switch toggle | — | **none** | The animation *is* the feedback. iOS does not buzz switches. |
 | Long-press to select | Medium | `LONG_PRESS` | Arms selection mode |
 | Drag reorder pickup | Medium | `LONG_PRESS` | One gesture, one buzz |
-| Sheet present | Selection | `CLOCK_TICK` | Light rise |
-| Sheet dismiss | Light | `CONTEXT_CLICK` | Heavier than present, matching §4.2 rule 4 |
+| Sheet present | Selection | `CLOCK_TICK` | Something is arriving |
+| Sheet dismiss | Light | `CONTEXT_CLICK` | Acknowledged, gone |
 | Destructive confirm | Warning | `CONFIRM` | Reserved — only on delete/clear/wipe |
 | Search committed | Selection | `CLOCK_TICK` | Keyboard dismissal |
 
 **`destructive confirm` is the only heavy haptic in the app. Reserve it.** If it fires routinely it stops meaning anything, and a delete you cannot feel is a delete people get wrong.
+
+**Haptics and motion are independent.** This table cites no motion rule and is not derived from
+one. §4.2 rule 4 ("dismiss is always gentler than present") governs *springs* — the dismiss
+animation is 180/0.90 against the present's 300/0.75 — and says nothing about which haptic
+constant fires. An earlier draft of this table justified sheet-dismiss's `CONTEXT_CLICK` as
+"matching §4.2 rule 4", which was simply wrong: it cross-referenced a motion rule that states the
+opposite relationship. The values stand on their own — present is a "something is arriving" tick,
+dismiss is an "acknowledged, gone" click. **Do not reintroduce a cross-reference between this
+table and §4.**
 
 **Accessibility:** all haptics respect the system touch-feedback setting. Never haptic-gate a destructive action without an on-screen consequence too.
 

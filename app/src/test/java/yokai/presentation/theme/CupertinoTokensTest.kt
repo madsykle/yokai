@@ -298,9 +298,26 @@ class CupertinoTokensTest {
         DarkCupertinoColors.accent shouldBe Color(0xFF0A84FF)
     }
 
-    /** The four tokens §3 introduces without a hex must stay enumerable until they are sourced. */
+    /**
+ * The four tokens §3 introduces without a hex stay enumerated — and pinned — until they are
+ * verified against a primary source. They carry interim Apple system values; if one of these
+ * changes before Phase 4 exit, it must be a deliberate, recorded act.
+ */
     @Test
     fun `provisional tokens are enumerated`() {
         PROVISIONAL_TOKENS shouldBe listOf("labelTertiary", "labelOnAccent", "separatorOpaque", "warning")
+        PROVISIONAL_TOKENS_NOTE.contains("Primary source verification") shouldBe true
+        PROVISIONAL_TOKENS_NOTE.contains("4") shouldBe true
+
+        val l = LightCupertinoColors
+        val d = DarkCupertinoColors
+        l.labelTertiary shouldBe Color(0x4D3C3C43) // #3C3C43 @ 30%
+        d.labelTertiary shouldBe Color(0x4DEBEBF5) // #EBEBF5 @ 30%
+        l.labelOnAccent shouldBe Color(0xFFFFFFFF)
+        d.labelOnAccent shouldBe Color(0xFFFFFFFF)
+        l.separatorOpaque shouldBe Color(0xFFC6C6C8)
+        d.separatorOpaque shouldBe Color(0xFF38383A)
+        l.warning shouldBe Color(0xFFFF9500) // systemOrange light
+        d.warning shouldBe Color(0xFFFF9F0A) // systemOrange dark
     }
 }

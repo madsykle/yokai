@@ -102,11 +102,11 @@ fun hapticWarning() {
 /**
  * Tab switch, sheet dismiss.
  *
- * NOTE — §5's table says sheet dismiss is "heavier than present, matching §4.2 rule 4", but
- * §4.2 rule 4 states dismiss is *gentler* than present. Those contradict, and the table's own
- * parenthetical is where it breaks. **NEEDS VERIFICATION** — resolve before the sheet component
- * lands. Until then this fires `CONTEXT_CLICK` per the table's Constant column, which is the
- * part that is unambiguous.
+ * Dismiss reads as "acknowledged, gone" against [hapticSelection]'s "something is arriving" for
+ * a sheet's present. That asymmetry is **independent of motion**: §4.2 rule 4 governs springs
+ * (the dismiss animation is 180/0.90 against the present's 300/0.75) and says nothing about
+ * which haptic fires. An earlier draft of §5 cross-referenced the two and got it backwards;
+ * the doc is fixed and now forbids reintroducing that link.
  */
 @Composable
 fun hapticLight() {
