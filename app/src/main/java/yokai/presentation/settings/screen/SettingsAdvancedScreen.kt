@@ -65,6 +65,19 @@ import yokai.presentation.settings.screen.SettingsAdvancedRoute
 
 object SettingsAdvancedScreen : ComposableSettings() {
 
+    /**
+     * The "Use experimental compose library" toggle routes the Library tab to
+     * `LibraryComposeController`, which currently renders placeholder text instead of the library
+     * (`LibraryContent.kt:31-42`) and has empty sheet handlers (`LibraryComposeController.kt:85-92`),
+     * so enabling it breaks the tab. The gate is on `BuildConfig.DEBUG` alone, which means every debug
+     * build - including the one CI ships - exposes it.
+     *
+     * The toggle is hidden until the Library Compose rewrite lands.
+     * TODO: re-enable when Library Compose rewrite lands (Phase 4 step 2). Delete this constant and
+     *   restore the `BuildConfig.FLAVOR == "dev" || BuildConfig.DEBUG` condition at the call site.
+     */
+    private val isComposeLibraryToggleVisible = false
+
     private fun readResolve() = SettingsAdvancedScreen
 
     override val route: NavKey get() = SettingsAdvancedRoute
@@ -395,7 +408,7 @@ object SettingsAdvancedScreen : ComposableSettings() {
                 subtitle = stringResource(MR.strings.updates_tracking_details),
                 onClick = { LibraryUpdateJob.startNow(context, target = LibraryUpdateJob.Target.TRACKING) },
             ))
-            if (BuildConfig.FLAVOR == "dev" || BuildConfig.DEBUG) {
+            if (isComposeLibraryToggleVisible) {
                 add(Preference.PreferenceItem.SwitchPreference(
                     pref = basePreferences.composeLibrary(),
                     title = stringResource(MR.strings.pref_use_compose_library),
