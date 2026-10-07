@@ -210,6 +210,9 @@ val glassShapes = Shapes(
  */
 const val GLASS_TRANSPARENCY_PREF = GLASS_TRANSPARENCY_PREF_KEY
 
+// Supplies the deprecated Material3 typography bridge to MaterialTheme. Suppressed rather than
+// avoided: 35 call sites in 22 files still read it, and migrating them is Ruling 5's later work.
+@Suppress("DEPRECATION")
 @Composable
 fun YokaiTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
