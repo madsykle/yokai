@@ -66,6 +66,12 @@ object CupertinoChevrons {
             defaultHeight = ChevronHeight,
             viewportWidth = ChevronWidth.value,
             viewportHeight = ChevronHeight.value,
+            // autoMirror is a Builder constructor parameter, not a chainable method:
+            // ImageVector.kt:119 declares `private val autoMirror: Boolean = false` as the
+            // last ctor arg of the secondary constructor (which is the primary public one
+            // now; the old signature is DeprecationLevel.HIDDEN). There is no
+            // autoMirrored() function to call on the built vector.
+            autoMirror = true,
         )
             .apply {
                 path(
@@ -86,6 +92,5 @@ object CupertinoChevrons {
                 }
             }
             .build()
-            .autoMirrored()
     }
 }

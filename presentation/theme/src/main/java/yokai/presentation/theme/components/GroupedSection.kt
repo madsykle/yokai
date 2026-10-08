@@ -212,17 +212,23 @@ fun GroupedRow(
                 .padding(vertical = GroupedSectionDefaults.rowVerticalPadding),
             verticalArrangement = Arrangement.spacedBy(GroupedSectionDefaults.lineSpacing),
         ) {
-            BasicText(text = label, style = CupertinoType.subhead, color = colors.labelPrimary)
+            // BasicText has no `color: Color` parameter — it takes a `ColorProducer?` SAM
+            // (BasicText.kt:101). Colour therefore rides in on the TextStyle, which is the
+            // same thing `ColorProducer { it }` would have produced and avoids wrapping five
+            // call sites in CompositionLocalProvider.
+            BasicText(text = label, style = CupertinoType.subhead.copy(color = colors.labelPrimary))
             if (subtitle != null) {
-                BasicText(text = subtitle, style = CupertinoType.caption1, color = colors.labelSecondary)
+                BasicText(
+                    text = subtitle,
+                    style = CupertinoType.caption1.copy(color = colors.labelSecondary),
+                )
             }
         }
 
         if (secondaryLabel != null) {
             BasicText(
                 text = secondaryLabel,
-                style = CupertinoType.subhead,
-                color = colors.labelSecondary,
+                style = CupertinoType.subhead.copy(color = colors.labelSecondary),
                 modifier = Modifier.padding(start = GroupedSectionDefaults.accessorySpacing),
             )
         }
@@ -287,8 +293,7 @@ fun GroupedHeader(
     val colors = CupertinoColors.current
     BasicText(
         text = GroupedSectionMetrics.headerLabel(text),
-        style = CupertinoType.sectionHeader,
-        color = colors.labelSecondary,
+        style = CupertinoType.sectionHeader.copy(color = colors.labelSecondary),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = GroupedSectionDefaults.blockTextInset),
@@ -304,8 +309,7 @@ fun GroupedFooter(
     val colors = CupertinoColors.current
     BasicText(
         text = text,
-        style = CupertinoType.caption1,
-        color = colors.labelSecondary,
+        style = CupertinoType.caption1.copy(color = colors.labelSecondary),
         modifier = modifier
             .fillMaxWidth()
             .padding(
