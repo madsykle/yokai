@@ -105,6 +105,27 @@ All values above except `title3` are from `DESIGN.md` §4.2, which already match
 
 **The grouped-list rule:** on `surface`, a list is **never** drawn edge to edge. Rows sit on `surfaceRaised` with a **16dp horizontal inset** and **10–12dp vertical radius**, grouped under one rounded container. That inset is the strongest Cupertino tell in a settings screen — stronger than colour, stronger than radius.
 
+**The two insets STACK — they do not collapse.** This was ambiguous in the first draft of this section, which said both that they "stack visually" and that row content has "0 additional". Resolved, and recorded here so it is not re-litigated:
+
+```
+  screen edge
+    |<- 16dp ->|<------- surfaceRaised, 12dp radius -------->|
+                 |<- 16dp ->|  label             value  >  |
+                 |          |------------------------------|  separator, inset 16dp
+                 |          |  next row                     |
+```
+
+- **16dp** screen edge → card edge (`sectionInset`)
+- **+16dp** card edge → row content (`rowContentInset`)
+- ⇒ a row label sits **32dp** from the screen edge
+- ⇒ the separator starts at **16dp**, aligned to row content, **never full-bleed**
+
+A collapsed single-inset reading would put the label at 16dp and lose the tell entirely. Implemented as two named constants in `GroupedSectionMetrics` so the alternate reading stays a one-line change.
+
+**Row radius** is `CornerRadii.medium` (12dp), the looser end of the 10–12dp range; iOS tightens as a list grows taller and `CornerRadii.small` (10dp) is the tighter end.
+
+**Insets do not scale with configuration.** iOS uses 16pt on regular devices and 20pt on Plus/Max. Not implemented, deliberately: this repo has **zero `values-sw*` resource directories**, so a qualifier-based split has no infrastructure to hang on, and a code-based split would introduce a second layout mode with no precedent on any Cupertino surface. `Spacing.space20` already exists, so revisiting this when a tablet layout lands is a one-token change.
+
 ### 3.3 Labels — four levels, not two
 
 | Token | Light | Dark | Use |

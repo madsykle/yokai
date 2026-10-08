@@ -1,5 +1,6 @@
 package yokai.presentation.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -138,6 +139,26 @@ val DarkCupertinoColors: CupertinoColorScheme = CupertinoColorScheme(
  * screens. The design system lands inert.
  */
 val LocalCupertinoColors = staticCompositionLocalOf { LightCupertinoColors }
+
+/**
+ * The scheme in scope.
+ *
+ * **Defaults to light and is currently provided by nothing.** Wiring it into `YokaiTheme` is a
+ * one-line change, deliberately deferred: `GlassColors` lives in `Theme.kt` and is explicitly
+ * out of scope for the token commit, and adding a `MaterialTheme` colour override now would
+ * restyle screens. The design system lands inert.
+ */
+object CupertinoColors {
+    /** Read the current scheme. The only sanctioned way in. */
+    val current: CupertinoColorScheme
+        @Composable get() = LocalCupertinoColors.current
+
+    /** Light scheme. Provided for previews and tests. */
+    val light: CupertinoColorScheme get() = LightCupertinoColors
+
+    /** Dark scheme. Provided for previews and tests. */
+    val dark: CupertinoColorScheme get() = DarkCupertinoColors
+}
 
 /** Names of the four tokens whose values are interim. See [CupertinoColorScheme]. */
 val PROVISIONAL_TOKENS: List<String> = listOf(
