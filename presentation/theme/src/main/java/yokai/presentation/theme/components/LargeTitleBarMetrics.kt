@@ -1,7 +1,9 @@
 package yokai.presentation.theme.components
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 
 /**
@@ -39,10 +41,10 @@ object LargeTitleBarMetrics {
     // ---- Type ---------------------------------------------------------------
 
     /** Expanded size, from `CupertinoType.largeTitle` (34sp). */
-    val LargeTitleSize = 34.sp
+    val LargeTitleSize: TextUnit = 34.sp
 
     /** Condensed size, from `CupertinoType.headline` (17sp). */
-    val HeadlineSize = 17.sp
+    val HeadlineSize: TextUnit = 17.sp
 
     // ---- Bar geometry -------------------------------------------------------
 
@@ -119,8 +121,13 @@ object LargeTitleBarMetrics {
      *
      * Interpolating the *size* rather than cross-fading two text runs keeps the title a single
      * layout node, so it cannot reflow the bar's height mid-collapse.
+     *
+     * Uses `lerp(TextUnit, TextUnit, Float)` rather than arithmetic: `TextUnit` deliberately has
+     * no `plus`/`minus` operators, only scalar multiply, because adding two type sizes has no
+     * meaning. `TextUnit.kt:367`.
      */
-    fun titleFontSize(fraction: Float) = LargeTitleSize + (HeadlineSize - LargeTitleSize) * fraction.coerceIn(0f, 1f)
+    fun titleFontSize(fraction: Float): TextUnit =
+        lerp(LargeTitleSize, HeadlineSize, fraction.coerceIn(0f, 1f))
 
     /**
      * Title leading weight for a collapse fraction.
