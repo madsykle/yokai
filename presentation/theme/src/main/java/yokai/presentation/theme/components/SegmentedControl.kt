@@ -133,7 +133,9 @@ private class ThumbPosition(private val scope: CoroutineScope) {
         }
         snapJob = scope.launch {
             Animatable(value).animateTo(target, CupertinoMotion.bouncy, initialVelocity) {
-                value = this.value
+                // `this` inside the block is the Animatable, and Animatable.value is read-only —
+                // it must be this@ThumbPosition.value that gets written.
+                this@ThumbPosition.value = value
             }
         }
     }
@@ -171,11 +173,11 @@ fun <T> SegmentedControl(
         SegmentedControlMetrics.ThumbInset.value * density.density
     }
 
-    // Resolved here, in composition, because pointerInput's lambdas are NOT composable. The
-    // tick becomes a plain () -> Unit the gesture can call freely.
-    val tick: () -> Unit = remember(density) {
-        { performSelectionHaptic(LocalView.current) }
-    }
+    // Resolved here, in composition, because pointerInput's lambdas are NOT composable. The tick
+    // becomes a plain () -> Unit the gesture can call freely. LocalView.current is read OUTSIDE
+    // the remember block, which is also not composable — reading it inside is the same error.
+    val view = LocalView.current
+    val tick: () -> Unit = remember(view) { { performSelectionHaptic(view) } }
 
     // Index of `selected`, recomputed when the caller changes it — the control is fully
     // controlled, so external changes must move the thumb too, not just taps.
