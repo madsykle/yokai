@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -206,7 +207,7 @@ private fun SearchGlyph(
     vector: ImageVector,
     width: Dp,
     height: Dp,
-    tint: androidx.compose.ui.graphics.Color,
+    tint: Color,
     onClick: () -> Unit,
 ) {
     Box(
