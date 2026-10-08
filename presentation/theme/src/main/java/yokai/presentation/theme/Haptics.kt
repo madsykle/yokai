@@ -2,6 +2,7 @@ package yokai.presentation.theme
 
 import android.os.Build
 import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalView
 
@@ -134,5 +135,17 @@ fun hapticMedium() {
  */
 @Composable
 fun hapticSelection() {
-    LocalView.current.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+    performSelectionHaptic(LocalView.current)
+}
+
+/**
+ * The same `CLOCK_TICK` as [hapticSelection], without needing a composition.
+ *
+ * Exists for gesture callbacks: `pointerInput` and `detectHorizontalDragGestures` lambdas are
+ * **not** `@Composable`, so calling [hapticSelection] inside one does not compile. The caller
+ * resolves `LocalView.current` in its composable body and hands the view in here, keeping the
+ * constant in one file rather than duplicating `CLOCK_TICK` at every call site.
+ */
+fun performSelectionHaptic(view: View) {
+    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
 }

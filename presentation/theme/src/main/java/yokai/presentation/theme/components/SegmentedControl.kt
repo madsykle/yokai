@@ -23,6 +23,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -30,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +42,7 @@ import kotlinx.coroutines.launch
 import yokai.presentation.theme.CupertinoColors
 import yokai.presentation.theme.CupertinoMotion
 import yokai.presentation.theme.CupertinoType
-import yokai.presentation.theme.hapticSelection
+import yokai.presentation.theme.performSelectionHaptic
 
 /**
  * One segment of a [SegmentedControl].
@@ -85,8 +88,10 @@ data class SegmentedControlSegment<T>(
 @Stable
 class SegmentedControlState internal constructor() {
     internal var selectedIndex by mutableIntStateOf(0)
-    internal var indicatorPosition by mutableFloatStateOf(0f)
-    internal var dragging by mutableFloatStateOf(false)
+
+    /** Boolean field -> mutableStateOf(Boolean). Using mutableFloatStateOf here cascaded into
+     * seven type errors across the file before it was caught. */
+    internal var dragging by mutableStateOf(false)
 
     /**
      * Whether a drag is in progress right now.
@@ -166,6 +171,12 @@ fun <T> SegmentedControl(
         SegmentedControlMetrics.ThumbInset.value * density.density
     }
 
+    // Resolved here, in composition, because pointerInput's lambdas are NOT composable. The
+    // tick becomes a plain () -> Unit the gesture can call freely.
+    val tick: () -> Unit = remember(density) {
+        { performSelectionHaptic(LocalView.current) }
+    }
+
     // Index of `selected`, recomputed when the caller changes it — the control is fully
     // controlled, so external changes must move the thumb too, not just taps.
     val selectedIndex = segments.indexOfFirst { it.value == selected }.coerceAtLeast(0)
@@ -193,7 +204,7 @@ fun <T> SegmentedControl(
                     onDragStart = {
                         state.dragging = true
                         dragPx = 0f
-                        hapticSelection()
+                        tick()
                     },
                     onHorizontalDrag = { change, dragAmount ->
                         change.consume()
@@ -211,7 +222,7 @@ fun <T> SegmentedControl(
                         // inside one segment stays silent.
                         val crossings = SegmentedControlMetrics.boundariesCrossed(from, to, segments.size)
                         if (crossings > 0) {
-                            repeat(crossings) { hapticSelection() }
+                            repeat(crossings) { tick() }
                             // Report the landing segment immediately so the highlight and the
                             // caller's data agree with what the finger is over.
                             val landed = SegmentedControlMetrics.nearestSegment(to, segments.size)
@@ -243,6 +254,10 @@ fun <T> SegmentedControl(
             thumbInsetPx = thumbInsetPx,
             segmentCount = segments.size,
         )
+        // Modifier.width takes Dp; the drag arithmetic is in pixels. Converted once here rather
+        // than at each of the two call sites. Float.toDp() is a Density *member* (Density.kt:81),
+        // not a free function, so it is not in scope here — hence the explicit Dp constructor.
+        val segmentWidth = Dp(segmentWidthPx / density.density)
 
         // Thumb. Positioned by float segment index, so during a drag it sits wherever the finger
         // is rather than jumping between cells.
@@ -254,7 +269,7 @@ fun <T> SegmentedControl(
                         y = 0,
                     )
                 }
-                .width(segmentWidthPx)
+                .width(segmentWidth)
                 .fillMaxHeight()
                 .padding(vertical = SegmentedControlMetrics.ThumbInset)
                 .background(
@@ -280,11 +295,11 @@ fun <T> SegmentedControl(
                         textAlign = TextAlign.Center,
                     ),
                     modifier = Modifier
-                        .width(segmentWidthPx)
+                        .width(segmentWidth)
                         .fillMaxHeight()
                         .wrapContentHeight(Alignment.CenterVertically)
                         .clickable {
-                            hapticSelection()
+                            tick()
                             thumb.snapTo(segments.indexOf(segment).toFloat())
                             onSelectionChange(segment.value)
                         },

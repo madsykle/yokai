@@ -130,5 +130,5 @@ object SegmentedControlMetrics {
     }
 
     /** Half-up rounding to a whole segment index, ties going the way a rightwards drag reads. */
-    private fun Float.roundToSegmentIndex(): Int = kotlin.math.floor(this + 0.5f)
+    private fun Float.roundToSegmentIndex(): Int = kotlin.math.floor(this + 0.5f).toInt()
 }
