@@ -68,8 +68,8 @@ class SearchBarMetricsTest {
     fun `an empty query and a whitespace query are distinguishable by clear, not by emptiness`() {
         // Guards the reason the X keys off isNotEmpty rather than isNotBlank: a blank-but-present
         // query still needs a way out.
-        SearchBarMetrics.showClear("   ").shouldBe true
-        SearchBarMetrics.showClear("").shouldBe false
+        SearchBarMetrics.showClear("   ") shouldBe true
+        SearchBarMetrics.showClear("") shouldBe false
     }
 
     // ---- Geometry -----------------------------------------------------------
