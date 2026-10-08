@@ -64,14 +64,15 @@ object CupertinoSearchIcons {
                     val steps = 16
                     for (i in 0..steps) {
                         val t = 2.0 * Math.PI * i / steps
-                        val x = cx + LensRadius * kotlin.math.cos(t)
-                        val y = cy + LensRadius * kotlin.math.sin(t)
+                        // cos/sin are Double; PathBuilder.moveTo/lineTo take Float.
+                        val x = (cx + LensRadius * kotlin.math.cos(t)).toFloat()
+                        val y = (cy + LensRadius * kotlin.math.sin(t)).toFloat()
                         if (i == 0) moveTo(x, y) else lineTo(x, y)
                     }
                     // Handle, leaving the lens edge at 45 degrees.
                     val hx = MagnifierWidth.value - Inset
                     val hy = MagnifierHeight.value - Inset
-                    moveTo(cx + LensRadius * 0.72f, cy + LensRadius * 0.72f)
+                    moveTo((cx + LensRadius * 0.72f), (cy + LensRadius * 0.72f))
                     lineTo(hx, hy)
                 }
             }

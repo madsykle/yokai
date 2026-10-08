@@ -153,17 +153,30 @@ fun CupertinoSwitch(
 /**
  * The track: a superellipse, not a rounded rectangle and not a capsule.
  *
- * [Superellipse] already exists and is built — do not rebuild it. It is parameterised by width
- * and height, so 51x31 needs no variant and no new token; only `segments` would ever want tuning
- * for a different surface, and that is already a parameter.
+ * [Superellipse] already exists and is built — do not rebuild it. It is parameterised by the
+ * half-extents and segment count, so 51x31 needs no variant and no new token; only `segments`
+ * would ever want tuning for a different surface, and that is already a parameter.
  */
 private fun DrawScope.drawTrack(fill: Color, outline: Color) {
-    val path = Superellipse.path(
-        width = size.width,
-        height = size.height,
+    // Built from Superellipse.points(), not Superellipse.path(). path() returns and takes an
+    // *android.graphics.Path* — GlassPane.kt:13 imports the Android Path for that reason — and
+    // DrawScope.drawPath needs the Compose one. points() is the same primitive path() is
+    // assembled from (Superellipse.kt:41), so this is that code with a Compose Path, and it
+    // avoids depending on an asComposePath() bridge.
+    val halfWidth = size.width / 2f
+    val halfHeight = size.height / 2f
+    val pts = Superellipse.points(
+        halfWidth = halfWidth,
+        halfHeight = halfHeight,
         segments = SwitchMetrics.TrackSegments,
-        outPath = Path(),
     )
+    val path = Path().apply {
+        moveTo(halfWidth + pts[0], halfHeight + pts[1])
+        for (i in 1 until SwitchMetrics.TrackSegments) {
+            lineTo(halfWidth + pts[i * 2], halfHeight + pts[i * 2 + 1])
+        }
+        close()
+    }
     drawPath(path, fill)
     if (outline != Color.Transparent) {
         drawPath(path, outline, style = Stroke(width = 1f))
