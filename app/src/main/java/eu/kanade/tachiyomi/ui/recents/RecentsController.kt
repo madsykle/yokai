@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
 import androidx.core.view.updatePaddingRelative
 import androidx.recyclerview.widget.RecyclerView
-import android.view.VelocityTracker
 import androidx.core.view.WindowInsetsCompat.Type.systemBars
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -221,8 +220,6 @@ class RecentsController(bundle: Bundle? = null) :
      */
     private var chromeScrollOffsetPx = 0f
 
-    private val chromeVelocityTracker = VelocityTracker()
-
     /** Push the presenter's view type into Compose state, if it has moved. */
     private fun syncChromeFromPresenter() {
         if (presenter.viewType != chromeViewType) chromeViewType = presenter.viewType
@@ -284,25 +281,28 @@ class RecentsController(bundle: Bundle? = null) :
      * [LargeTitleBarState.onScroll] wants the **cumulative** offset in px, not a per-frame delta —
      * the collapse fraction is derived from it (`LargeTitleBarMetrics.collapseFraction`).
      *
-     * `LargeTitleBarState.velocityCapture()` is a `NestedScrollConnection` and so only works for
-     * Compose scrollables; a `VelocityTracker` is the View-side equivalent, because RecyclerView
-     * exposes no velocity of its own. Signs line up: RecyclerView reports `dy > 0` when the user
-     * scrolls down, the same direction `onSettle` documents for its argument.
+     * [LargeTitleBarState.onSettle] is called with no argument on purpose. Its velocity comes
+     * from `LargeTitleBarState.velocityCapture()`, a `NestedScrollConnection`, which cannot attach
+     * to a RecyclerView; and `android.view.VelocityTracker` cannot stand in, because
+     * `addMovement` takes an `android.view.MotionEvent` — there is no `(float, float, long)`
+     * overload (`javap` on `android.jar` API 36) and `onScrolled` supplies no event to adapt.
+     * So the settle spring runs with zero initial velocity: it still carries the title home for
+     * overscroll and short-list cases, just without the flick-proportional start. Reconnecting
+     * `velocityCapture()` is a session-B item, and it is free there once the list is a Compose
+     * `LazyColumn` with `Modifier.nestedScroll`.
      */
     private fun setUpCupertinoChromeScroll() {
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    chromeVelocityTracker.addMovement(dy.toFloat())
                     chromeScrollOffsetPx += dy
                     largeTitleState?.onScroll(chromeScrollOffsetPx)
                 }
 
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    if (newState != RecyclerView.SCROLL_STATE_IDLE) return
-                    chromeVelocityTracker.computeCurrentVelocity(1000)
-                    largeTitleState?.onSettle(chromeVelocityTracker.yVelocity)
-                    chromeVelocityTracker.recycle()
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        largeTitleState?.onSettle()
+                    }
                 }
             },
         )
