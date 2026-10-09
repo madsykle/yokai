@@ -42,6 +42,17 @@
         android:layout_gravity="center"
         android:visibility="gone"/>
 
+    <!-- Cupertino chrome: large title + segmented control. Added as a child of this same
+         CoordinatorLayout rather than by swapping the controller to a Compose base class,
+         because RecentsController still holds a ViewBinding that 108 call sites depend on (75 of
+         them the download bottom sheet). Sits BEFORE the bottom sheet include so the sheet stays
+         last in the child order — BottomSheetBehavior depends on being drawn above content. -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/cupertino_chrome"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top" />
+
     <!-- Adding bottom sheet after main content -->
     <include layout="@layout/download_bottom_sheet"
         android:id="@+id/download_bottom_sheet"/>

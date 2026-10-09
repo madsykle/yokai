@@ -15,22 +15,32 @@ import androidx.activity.BackEventCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HistoryToggleOff
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.dp
+import androidx.core.view.updatePaddingRelative
+import androidx.recyclerview.widget.RecyclerView
+import android.view.VelocityTracker
 import androidx.core.view.WindowInsetsCompat.Type.systemBars
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
-import androidx.core.view.updatePaddingRelative
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.TransitionSet
 import com.bluelinelabs.conductor.ControllerChangeHandler
 import com.bluelinelabs.conductor.ControllerChangeType
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayout
 import eu.davidea.flexibleadapter.FlexibleAdapter
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
@@ -73,7 +83,6 @@ import eu.kanade.tachiyomi.util.system.spToPx
 import eu.kanade.tachiyomi.util.system.toInt
 import eu.kanade.tachiyomi.util.view.activityBinding
 import eu.kanade.tachiyomi.util.view.collapse
-import eu.kanade.tachiyomi.util.view.compatToolTipText
 import eu.kanade.tachiyomi.util.view.expand
 import eu.kanade.tachiyomi.util.view.fullAppBarHeight
 import eu.kanade.tachiyomi.util.view.hide
@@ -88,7 +97,6 @@ import eu.kanade.tachiyomi.util.view.setAction
 import eu.kanade.tachiyomi.util.view.setOnQueryTextChangeListener
 import eu.kanade.tachiyomi.util.view.setPositiveButton
 import eu.kanade.tachiyomi.util.view.setStyle
-import eu.kanade.tachiyomi.util.view.smoothScrollToTop
 import eu.kanade.tachiyomi.util.view.snack
 import eu.kanade.tachiyomi.util.view.updateGradiantBGRadius
 import eu.kanade.tachiyomi.util.view.withFadeTransaction
@@ -96,7 +104,14 @@ import eu.kanade.tachiyomi.widget.LinearLayoutManagerAccurateOffset
 import java.util.Locale
 import kotlin.math.max
 import kotlinx.coroutines.launch
+import dev.icerock.moko.resources.compose.stringResource
 import yokai.i18n.MR
+import yokai.presentation.theme.components.LargeTitleBar
+import yokai.presentation.theme.components.LargeTitleBarMetrics
+import yokai.presentation.theme.components.LargeTitleBarState
+import yokai.presentation.theme.components.SegmentedControl
+import yokai.presentation.theme.components.SegmentedControlSegment
+import yokai.presentation.theme.components.rememberLargeTitleBarState
 import yokai.util.lang.getString
 import android.R as AR
 
@@ -165,12 +180,162 @@ class RecentsController(bundle: Bundle? = null) :
         RecentsControllerBinding.inflate(inflater)
 
     /**
+     * The Cupertino chrome replaces the legacy app bar, toolbar and view-type tab strip.
+     *
+     * `BaseController.hideLegacyAppBar()` (`BaseController.kt:147`) sets `isVisible = false` —
+     * INVISIBLE, not GONE. That is enough here because `controller_container` is `match_parent`
+     * constrained to the parent's top (`main_activity.xml:11-19`) and the app bar merely overlays
+     * it, so no dead layout band is left behind. The chrome therefore owns the top inset itself.
+     *
+     * `main_tabs` is nested inside `ExpandedAppBarLayout` (`main_activity.xml:217`, under the
+     * `app_bar` opened at line 32), so hiding the app bar hides the tab strip with it.
+     * [onChangeStarted] still clears the tabs, because `tabs_frame_layout` is `gone` by default
+     * and `MainActivity.showTabBar(true)` can make it visible again.
+     */
+    override val shouldHideLegacyAppBar = true
+
+    /**
+     * View type as Compose state.
+     *
+     * [RecentsPresenter.viewType] is a plain `var`, so reading it inside composition would never
+     * recompose when it changed. Holding it here means the segmented control reflects the
+     * presenter. Changes made outside the control (back-handler jumps, item taps) go through
+     * [syncChromeFromPresenter].
+     */
+    private var chromeViewType by mutableStateOf(RecentsViewType.GroupedAll)
+
+    /**
+     * The bar's state holder, published out of composition so the View scroll listener can reach
+     * it. Assigned from a `SideEffect` — writing a field directly in the composable body would be
+     * a side effect in a spot the compiler may skip.
+     */
+    private var largeTitleState: LargeTitleBarState? = null
+
+    /**
+     * Cumulative scroll offset fed to [LargeTitleBarState.onScroll].
+     *
+     * An accumulator, not a reading of `RecyclerView.computeVerticalScrollOffset()`: that reports
+     * 0 for a list too short to scroll, which would snap the title open. Reset in
+     * [setUpCupertinoChrome] alongside the fresh adapter, so a re-created view starts at 0 and any
+     * restored scroll position arrives as real `dy` in [setUpCupertinoChromeScroll].
+     */
+    private var chromeScrollOffsetPx = 0f
+
+    private val chromeVelocityTracker = VelocityTracker()
+
+    /** Push the presenter's view type into Compose state, if it has moved. */
+    private fun syncChromeFromPresenter() {
+        if (presenter.viewType != chromeViewType) chromeViewType = presenter.viewType
+    }
+
+    /**
+     * Mount the Cupertino chrome into [RecentsControllerBinding.cupertinoChrome].
+     *
+     * A `ComposeView` declared in `recents_controller.xml` rather than a base-class swap: this
+     * controller holds a ViewBinding that 108 call sites depend on, 75 of them the download
+     * bottom sheet, which is out of scope for session A. Putting the chrome inside the existing
+     * CoordinatorLayout keeps `binding.root` — and with it the sheet, the adapter, the endless
+     * scroll listener and predictive back — exactly as they were.
+     */
+    private fun setUpCupertinoChrome() {
+        binding.cupertinoChrome.setViewCompositionStrategy(
+            ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
+        )
+        chromeViewType = presenter.viewType
+        chromeScrollOffsetPx = 0f
+        binding.cupertinoChrome.setContent {
+            RecentsChrome(
+                viewType = chromeViewType,
+                onViewTypeSelected = { selected ->
+                    setViewType(selected)
+                    chromeViewType = selected
+                },
+            )
+        }
+    }
+
+    @Composable
+    private fun RecentsChrome(
+        viewType: RecentsViewType,
+        onViewTypeSelected: (RecentsViewType) -> Unit,
+    ) {
+        val barState = rememberLargeTitleBarState()
+        SideEffect { largeTitleState = barState }
+
+        Column {
+            LargeTitleBar(
+                title = binding.root.context.getString(MR.strings.recents),
+                state = barState,
+            )
+            SegmentedControl(
+                segments = RecentsViewType.entries.map {
+                    SegmentedControlSegment(it, stringResource(it.stringRes))
+                },
+                selected = viewType,
+                onSelectionChange = onViewTypeSelected,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = CupertinoSegmentedInset),
+            )
+        }
+    }
+
+    /**
+     * Feed the large title from the RecyclerView.
+     *
+     * [LargeTitleBarState.onScroll] wants the **cumulative** offset in px, not a per-frame delta —
+     * the collapse fraction is derived from it (`LargeTitleBarMetrics.collapseFraction`).
+     *
+     * `LargeTitleBarState.velocityCapture()` is a `NestedScrollConnection` and so only works for
+     * Compose scrollables; a `VelocityTracker` is the View-side equivalent, because RecyclerView
+     * exposes no velocity of its own. Signs line up: RecyclerView reports `dy > 0` when the user
+     * scrolls down, the same direction `onSettle` documents for its argument.
+     */
+    private fun setUpCupertinoChromeScroll() {
+        binding.recycler.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    chromeVelocityTracker.addMovement(dy.toFloat())
+                    chromeScrollOffsetPx += dy
+                    largeTitleState?.onScroll(chromeScrollOffsetPx)
+                }
+
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    if (newState != RecyclerView.SCROLL_STATE_IDLE) return
+                    chromeVelocityTracker.computeCurrentVelocity(1000)
+                    largeTitleState?.onSettle(chromeVelocityTracker.yVelocity)
+                    chromeVelocityTracker.recycle()
+                }
+            },
+        )
+    }
+
+    /**
+     * Height the chrome occupies, in dp, excluding the status-bar inset.
+     *
+     * Constant because the bar pins at [LargeTitleBarMetrics.BarHeight] expanded or collapsed —
+     * only its type size animates — and the segmented control never changes height either. So
+     * this is safe to read once rather than observe.
+     */
+    private val chromeHeightDp = LargeTitleBarMetrics.BarHeight.value +
+        CupertinoSegmentedInset.value * 2 +
+        SegmentedControlHeight.value
+
+    companion object {
+        /** Vertical gap above and below the segmented control. */
+        private val CupertinoSegmentedInset = 8.dp
+
+        /** Mirrors `SegmentedControlMetrics.Height`; restated here to avoid the metrics import. */
+        private val SegmentedControlHeight = 32.dp
+    }
+
+    /**
      * Called when view is created
      *
      * @param view created view
      */
     override fun onViewCreated(view: View) {
         super.onViewCreated(view)
+        setUpCupertinoChrome()
+        setUpCupertinoChromeScroll()
         // Initialize adapter
         val isReturning = this::adapter.isInitialized
         adapter = RecentMangaAdapter(this)
@@ -193,14 +358,23 @@ class RecentsController(bundle: Bundle? = null) :
             swipeRefreshLayout = binding.swipeRefresh,
             ignoreInsetVisibility = true,
             afterInsets = {
-                val appBarHeight = activityBinding?.appBar?.attrToolbarHeight ?: 0
+                // The legacy app bar is hidden in favour of the Cupertino chrome, so the list's
+                // top padding is the chrome's height rather than the toolbar's. Keeping the old
+                // appBarHeight here would leave a dead toolbar-sized gap above the first row.
+                val chromeHeight = (chromeHeightDp * view.resources.displayMetrics.density).toInt()
                 val systemInsets = it.ignoredSystemInsets
-                headerHeight = systemInsets.top + appBarHeight + 48.dpToPx
+                // Write-only before this change and still is (nothing reads `headerHeight`); kept
+                // so the diff stays about the chrome rather than about deleting pre-existing state.
+                headerHeight = systemInsets.top + chromeHeight
+                // controller_container is full-height and the app bar only overlays it, so the
+                // chrome — not the window — has to absorb the status bar.
+                binding.cupertinoChrome.updatePaddingRelative(top = systemInsets.top)
                 binding.recycler.updatePaddingRelative(
+                    top = systemInsets.top + chromeHeight,
                     bottom = activityBinding?.bottomNav?.height ?: systemInsets.bottom,
                 )
                 binding.downloadBottomSheet.sheetLayout.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    height = appBarHeight + systemInsets.top
+                    height = chromeHeight + systemInsets.top
                 }
                 val bigToolbarHeight = fullAppBarHeight ?: 0
 
@@ -738,6 +912,9 @@ class RecentsController(bundle: Bundle? = null) :
         activityBinding?.mainTabs?.run { selectTab(getTabAt(viewType.mainValue)) }
         (activity as? MainActivity)?.reEnableBackPressedCallBack()
         updateTitleAndMenu()
+        // Back-handler jumps and item taps move the view type without going through the
+        // segmented control, so push it into Compose state here too or the control goes stale.
+        syncChromeFromPresenter()
     }
 
     private fun setViewType(viewType: RecentsViewType) {
@@ -917,34 +1094,15 @@ class RecentsController(bundle: Bundle? = null) :
         if (type.isEnter) {
             if (type == ControllerChangeType.POP_ENTER) presenter.onCreate()
             binding.downloadBottomSheet.dlBottomSheet.dismiss()
-            if (isControllerVisible) {
-                activityBinding?.mainTabs?.let { tabs ->
-                    tabs.removeAllTabs()
-                    tabs.clearOnTabSelectedListeners()
-                    val selectedTab = presenter.viewType
-                    RecentsViewType.entries.forEach { viewType ->
-                        tabs.addTab(
-                            tabs.newTab().setText(activity?.getString(viewType.stringRes)).also { tab ->
-                                tab.view.compatToolTipText = null
-                            },
-                            viewType == selectedTab,
-                        )
-                    }
-                    tabs.addOnTabSelectedListener(
-                        object : TabLayout.OnTabSelectedListener {
-                            override fun onTabSelected(tab: TabLayout.Tab?) {
-                                setViewType(RecentsViewType.valueOf(tab?.position))
-                            }
-
-                            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-                            override fun onTabReselected(tab: TabLayout.Tab?) {
-                                binding.recycler.smoothScrollToTop()
-                            }
-                        },
-                    )
-                    (activity as? MainActivity)?.showTabBar(true)
-                }
+            // The view-type TabLayout strip is superseded by the Cupertino segmented control.
+            // Cleared explicitly rather than left to hideLegacyAppBar(): tabs_frame_layout is
+            // gone by default, but MainActivity.showTabBar(true) can reveal it again.
+            activityBinding?.mainTabs?.let { tabs ->
+                tabs.removeAllTabs()
+                tabs.clearOnTabSelectedListeners()
             }
+            (activity as? MainActivity)?.showTabBar(false)
+            syncChromeFromPresenter()
         } else {
             val lastController = router.backstack.lastOrNull()?.controller
             if (lastController !is DialogController) {
