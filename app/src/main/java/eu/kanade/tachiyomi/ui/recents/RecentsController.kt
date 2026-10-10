@@ -106,6 +106,7 @@ import kotlinx.coroutines.launch
 import dev.icerock.moko.resources.compose.stringResource
 import yokai.i18n.MR
 import yokai.presentation.theme.YokaiTheme
+import yokai.presentation.theme.components.CupertinoSearchBar
 import yokai.presentation.theme.components.LargeTitleBar
 import yokai.presentation.theme.components.LargeTitleBarMetrics
 import yokai.presentation.theme.components.LargeTitleBarState
@@ -151,11 +152,21 @@ class RecentsController(bundle: Bundle? = null) :
     private var deviceRadius = 0f to 0f
     private var lastScale = 1f
 
-    private var query = ""
-        set(value) {
-            field = value
-            presenter.query = value
-        }
+    /**
+     * Snapshot-backed so the chrome's `CupertinoSearchBar` recomposes as the user types.
+     * [setQuery] is the only writer, so the presenter's copy can never drift from the chrome's.
+     */
+    private var query by mutableStateOf("")
+
+    /**
+     * Single entry point for the query, shared by the Cupertino bar and the legacy `SearchView`
+     * listener. Forwards to the presenter exactly as the original setter did, so this is the same
+     * filtering pathway — not a second one.
+     */
+    private fun setQuery(value: String) {
+        query = value
+        presenter.query = value
+    }
 
     override val mainRecycler: RecyclerView
         get() = binding.recycler
@@ -270,6 +281,33 @@ class RecentsController(bundle: Bundle? = null) :
                 title = binding.root.context.getString(MR.strings.recents),
                 state = barState,
             )
+            CupertinoSearchBar(
+                query = query,
+                // Same three calls the legacy `SearchView` listener made — one pathway into the
+                // presenter, not a second one.
+                onQueryChange = { new ->
+                    if (query != new) {
+                        setQuery(new)
+                        resetProgressItem()
+                        refresh()
+                    }
+                },
+                placeholder = getSearchTitle().orEmpty(),
+                cancelLabel = stringResource(MR.strings.cancel),
+                onCancel = {
+                    if (query.isNotEmpty()) {
+                        setQuery("")
+                        resetProgressItem()
+                        refresh()
+                    }
+                },
+                // The list cannot scroll under the bar yet — that is session B, with the LazyColumn
+                // — so this layout always has content behind the bar and the capsule should always
+                // be drawn. `barAlpha(false) == 0f`, so passing false would leave it permanently
+                // invisible. Flip to false once overlap actually lands.
+                contentScrolledUnder = true,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = SearchBarInset),
+            )
             SegmentedControl(
                 segments = RecentsViewType.entries.map {
                     SegmentedControlSegment(it, stringResource(it.stringRes))
@@ -322,8 +360,23 @@ class RecentsController(bundle: Bundle? = null) :
      * this is safe to read once rather than observe.
      */
     private val chromeHeightDp = LargeTitleBarMetrics.BarHeight.value +
+        SearchBarInset.value +
+        CupertinoSearchBarHeight.value +
         CupertinoSegmentedInset.value * 2 +
         SegmentedControlHeight.value
+
+    /**
+     * The one place the list's padding is written. `headerHeight` (status-bar inset plus chrome
+     * height) is set once per inset change from `scrollViewWith`'s `afterInsets`.
+     *
+     * Every call goes through here because `updatePaddingRelative` *replaces* both axes: a later
+     * `updatePaddingRelative(bottom = …)` silently resets `top` to 0 and slides the list under the
+     * chrome. Routing all three sites through one function makes that impossible rather than
+     * fixing it in three places.
+     */
+    private fun applyListPadding(bottom: Int) {
+        binding.recycler.updatePaddingRelative(top = headerHeight, bottom = bottom)
+    }
 
     companion object {
         /** Vertical gap above and below the segmented control. */
@@ -331,6 +384,12 @@ class RecentsController(bundle: Bundle? = null) :
 
         /** Mirrors `SegmentedControlMetrics.Height`; restated here to avoid the metrics import. */
         private val SegmentedControlHeight = 32.dp
+
+        /** Mirrors `SearchBarMetrics.Height`; restated here to avoid the metrics import. */
+        private val CupertinoSearchBarHeight = 36.dp
+
+        /** Gap between the title bar and the search field. */
+        private val SearchBarInset = 8.dp
     }
 
     /**
@@ -369,16 +428,19 @@ class RecentsController(bundle: Bundle? = null) :
                 // appBarHeight here would leave a dead toolbar-sized gap above the first row.
                 val chromeHeight = (chromeHeightDp * view.resources.displayMetrics.density).toInt()
                 val systemInsets = it.ignoredSystemInsets
-                // Write-only before this change and still is (nothing reads `headerHeight`); kept
-                // so the diff stays about the chrome rather than about deleting pre-existing state.
                 headerHeight = systemInsets.top + chromeHeight
                 // controller_container is full-height and the app bar only overlays it, so the
-                // chrome — not the window — has to absorb the status bar.
-                binding.cupertinoChrome.updatePaddingRelative(top = systemInsets.top)
-                binding.recycler.updatePaddingRelative(
-                    top = systemInsets.top + chromeHeight,
-                    bottom = activityBinding?.bottomNav?.height ?: systemInsets.bottom,
-                )
+                // chrome — not the window — has to clear the status bar.
+                //
+                // Margin, not padding. The chrome has a fixed height, so padding would shrink its
+                // content area (the bar would lose its top gap) instead of moving the block down.
+                // This was padding back when the chrome measured itself (`wrap_content`), which is
+                // exactly what let the async inset callback change its measured height after first
+                // layout. A fixed height makes margin the correct tool and the race moot.
+                binding.cupertinoChrome.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                    topMargin = systemInsets.top
+                }
+                applyListPadding(activityBinding?.bottomNav?.height ?: systemInsets.bottom)
                 binding.downloadBottomSheet.sheetLayout.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                     height = chromeHeight + systemInsets.top
                 }
@@ -418,7 +480,7 @@ class RecentsController(bundle: Bundle? = null) :
                 activityBinding?.bottomNav?.height ?: view.rootWindowInsetsCompat?.getInsets(
                     systemBars(),
                 )?.bottom ?: 0
-            binding.recycler.updatePaddingRelative(bottom = height)
+            applyListPadding(height)
             binding.downloadBottomSheet.dlRecycler.updatePaddingRelative(
                 bottom = height,
             )
@@ -628,7 +690,11 @@ class RecentsController(bundle: Bundle? = null) :
     fun updateTitleAndMenu() {
         if (isControllerVisible) {
             val activity = (activity as? MainActivity) ?: return
-            activityBinding?.appBar?.isInvisible = showingDownloads
+            // `shouldHideLegacyAppBar` already hid the app bar in `onCreateView` (BaseLegacyController ->
+            // setAppBarVisibility -> hideLegacyAppBar), but this line re-showed it on every call
+            // because `showingDownloads` is false in normal use. That is how the Material toolbar
+            // and its search field kept drawing over the Cupertino chrome.
+            activityBinding?.appBar?.isInvisible = showingDownloads || shouldHideLegacyAppBar
             (activity as? MainActivity)?.setStatusBarColorTransparent(showingDownloads)
             setTitle()
         }
@@ -716,8 +782,8 @@ class RecentsController(bundle: Bundle? = null) :
     fun setPadding(sheetIsHidden: Boolean) {
         val peekHeight = binding.downloadBottomSheet.dlBottomSheet.sheetBehavior?.peekHeight ?: 0
         val cInsets = view?.rootWindowInsetsCompat ?: return
-        binding.recycler.updatePaddingRelative(
-            bottom = if (sheetIsHidden) {
+        applyListPadding(
+            if (sheetIsHidden) {
                 activityBinding?.bottomNav?.height ?: cInsets.getInsets(systemBars()).bottom
             } else {
                 peekHeight
@@ -1087,7 +1153,7 @@ class RecentsController(bundle: Bundle? = null) :
         }
         setOnQueryTextChangeListener(activityBinding?.searchToolbar?.searchView) {
             if (query != it) {
-                query = it ?: return@setOnQueryTextChangeListener false
+                setQuery(it ?: return@setOnQueryTextChangeListener false)
                 resetProgressItem()
                 refresh()
             }
