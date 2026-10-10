@@ -113,7 +113,10 @@ class RecentMangaHolder(
                 .addTransition(androidx.transition.Slide())
             transition.duration =
                 itemView.resources.getInteger(AR.integer.config_shortAnimTime).toLong()
-            TransitionManager.beginDelayedTransition(adapter.recyclerView, transition)
+            // Scope the delayed transition to the holder's own root. It used to be `adapter.recyclerView`,
+            // which is null once Recents has no RecyclerView, and `beginDelayedTransition` requires
+            // a non-null scene root.
+            TransitionManager.beginDelayedTransition(binding.root, transition)
         }
         updateCards()
         binding.frontView.layoutTransition?.enableTransitionType(LayoutTransition.APPEARING)
@@ -453,7 +456,7 @@ class RecentMangaHolder(
         val downloadInfo =
             item.downloadInfo.find { it.chapterId == chapter.id } ?: return
         downloadButton.downloadButton.setOnClickListener {
-            downloadOrRemoveMenu(it, chapter, downloadInfo.status)
+            downloadOrRemoveMenu(it, item, downloadInfo.status)
         }
         downloadButton.downloadButton.isVisible = when (showDLs) {
             RecentMangaAdapter.ShowRecentsDLs.None -> false

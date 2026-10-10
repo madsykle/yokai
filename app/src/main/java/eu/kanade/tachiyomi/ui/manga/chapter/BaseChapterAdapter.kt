@@ -10,6 +10,14 @@ open class BaseChapterAdapter<T : IFlexible<*>>(
 
     val baseDelegate = obj
 
+    /**
+     * Resolves an item's adapter position from the data rather than from a holder.
+     *
+     * `FlexibleAdapter.positionOf` reads the attached RecyclerView, so it returns `NO_POSITION`
+     * for any holder that has left one. Item-keyed callers go through this instead.
+     */
+    internal fun positionOf(item: BaseChapterItem<*, *>): Int = currentItems.indexOfFirst { it == item }
+
     interface DownloadInterface {
         fun downloadChapter(position: Int)
         fun startDownloadNow(position: Int)
