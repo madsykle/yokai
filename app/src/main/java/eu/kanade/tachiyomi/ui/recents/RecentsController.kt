@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.stickyHeader
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -347,7 +346,9 @@ class RecentsController(bundle: Bundle? = null) :
                 }
             }
         }
-        return Modifier.nestedScroll(state.velocityCapture(), connection)
+        // `nestedScroll` has no vararg overload; each connection is its own modifier, and both end up
+        // in the same dispatcher's chain.
+        return Modifier.nestedScroll(state.velocityCapture()).nestedScroll(connection)
     }
 
     /**
@@ -1626,9 +1627,12 @@ private fun refreshItem(chapterId: Long) {
             animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
             label = "recents-spinner-angle",
         )
+        // Resolved outside the Canvas lambda: `CupertinoColors.current` is a @Composable getter and
+        // DrawScope is not a composable scope.
+        val color = CupertinoColors.current.labelTertiary
         Canvas(modifier.size(24.dp)) {
             drawArc(
-                color = CupertinoColors.current.labelTertiary,
+                color = color,
                 startAngle = angle,
                 sweepAngle = 270f,
                 useCenter = false,
