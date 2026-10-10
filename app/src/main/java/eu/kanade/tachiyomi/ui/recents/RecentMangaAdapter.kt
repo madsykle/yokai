@@ -59,6 +59,28 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
         setDisplayHeadersAtStartUp(true)
     }
 
+    /**
+     * Called instead of `notifyDataSetChanged()` when a display preference changes.
+     *
+     * With no RecyclerView attached, `notifyDataSetChanged()` redraws nothing, so a preference
+     * change would silently fail to reach the rows. The controller holds this and bumps a
+     * snapshot-state counter the composable reads, which re-runs `AndroidView`'s `update` and
+     * re-binds every row in place.
+     *
+     * Null until [RecentsController.onViewCreated] wires it, so the adapter is still constructible
+     * on its own.
+     */
+    var onDataInvalidated: (() -> Unit)? = null
+
+    /**
+     * Called when the cover-outline preference changes, so the controller can push
+     * [RecentMangaHolder.updateCards] into the holders it can actually see.
+     *
+     * This used to be a loop over `recyclerView.findViewHolderForAdapterPosition`, which cannot
+     * survive the list becoming a LazyColumn.
+     */
+    var onOutlineChanged: (() -> Unit)? = null
+
     fun setPreferenceFlows() {
         recentsPreferences.showRecentsDownloads().register { showDownloads = it }
         recentsPreferences.showRecentsRemHistory().register { showRemoveHistory = it }
@@ -70,14 +92,12 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
         preferences.sortFetchedTime().changesIn(delegate.scope()) { sortByFetched = it }
         uiPreferences.outlineOnCovers().register(false) {
             showOutline = it
-            (0 until itemCount).forEach { i ->
-                (recyclerView.findViewHolderForAdapterPosition(i) as? RecentMangaHolder)?.updateCards()
-            }
+            onOutlineChanged?.invoke()
         }
         preferences.libraryUpdateLastTimestamp().changesIn(delegate.scope()) {
             lastUpdatedTime = it
             if (viewType.isUpdates) {
-                notifyItemChanged(0)
+                onDataInvalidated?.invoke()
             }
         }
     }
@@ -95,7 +115,7 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
             .onEach {
                 onChanged(it)
                 if (notify) {
-                    notifyDataSetChanged()
+                    onDataInvalidated?.invoke()
                 }
             }
             .launchIn(delegate.scope())

@@ -1,6 +1,49 @@
 package eu.kanade.tachiyomi.ui.recents
 
 import android.app.Activity
+import android.text.format.DateUtils
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.stickyHeader
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewCompat
+import java.util.Date
+import yokai.presentation.theme.CupertinoColors
+import yokai.presentation.theme.CupertinoType
+import yokai.presentation.theme.components.CupertinoEmptyState
+import eu.kanade.tachiyomi.util.system.timeSpanFromNow
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -18,7 +61,6 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -31,9 +73,6 @@ import androidx.core.view.WindowInsetsCompat.Type.systemBars
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
-import androidx.core.view.updatePadding
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.transition.TransitionSet
 import com.bluelinelabs.conductor.ControllerChangeHandler
 import com.bluelinelabs.conductor.ControllerChangeType
@@ -65,7 +104,6 @@ import eu.kanade.tachiyomi.ui.main.TabbedInterface
 import eu.kanade.tachiyomi.ui.manga.MangaDetailsController
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.recents.options.TabbedRecentsOptionsSheet
-import eu.kanade.tachiyomi.ui.source.browse.ProgressItem
 import eu.kanade.tachiyomi.util.chapter.updateTrackChapterMarkedAsRead
 import eu.kanade.tachiyomi.util.system.addCheckBoxPrompt
 import eu.kanade.tachiyomi.util.system.dpToPx
@@ -83,23 +121,17 @@ import eu.kanade.tachiyomi.util.system.toInt
 import eu.kanade.tachiyomi.util.view.activityBinding
 import eu.kanade.tachiyomi.util.view.collapse
 import eu.kanade.tachiyomi.util.view.expand
-import eu.kanade.tachiyomi.util.view.fullAppBarHeight
 import eu.kanade.tachiyomi.util.view.hide
 import eu.kanade.tachiyomi.util.view.isCollapsed
 import eu.kanade.tachiyomi.util.view.isControllerVisible
 import eu.kanade.tachiyomi.util.view.isExpanded
 import eu.kanade.tachiyomi.util.view.isHidden
-import eu.kanade.tachiyomi.util.view.moveRecyclerViewUp
-import eu.kanade.tachiyomi.util.view.onAnimationsFinished
-import eu.kanade.tachiyomi.util.view.scrollViewWith
 import eu.kanade.tachiyomi.util.view.setAction
 import eu.kanade.tachiyomi.util.view.setOnQueryTextChangeListener
 import eu.kanade.tachiyomi.util.view.setPositiveButton
-import eu.kanade.tachiyomi.util.view.setStyle
 import eu.kanade.tachiyomi.util.view.snack
 import eu.kanade.tachiyomi.util.view.updateGradiantBGRadius
 import eu.kanade.tachiyomi.util.view.withFadeTransaction
-import eu.kanade.tachiyomi.widget.LinearLayoutManagerAccurateOffset
 import java.util.Locale
 import kotlin.math.max
 import kotlinx.coroutines.launch
@@ -142,12 +174,13 @@ class RecentsController(bundle: Bundle? = null) :
     private lateinit var adapter: RecentMangaAdapter
     var displaySheet: TabbedRecentsOptionsSheet? = null
 
-    private var progressItem: ProgressItem? = null
     override var presenter = RecentsPresenter()
     private var snack: Snackbar? = null
     private var lastChapterId: Long? = null
+
+    /** True while a library update is running. Drawn as an indicator; no gesture wired yet. */
+    private var listIsRefreshing by mutableStateOf(false)
     private var showingDownloads = false
-    private var headerHeight = 0
     private var ogRadius = 0f
     private var deviceRadius = 0f to 0f
     private var lastScale = 1f
@@ -168,8 +201,11 @@ class RecentsController(bundle: Bundle? = null) :
         presenter.query = value
     }
 
-    override val mainRecycler: RecyclerView
-        get() = binding.recycler
+    // `mainRecycler` is deliberately not overridden. The legacy app bar is hidden in favour of
+    // the Cupertino chrome, so `BaseController.mainRecyclerView` returning null here only means
+    // `MainActivity.requestApplyInsets()` / `updateAppBarAfterY()` no-op for Recents, which is
+    // correct: there is no app bar for them to move. Every consumer is already null-safe
+    // (`ControllerExtensions.kt:708,712`; `MainActivity.kt:691,693,707`).
 
     override fun getTitle(): String? {
         return view?.context?.getString(MR.strings.recents)
@@ -215,141 +251,103 @@ class RecentsController(bundle: Bundle? = null) :
      */
     private var chromeViewType by mutableStateOf(RecentsViewType.GroupedAll)
 
-    /**
-     * The bar's state holder, published out of composition so the View scroll listener can reach
-     * it. Assigned from a `SideEffect` — writing a field directly in the composable body would be
-     * a side effect in a spot the compiler may skip.
-     */
-    private var largeTitleState: LargeTitleBarState? = null
-
-    /**
-     * Cumulative scroll offset fed to [LargeTitleBarState.onScroll].
-     *
-     * An accumulator, not a reading of `RecyclerView.computeVerticalScrollOffset()`: that reports
-     * 0 for a list too short to scroll, which would snap the title open. Reset in
-     * [setUpCupertinoChrome] alongside the fresh adapter, so a re-created view starts at 0 and any
-     * restored scroll position arrives as real `dy` in [setUpCupertinoChromeScroll].
-     */
-    private var chromeScrollOffsetPx = 0f
-
     /** Push the presenter's view type into Compose state, if it has moved. */
     private fun syncChromeFromPresenter() {
         if (presenter.viewType != chromeViewType) chromeViewType = presenter.viewType
     }
 
     /**
-     * Mount the Cupertino chrome into [RecentsControllerBinding.cupertinoChrome].
+     * Mount [RecentsScreen] into [RecentsControllerBinding.cupertinoChrome].
      *
      * A `ComposeView` declared in `recents_controller.xml` rather than a base-class swap: this
-     * controller holds a ViewBinding that 108 call sites depend on, 75 of them the download
-     * bottom sheet, which is out of scope for session A. Putting the chrome inside the existing
-     * CoordinatorLayout keeps `binding.root` — and with it the sheet, the adapter, the endless
-     * scroll listener and predictive back — exactly as they were.
+     * controller holds a ViewBinding that the download bottom sheet alone accounts for, and
+     * keeping `binding.root` keeps the sheet, its BottomSheetBehavior child ordering and the
+     * controller lifecycle exactly as they were.
      */
-    private fun setUpCupertinoChrome() {
+    private fun setUpCupertinoScreen() {
         binding.cupertinoChrome.setViewCompositionStrategy(
             ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
         )
         chromeViewType = presenter.viewType
-        chromeScrollOffsetPx = 0f
+        recentsRows = buildRecentsRows(presenter.recentItems)
         binding.cupertinoChrome.setContent {
             // Same wrapper every Compose screen enters (BaseComposeController.kt:30). Also where
-            // LocalCupertinoColors comes from, i.e. why this chrome follows dark mode at all —
+            // LocalCupertinoColors comes from, i.e. why this screen follows dark mode at all —
             // without it the components resolve to LightCupertinoColors unconditionally.
             YokaiTheme {
-                RecentsChrome(
+                RecentsScreen(
+                    rows = recentsRows,
                     viewType = chromeViewType,
+                    adapter = adapter,
+                    emptyStateIcon = if (isSearching()) Icons.Filled.SearchOff else Icons.Filled.HistoryToggleOff,
+                    emptyStateTitle = when {
+                        isSearching() -> stringResource(MR.strings.no_results_found)
+                        else -> when (presenter.viewType) {
+                            RecentsViewType.Updates -> stringResource(MR.strings.no_recent_chapters)
+                            RecentsViewType.History -> stringResource(MR.strings.no_recently_read_manga)
+                            else -> stringResource(MR.strings.no_recent_read_updated_manga)
+                        }
+                    },
+                    isLoading = recentsLoading,
+                    topInsetPx = listTopInsetPx,
+                    bottomInsetPx = listBottomInsetPx,
+                    // Read so a display-preference change recomposes the list; the rows re-bind
+                    // through AndroidView's `update` block.
+                    preferencesVersion = preferencesVersion,
                     onViewTypeSelected = { selected ->
                         setViewType(selected)
                         chromeViewType = selected
                     },
+                    onQueryChange = { new ->
+                        if (query != new) {
+                            applyQuery(new)
+                            resetProgressItem()
+                            refresh()
+                        }
+                    },
+                    onQueryCancel = {
+                        if (query.isNotEmpty()) {
+                            applyQuery("")
+                            resetProgressItem()
+                            refresh()
+                        }
+                    },
+                    onLoadMore = ::requestNextPage,
                 )
             }
         }
     }
 
-    @Composable
-    private fun RecentsChrome(
-        viewType: RecentsViewType,
-        onViewTypeSelected: (RecentsViewType) -> Unit,
-    ) {
-        val barState = rememberLargeTitleBarState()
-        SideEffect { largeTitleState = barState }
-
-        Column {
-            LargeTitleBar(
-                title = binding.root.context.getString(MR.strings.recents),
-                state = barState,
-            )
-            CupertinoSearchBar(
-                query = query,
-                // Same three calls the legacy `SearchView` listener made — one pathway into the
-                // presenter, not a second one.
-                onQueryChange = { new ->
-                    if (query != new) {
-                        applyQuery(new)
-                        resetProgressItem()
-                        refresh()
-                    }
-                },
-                placeholder = getSearchTitle().orEmpty(),
-                cancelLabel = stringResource(MR.strings.cancel),
-                onCancel = {
-                    if (query.isNotEmpty()) {
-                        applyQuery("")
-                        resetProgressItem()
-                        refresh()
-                    }
-                },
-                // The list cannot scroll under the bar yet — that is session B, with the LazyColumn
-                // — so this layout always has content behind the bar and the capsule should always
-                // be drawn. `barAlpha(false) == 0f`, so passing false would leave it permanently
-                // invisible. Flip to false once overlap actually lands.
-                contentScrolledUnder = true,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = SearchBarInset),
-            )
-            SegmentedControl(
-                segments = RecentsViewType.entries.map {
-                    SegmentedControlSegment(it, stringResource(it.stringRes))
-                },
-                selected = viewType,
-                onSelectionChange = onViewTypeSelected,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = CupertinoSegmentedInset),
-            )
-        }
-    }
-
     /**
-     * Feed the large title from the RecyclerView.
+     * Feed the large title from the LazyColumn.
      *
-     * [LargeTitleBarState.onScroll] wants the **cumulative** offset in px, not a per-frame delta —
-     * the collapse fraction is derived from it (`LargeTitleBarMetrics.collapseFraction`).
+     * Two separate concerns, deliberately not one:
      *
-     * [LargeTitleBarState.onSettle] is called with no argument on purpose. Its velocity comes
-     * from `LargeTitleBarState.velocityCapture()`, a `NestedScrollConnection`, which cannot attach
-     * to a RecyclerView; and `android.view.VelocityTracker` cannot stand in, because
-     * `addMovement` takes an `android.view.MotionEvent` — there is no `(float, float, long)`
-     * overload (`javap` on `android.jar` API 36) and `onScrolled` supplies no event to adapt.
-     * So the settle spring runs with zero initial velocity: it still carries the title home for
-     * overscroll and short-list cases, just without the flick-proportional start. Reconnecting
-     * `velocityCapture()` is a session-B item, and it is free there once the list is a Compose
-     * `LazyColumn` with `Modifier.nestedScroll`.
+     * - **Where it is.** [LargeTitleBarState.onScroll] wants the cumulative offset in px, not a
+     *   per-frame delta, because the collapse fraction is derived from it. A LazyColumn has no
+     *   `computeVerticalScrollOffset`, and `firstVisibleItemIndex * itemHeight` is a lie the
+     *   moment rows differ in height — so the offset is accumulated from the nested-scroll
+     *   deltas the list itself consumed.
+     * - **When it settles.** `velocityCapture()` is a `NestedScrollConnection`, so the fling
+     *   velocity finally has somewhere to come from now that both live in one composition.
      */
-    private fun setUpCupertinoChromeScroll() {
-        binding.recycler.addOnScrollListener(
-            object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    chromeScrollOffsetPx += dy
-                    largeTitleState?.onScroll(chromeScrollOffsetPx)
+    @Composable
+    private fun rememberTitleCollapse(state: LargeTitleBarState): Modifier {
+        val offset = remember { mutableStateOf(0f) }
+        val connection = remember(state) {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    offset.value += consumed.y
+                    state.onScroll(offset.value)
+                    return Offset.Zero
                 }
-
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        largeTitleState?.onSettle()
-                    }
-                }
-            },
-        )
+            }
+        }
+        return Modifier.nestedScroll(state.velocityCapture(), connection)
     }
 
     /**
@@ -365,19 +363,6 @@ class RecentsController(bundle: Bundle? = null) :
         CupertinoSegmentedInset.value * 2 +
         SegmentedControlHeight.value
 
-    /**
-     * The one place the list's padding is written. `headerHeight` (status-bar inset plus chrome
-     * height) is set once per inset change from `scrollViewWith`'s `afterInsets`.
-     *
-     * Every call goes through here because `updatePaddingRelative` *replaces* both axes: a later
-     * `updatePaddingRelative(bottom = …)` silently resets `top` to 0 and slides the list under the
-     * chrome. Routing all three sites through one function makes that impossible rather than
-     * fixing it in three places.
-     */
-    private fun applyListPadding(bottom: Int) {
-        binding.recycler.updatePaddingRelative(top = headerHeight, bottom = bottom)
-    }
-
     companion object {
         /** Vertical gap above and below the segmented control. */
         private val CupertinoSegmentedInset = 8.dp
@@ -390,89 +375,190 @@ class RecentsController(bundle: Bundle? = null) :
 
         /** Gap between the title bar and the search field. */
         private val SearchBarInset = 8.dp
+
+        /**
+         * How close to the end of the list a page request may fire, in rows.
+         *
+         * Replaces `FlexibleAdapter.EndlessScrollListener`, whose default was a pixel distance.
+         * A row count rather than a pixel one because the rows are not a fixed height — the
+         * type-1 rows in particular vary with the cover.
+         */
+        private const val PREFETCH_DISTANCE = 3
     }
+
+    /**
+     * What the LazyColumn is showing, flattened.
+     *
+     * The sections live in the data rather than in the adapter: `RecentsPresenter` puts a
+     * `RecentMangaHeaderItem` or a `DateItem` on every `RecentMangaItem` it emits
+     * (`RecentsPresenter.kt:383-419`), so the whole hierarchy is derivable here.
+     *
+     * Identity is a string built from the values themselves, never `equals()`. `RecentMangaHeaderItem.equals`
+     * compares `recentsType == recentsType` inside its `other is LibraryHeaderItem` branch and has no
+     * `RecentMangaHeaderItem` branch at all (`RecentMangaHeaderItem.kt:47-52`), so every header compares
+     * unequal to itself and every section would repeat. Filed for B1c.
+     */
+    private sealed interface RecentsRow {
+        val key: String
+
+        data class Section(val recentsType: Int) : RecentsRow {
+            override val key: String get() = "section-$recentsType"
+        }
+
+        data class DateSection(val date: Date, val addedString: Boolean, val showLastUpdated: Boolean) : RecentsRow {
+            override val key: String get() = "date-${date.time}"
+        }
+
+        data class Manga(val item: RecentMangaItem) : RecentsRow {
+            override val key: String get() = "manga-${item.mch.manga.id}-${item.chapter.id}"
+        }
+
+        data class Footer(val recentsType: Int) : RecentsRow {
+            override val key: String get() = "footer-$recentsType"
+        }
+    }
+
+    /**
+     * Live type-1 rows, keyed by [RecentsRow.Manga.key].
+     *
+     * Replaces `RecyclerView.findViewHolderForItemId` for the download-progress path
+     * ([updateChapterDownload]) and the cover-outline path ([RecentMangaAdapter.setPreferenceFlows]).
+     *
+     * Owned by the controller, not by a `remember`: both callers run outside composition. Entries are
+     * strong references, so [DisposableEffect]'s `onDispose` is what keeps a scrolled-away row from
+     * pinning its inflated view tree for the controller's lifetime.
+     */
+    private val holderRegistry = mutableMapOf<String, RecentMangaHolder>()
+
+    private fun buildRecentsRows(recents: List<RecentMangaItem>): List<RecentsRow> = buildList {
+        var lastHeaderKey: String? = null
+        var headerCount = 0
+        recents.forEach { item ->
+            when (val header = item.header) {
+                is RecentMangaHeaderItem -> {
+                    val key = "section-${header.recentsType}"
+                    if (key != lastHeaderKey) {
+                        add(RecentsRow.Section(header.recentsType))
+                        lastHeaderKey = key
+                        headerCount++
+                    }
+                }
+                is DateItem -> {
+                    val key = "date-${header.date.time}"
+                    if (key != lastHeaderKey) {
+                        // Only the very first header carries the library-update timestamp, which is
+                        // what `DateItem.Holder` did with `bindingAdapterPosition == 0`.
+                        add(RecentsRow.DateSection(header.date, header.addedString, headerCount == 0))
+                        lastHeaderKey = key
+                        headerCount++
+                    }
+                }
+                else -> Unit
+            }
+            if (item.mch.manga.id == null) {
+                add(RecentsRow.Footer((item.header as? RecentMangaHeaderItem)?.recentsType ?: 0))
+            } else {
+                add(RecentsRow.Manga(item))
+            }
+        }
+    }
+
+    /**
+     * Rows the LazyColumn is showing, rebuilt in [setUpCupertinoScreen] and [showLists].
+     *
+     * Held as one immutable list rather than a live adapter, so Compose sees a single atomic
+     * swap — the presenter only ever publishes a complete list (`RecentsPresenter.kt:437-446`),
+     * and there is nothing incremental for the list to animate.
+     */
+    private var recentsRows by mutableStateOf(emptyList<RecentsRow>())
+
+    /** True while the first page is in flight and there is nothing to show yet. */
+    private var recentsLoading by mutableStateOf(false)
+
+    /** Bumped by a display-preference change so every row re-binds. See [setUpCupertinoScreen]. */
+    private var preferencesVersion by mutableIntStateOf(0)
+
+    /**
+     * Bottom of the list, in px.
+     *
+     * The bottom navigation bar is a plain View in the activity, not a window inset, so
+     * `LocalWindowInsets` cannot see it. This is `activityBinding.bottomNav.height`, falling back
+     * to the system bar inset — the same two values `setBottomPadding` uses for the sheet.
+     */
+    private var listBottomInsetPx by mutableStateOf(0)
+
+    /** Status-bar inset, so the chrome clears the status bar. See [setUpInsets]. */
+    private var listTopInsetPx by mutableStateOf(0)
+
+    /** Bumped when the screen should scroll the list back to the first row. See [showLists]. */
+    private var scrollToTopSignal by mutableIntStateOf(0)
+
+    /**
+     * One page request at a time.
+     *
+     * The LazyColumn near-end effect fires whenever the last row is within [PREFETCH_DISTANCE] of the
+     * viewport, which is not once per page — `totalItemsCount` grows as the page arrives, so the
+     * condition stays true and re-arms. Cleared in [showLists], not on a timer.
+     */
+    private var pagingRequestInFlight = false
 
     /**
      * Called when view is created
      *
      * @param view created view
      */
+    /**
+     * Replaces `scrollViewWith`, which cannot outlive the RecyclerView: its first parameter is a
+     * `ScrollingView` (`ControllerExtensions.kt:278`) and Compose has no equivalent.
+     *
+     * Three of its four consumers are View-side and stay here — the sheet's peek height
+     * ([setBottomPadding]), `deviceRadius`, and the sheet's own top height. The fourth, the list's
+     * bottom padding, becomes Compose state.
+     *
+     * The bottom value is the bottom navigation bar's **height**, not a window inset, so it cannot
+     * go through `Modifier.windowInsetsPadding` either; it is passed in explicitly.
+     */
+    private fun setUpInsets(view: View) {
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            listTopInsetPx = insets.ignoredSystemInsets.top
+            // The chrome is match_parent now and pads itself by listTopInsetPx, so it needs no
+            // margin: adding one here would inset it twice.
+            binding.downloadBottomSheet.sheetLayout.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                height = (chromeHeightDp * view.resources.displayMetrics.density).toInt() +
+                    insets.ignoredSystemInsets.top
+            }
+            deviceRadius = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val wInsets = insets.toWindowInsets()
+                val lCorner = wInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT)
+                val rCorner = wInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT)
+                (lCorner?.radius?.toFloat() ?: 0f) to (rCorner?.radius?.toFloat() ?: 0f)
+            } else {
+                ogRadius to ogRadius
+            }
+            setBottomPadding()
+            insets
+        }
+        ViewCompat.requestApplyInsets(view)
+    }
+
     override fun onViewCreated(view: View) {
         super.onViewCreated(view)
-        setUpCupertinoChrome()
-        setUpCupertinoChromeScroll()
         // Initialize adapter
         val isReturning = this::adapter.isInitialized
         adapter = RecentMangaAdapter(this)
+        // With no RecyclerView, notifyDataSetChanged() redraws nothing, so preference changes are
+        // routed back here: the counter is read by RecentsScreen's call site, which recomposes
+        // and re-runs every AndroidView row's `update`.
+        adapter.onDataInvalidated = { preferencesVersion++ }
+        adapter.onOutlineChanged = { holderRegistry.values.forEach(RecentMangaHolder::updateCards) }
         adapter.setPreferenceFlows()
-        binding.recycler.adapter = adapter
-        binding.recycler.layoutManager = LinearLayoutManagerAccurateOffset(view.context)
-        binding.recycler.setHasFixedSize(true)
-        binding.recycler.recycledViewPool.setMaxRecycledViews(0, 0)
-        binding.recycler.addItemDecoration(RecentMangaDivider(view.context))
-        binding.recycler.onAnimationsFinished {
-            (activity as? MainActivity)?.splashState?.ready = true
-        }
-        adapter.isSwipeEnabled = true
-        adapter.itemTouchHelperCallback.setSwipeFlags(
-            if (view.resources.isLTR) ItemTouchHelper.LEFT else ItemTouchHelper.RIGHT,
-        )
-        binding.swipeRefresh.setStyle()
-        scrollViewWith(
-            binding.recycler,
-            swipeRefreshLayout = binding.swipeRefresh,
-            ignoreInsetVisibility = true,
-            afterInsets = {
-                // The legacy app bar is hidden in favour of the Cupertino chrome, so the list's
-                // top padding is the chrome's height rather than the toolbar's. Keeping the old
-                // appBarHeight here would leave a dead toolbar-sized gap above the first row.
-                val chromeHeight = (chromeHeightDp * view.resources.displayMetrics.density).toInt()
-                val systemInsets = it.ignoredSystemInsets
-                headerHeight = systemInsets.top + chromeHeight
-                // controller_container is full-height and the app bar only overlays it, so the
-                // chrome — not the window — has to clear the status bar.
-                //
-                // Margin, not padding. The chrome has a fixed height, so padding would shrink its
-                // content area (the bar would lose its top gap) instead of moving the block down.
-                // This was padding back when the chrome measured itself (`wrap_content`), which is
-                // exactly what let the async inset callback change its measured height after first
-                // layout. A fixed height makes margin the correct tool and the race moot.
-                binding.cupertinoChrome.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    topMargin = systemInsets.top
-                }
-                applyListPadding(activityBinding?.bottomNav?.height ?: systemInsets.bottom)
-                binding.downloadBottomSheet.sheetLayout.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    height = chromeHeight + systemInsets.top
-                }
-                val bigToolbarHeight = fullAppBarHeight ?: 0
-
-                binding.recentsEmptyView.updatePadding(
-                    top = bigToolbarHeight + systemInsets.top,
-                    bottom = activityBinding?.bottomNav?.height ?: systemInsets.bottom,
-                )
-                binding.progress.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    topMargin = (bigToolbarHeight + systemInsets.top) / 2
-                }
-                if (activityBinding?.bottomNav == null) {
-                    setBottomPadding()
-                }
-                deviceRadius = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val wInsets = it.toWindowInsets()
-                    val lCorner = wInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT)
-                    val rCorner = wInsets?.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT)
-                    (lCorner?.radius?.toFloat() ?: 0f) to (rCorner?.radius?.toFloat() ?: 0f)
-                } else {
-                    ogRadius to ogRadius
-                }
-            },
-            onBottomNavUpdate = {
-                setBottomPadding()
-            },
-        )
-
+        setUpInsets(view)
+        setUpCupertinoScreen()
+        // The splash used to wait for the RecyclerView's first item animation, which no longer
+        // exists; first layout is the equivalent "the list has something on screen" signal.
+        view.post { (activity as? MainActivity)?.splashState?.ready = true }
         if (!isReturning && adapter.itemCount == 0) {
             activityBinding?.appBar?.y = 0f
-            activityBinding?.appBar?.updateAppBarAfterY(binding.recycler)
             activityBinding?.appBar?.lockYPos = true
         }
         viewScope.launchUI {
@@ -480,7 +566,7 @@ class RecentsController(bundle: Bundle? = null) :
                 activityBinding?.bottomNav?.height ?: view.rootWindowInsetsCompat?.getInsets(
                     systemBars(),
                 )?.bottom ?: 0
-            applyListPadding(height)
+            setPadding(binding.downloadBottomSheet.dlBottomSheet.sheetBehavior?.isHideable == true)
             binding.downloadBottomSheet.dlRecycler.updatePaddingRelative(
                 bottom = height,
             )
@@ -514,8 +600,9 @@ class RecentsController(bundle: Bundle? = null) :
 
         if (presenter.recentItems.isNotEmpty()) {
             adapter.updateDataSet(presenter.recentItems)
+            recentsRows = buildRecentsRows(presenter.recentItems)
         } else {
-            binding.recentsFrameLayout.alpha = 0f
+            recentsLoading = presenter.isLoading
         }
 
         binding.downloadBottomSheet.dlBottomSheet.onCreate(this)
@@ -634,34 +721,15 @@ class RecentsController(bundle: Bundle? = null) :
             },
         )
         viewScope.launch {
+            // Refresh state, not the gesture. The SwipeRefreshLayout that used to host it is gone
+            // with the rest of the RecyclerView tree, so pulling no longer starts a library
+            // update; the `LibraryUpdateJob` collectors above and below still reflect one that
+            // started elsewhere. B1c restores the gesture.
             LibraryUpdateJob.isRunningFlow(view.context).collect {
-                binding.swipeRefresh.isRefreshing = it
+                listIsRefreshing = it
             }
         }
-        binding.swipeRefresh.setOnRefreshListener {
-            if (!LibraryUpdateJob.isRunning(view.context)) {
-                binding.swipeRefresh.isRefreshing = true
-                snack?.dismiss()
-                snack = view.snack(MR.strings.updating_library) {
-                    anchorView =
-                        if (binding.downloadBottomSheet.root.sheetBehavior.isCollapsed()) {
-                            binding.downloadBottomSheet.root
-                        } else {
-                            activityBinding?.bottomNav ?: binding.downloadBottomSheet.root
-                        }
-                    setAction(MR.strings.cancel) {
-                        LibraryUpdateJob.stop(context)
-                        viewScope.launchUI {
-                            NotificationReceiver.dismissNotification(
-                                context,
-                                Notifications.ID_LIBRARY_PROGRESS,
-                            )
-                        }
-                    }
-                }
-                LibraryUpdateJob.startNow(view.context)
-            }
-        }
+
         ogRadius = view.resources.getDimension(R.dimen.rounded_radius)
         setSheetToolbar()
         if (showingDownloads) {
@@ -727,17 +795,17 @@ class RecentsController(bundle: Bundle? = null) :
     }
 
     fun setRefreshing(refresh: Boolean) {
-        binding.swipeRefresh.isRefreshing = refresh
+        listIsRefreshing = refresh
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int) { }
 
     override fun shouldMoveItem(fromPosition: Int, toPosition: Int) = true
 
-    override fun onActionStateChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
-        binding.swipeRefresh.isEnabled = actionState != ItemTouchHelper.ACTION_STATE_SWIPE ||
-            binding.swipeRefresh.isRefreshing
-    }
+    // Swipe-to-mark-read regressed with the ItemTouchHelper FlexibleAdapter used to own; this
+    // callback existed only to suspend pull-to-refresh while a swipe was in flight. B1c restores
+    // the gesture as a Compose SwipeToDismiss and reinstates the pause with it.
+    override fun onActionStateChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) = Unit
 
     override fun canStillGoBack(): Boolean {
         return showingDownloads ||
@@ -782,13 +850,14 @@ class RecentsController(bundle: Bundle? = null) :
     fun setPadding(sheetIsHidden: Boolean) {
         val peekHeight = binding.downloadBottomSheet.dlBottomSheet.sheetBehavior?.peekHeight ?: 0
         val cInsets = view?.rootWindowInsetsCompat ?: return
-        applyListPadding(
-            if (sheetIsHidden) {
-                activityBinding?.bottomNav?.height ?: cInsets.getInsets(systemBars()).bottom
-            } else {
-                peekHeight
-            },
-        )
+        // The one place the list's bottom padding is written. Not `updatePaddingRelative` any more:
+        // the LazyColumn takes its insets as `contentPadding`, so this is Compose state and the
+        // bottom navigation bar's height goes in explicitly rather than through a window inset.
+        listBottomInsetPx = if (sheetIsHidden) {
+            activityBinding?.bottomNav?.height ?: cInsets.getInsets(systemBars()).bottom
+        } else {
+            peekHeight
+        }
     }
 
     override fun onActivityResumed(activity: Activity) {
@@ -824,14 +893,16 @@ class RecentsController(bundle: Bundle? = null) :
         shouldMoveToTop: Boolean = false,
     ) {
         if (view == null) return
-        if (!binding.progress.isVisible && recents.isNotEmpty()) {
+        // The page landed, so a near-end effect is allowed to ask for the next one.
+        pagingRequestInFlight = false
+        if (!recentsLoading && recents.isNotEmpty()) {
             (activity as? MainActivity)?.showNotificationPermissionPrompt()
         }
-        binding.progress.isVisible = false
-        binding.recentsFrameLayout.alpha = 1f
+        recentsLoading = false
         adapter.removeAllScrollableHeaders()
         adapter.updateDataSet(recents)
         adapter.onLoadMoreComplete(null)
+        recentsRows = buildRecentsRows(recents)
         if (isControllerVisible) {
             activityBinding?.appBar?.lockYPos = false
         }
@@ -842,34 +913,8 @@ class RecentsController(bundle: Bundle? = null) :
         } else if (presenter.viewType != RecentsViewType.GroupedAll) {
             resetProgressItem()
         }
-        if (recents.isEmpty()) {
-            binding.recentsEmptyView.show(
-                if (!isSearching()) {
-                    Icons.Filled.HistoryToggleOff
-                } else {
-                    Icons.Filled.SearchOff
-                },
-                if (isSearching()) {
-                    MR.strings.no_results_found
-                } else {
-                    when (presenter.viewType) {
-                        RecentsViewType.Updates -> MR.strings.no_recent_chapters
-                        RecentsViewType.History -> MR.strings.no_recently_read_manga
-                        else -> MR.strings.no_recent_read_updated_manga
-                    }
-                },
-            )
-        } else {
-            binding.recentsEmptyView.hide()
-        }
-        val isSearchExpanded = activityBinding?.searchToolbar?.isSearchExpanded == true
         if (shouldMoveToTop) {
-            if (isSearchExpanded) {
-                moveRecyclerViewUp(scrollUpAnyway = true)
-            } else {
-                (binding.recycler.layoutManager as? LinearLayoutManager)
-                    ?.scrollToPositionWithOffset(0, 0)
-            }
+            scrollToTopSignal++
         }
         if (lastChapterId != null) {
             refreshItem(lastChapterId ?: 0L)
@@ -881,7 +926,11 @@ class RecentsController(bundle: Bundle? = null) :
         if (view == null || !this::adapter.isInitialized) return
         val id = download.chapter.id ?: return
         val item = adapter.getItemByChapterId(id) ?: return
-        val holder = binding.recycler.findViewHolderForItemId(item.id!!) as? RecentMangaHolder ?: return
+        // Looked up in the registry the AndroidView factory fills, not with
+        // findViewHolderForItemId. Keyed by the row key rather than by chapter id: `item.id` is
+        // `chapter.id` via `Chapter by chapter` in BaseChapterItem, so it is null on the footer
+        // row's blank chapter and would collide across a rebuild.
+        val holder = holderRegistry["manga-${item.mch.manga.id}-${item.chapter.id}"] ?: return
         if (item.id == id) {
             holder.notifyStatus(download.status, download.progress, download.chapter.read, true)
         } else {
@@ -899,12 +948,15 @@ class RecentsController(bundle: Bundle? = null) :
         binding.downloadBottomSheet.dlBottomSheet.update(isRunning)
     }
 
-    private fun refreshItem(chapterId: Long) {
-        val recentItemPos = adapter.currentItems.indexOfFirst {
-            it is RecentMangaItem &&
-                it.mch.chapter.id == chapterId
-        }
-        if (recentItemPos > -1) adapter.notifyItemChanged(recentItemPos)
+    /**
+     * Re-binds the rows after a swipe changed a chapter's read state.
+     *
+     * Was `adapter.notifyItemChanged(position)`, which with no RecyclerView redraws nothing.
+     * Bumping the preference counter recomposes the screen and re-runs every `AndroidView`
+     * `update`, which is the same visible result and does not depend on a holder existing yet.
+     */
+private fun refreshItem(chapterId: Long) {
+        if (adapter.getItemByChapterId(chapterId) != null) preferencesVersion++
     }
 
     override fun downloadChapter(position: Int) {
@@ -1100,7 +1152,7 @@ class RecentsController(bundle: Bundle? = null) :
         val transition = TransitionSet().addTransition(androidx.transition.Fade())
         transition.duration = view!!.resources.getInteger(AR.integer.config_shortAnimTime)
             .toLong()
-        androidx.transition.TransitionManager.beginDelayedTransition(binding.recycler, transition)
+        androidx.transition.TransitionManager.beginDelayedTransition(binding.root, transition)
         if (holderId == -1L) return
         val chapter = holderId?.let { id -> item.mch.extraChapters.find { id == it.id } }
             ?: item.chapter
@@ -1253,7 +1305,20 @@ class RecentsController(bundle: Bundle? = null) :
     override fun noMoreLoad(newItemsSize: Int) {}
 
     override fun onLoadMore(lastPosition: Int, currentPage: Int) {
+        requestNextPage()
+    }
+
+    /**
+     * Asks the presenter for the next page, at most once per page.
+     *
+     * Guard carried over verbatim from the old `onLoadMore` (`RecentsController.kt:1257-1263`).
+     * The `EndlessScrollListener` interface stays implemented because `FlexibleAdapter` requires
+     * it, but nothing reaches it now: the LazyColumn's near-end effect calls this instead, and it
+     * fires far more often than "one page at a time".
+     */
+    private fun requestNextPage() {
         val view = view ?: return
+        if (pagingRequestInFlight) return
         if (presenter.finished ||
             BackupRestoreJob.isRunning(view.context.applicationContext) ||
             (presenter.viewType == RecentsViewType.GroupedAll && !isSearching())
@@ -1261,19 +1326,314 @@ class RecentsController(bundle: Bundle? = null) :
             loadNoMore()
             return
         }
+        pagingRequestInFlight = true
         presenter.requestNext()
     }
 
     private fun loadNoMore() {
-        adapter.onLoadMoreComplete(null)
+        pagingRequestInFlight = false
     }
 
     /**
-     * Sets a new progress item and reenables the scroll listener.
+     * Re-arms pagination after a query change or a view-type switch.
+     *
+     * Used to set a `ProgressItem` and hand it to the adapter's endless-scroll listener. Both
+     * halves are gone: the row is now drawn by the screen when [listIsRefreshing] or
+     * [presenter] is loading, and the near-end effect is the trigger.
      */
     private fun resetProgressItem() {
-        adapter.onLoadMoreComplete(null)
-        progressItem = ProgressItem()
-        adapter.setEndlessScrollListener(this, progressItem!!)
+        pagingRequestInFlight = false
+    }
+
+    /**
+     * The whole Recents body: chrome, list, and the two overlays the old XML used to host as
+     * Views.
+     *
+     * One composition rather than four sibling Views, so the chrome sits *above* the list in the
+     * same coordinate space and [CupertinoSearchBar]'s `contentScrolledUnder` finally means what
+     * it says — nothing scrolls under a bar that is not drawn over the list.
+     */
+    @Composable
+    private fun RecentsScreen(
+        rows: List<RecentsRow>,
+        viewType: RecentsViewType,
+        adapter: RecentMangaAdapter,
+        emptyStateIcon: ImageVector,
+        emptyStateTitle: String,
+        isLoading: Boolean,
+        topInsetPx: Int,
+        bottomInsetPx: Int,
+        preferencesVersion: Int,
+        onViewTypeSelected: (RecentsViewType) -> Unit,
+        onQueryChange: (String) -> Unit,
+        onQueryCancel: () -> Unit,
+        onLoadMore: () -> Unit,
+    ) {
+        val context = LocalContext.current
+        val density = LocalDensity.current
+        val barState = rememberLargeTitleBarState()
+        val listState = rememberLazyListState()
+        val collapse = rememberTitleCollapse(barState)
+        // Captured once per composition, matching `DateItem.Holder`, so every header in the
+        // composition agrees on what "yesterday" means.
+        val nowMillis = remember { System.currentTimeMillis() }
+        // `Int.toDp()` is a `Density` member, and neither `Modifier.padding` nor `PaddingValues` is
+        // a density scope.
+        val topPadding = with(density) { topInsetPx.toDp() }
+        val bottomPadding = with(density) { bottomInsetPx.toDp() }
+
+        LaunchedEffect(listState) {
+            snapshotFlow { listState.isScrollInProgress }
+                .collect { if (!it) barState.onSettle() }
+        }
+        LaunchedEffect(listState) {
+            snapshotFlow {
+                val info = listState.layoutInfo
+                val last = info.visibleItemsInfo.lastOrNull()?.index ?: 0
+                last >= info.totalItemsCount - PREFETCH_DISTANCE
+            }.collect { nearEnd -> if (nearEnd) onLoadMore() }
+        }
+        LaunchedEffect(scrollToTopSignal) {
+            if (scrollToTopSignal > 0) listState.scrollToItem(0)
+        }
+
+        Column(Modifier.fillMaxSize()) {
+            Column(Modifier.padding(top = topPadding)) {
+                LargeTitleBar(
+                    title = context.getString(MR.strings.recents),
+                    state = barState,
+                )
+                CupertinoSearchBar(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    placeholder = getSearchTitle().orEmpty(),
+                    cancelLabel = stringResource(MR.strings.cancel),
+                    onCancel = onQueryCancel,
+                    // The chrome is a sibling Column above the list, not a bar drawn over it, so
+                    // content genuinely never scrolls underneath. This is the `true` the session-A
+                    // commit had to hard-code until the LazyColumn landed.
+                    contentScrolledUnder = false,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = SearchBarInset),
+                )
+                SegmentedControl(
+                    segments = RecentsViewType.entries.map {
+                        SegmentedControlSegment(it, stringResource(it.stringRes))
+                    },
+                    selected = viewType,
+                    onSelectionChange = onViewTypeSelected,
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp,
+                        vertical = CupertinoSegmentedInset,
+                    ),
+                )
+            }
+
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = collapse.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = bottomPadding),
+                ) {
+                    rows.forEach { row ->
+                        when (row) {
+                            is RecentsRow.Section -> stickyHeader(key = row.key) {
+                                BasicText(
+                                    text = stringResource(
+                                        when (row.recentsType) {
+                                            RecentMangaHeaderItem.NEW_CHAPTERS -> MR.strings.new_chapters
+                                            RecentMangaHeaderItem.NEWLY_ADDED -> MR.strings.newly_added
+                                            else -> MR.strings.continue_reading
+                                        },
+                                    ),
+                                    style = CupertinoType.title3.copy(
+                                        color = CupertinoColors.current.labelPrimary,
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(CupertinoColors.current.surface)
+                                        .padding(start = 12.dp, top = 5.dp, bottom = 8.dp),
+                                )
+                            }
+
+                            is RecentsRow.DateSection -> stickyHeader(key = row.key) {
+                                val relative = DateUtils.getRelativeTimeSpanString(
+                                    row.date.time,
+                                    nowMillis,
+                                    DateUtils.DAY_IN_MILLIS,
+                                )
+                                Column(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(CupertinoColors.current.surface)
+                                        .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 4.dp),
+                                ) {
+                                    BasicText(
+                                        text = if (row.addedString) {
+                                            context.getString(MR.strings.fetched_, relative)
+                                        } else {
+                                            relative.toString()
+                                        },
+                                        style = CupertinoType.title3.copy(
+                                            color = CupertinoColors.current.labelSecondary,
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    if (row.showLastUpdated && adapter.lastUpdatedTime > 0L) {
+                                        BasicText(
+                                            text = context.timeSpanFromNow(
+                                                MR.strings.updates_last_update_info,
+                                                adapter.lastUpdatedTime,
+                                            ),
+                                            style = CupertinoType.footnote.copy(
+                                                color = CupertinoColors.current.labelTertiary,
+                                            ),
+                                            modifier = Modifier.padding(top = 4.dp),
+                                        )
+                                    }
+                                }
+                            }
+
+                            is RecentsRow.Footer -> item(key = row.key) {
+                                RecentsFooterRow(
+                                    recentsType = row.recentsType,
+                                    onClick = {
+                                        tempJumpTo(
+                                            when (row.recentsType) {
+                                                RecentMangaHeaderItem.NEW_CHAPTERS -> RecentsViewType.Updates
+                                                else -> RecentsViewType.History
+                                            },
+                                        )
+                                    },
+                                )
+                            }
+
+                            is RecentsRow.Manga -> item(key = row.key) {
+                                RecentsMangaRow(
+                                    item = row.item,
+                                    adapter = adapter,
+                                    rebindToken = preferencesVersion,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (rows.isEmpty() && !isLoading) {
+                    CupertinoEmptyState(
+                        icon = emptyStateIcon,
+                        title = emptyStateTitle,
+                    )
+                }
+                if (isLoading || listIsRefreshing) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        CupertinoLoadingIndicator(Modifier.padding(top = 24.dp))
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * A type-1 row, still the inflated `RecentMangaHolder`.
+     *
+     * `AndroidView` rather than a Compose row because B1b does not restyle rows. B1c replaces this
+     * with a real composable, at which point the registry and the `RecentMangaHolder` plumbing go
+     * with it.
+     *
+     * The shared-element transition still works because the click hands [openChapter] the row's own
+     * `main_view`, which is attached to this hierarchy — the reader takes the `View` by identity
+     * and the `transitionName` rides along in the bundle.
+     */
+    @Composable
+    private fun RecentsMangaRow(item: RecentMangaItem, adapter: RecentMangaAdapter, rebindToken: Int) {
+        val key = "manga-${item.mch.manga.id}-${item.chapter.id}"
+        AndroidView(
+            factory = { ctx ->
+                val view = LayoutInflater.from(ctx)
+                    .inflate(item.getLayoutRes(), null, false)
+                holderRegistry[key] = RecentMangaHolder(view, adapter)
+                view.setOnClickListener {
+                    openChapter(it.findViewById(R.id.main_view), item.mch.manga, item.chapter)
+                }
+                view.setOnLongClickListener {
+                    onItemLongClick(item)
+                    true
+                }
+                view
+            },
+            update = { view ->
+                val holder = holderRegistry[key]
+                // A display-preference change alters neither this row's key nor its item, so
+                // nothing here would otherwise tell the holder it was bound under different
+                // settings. `preferencesVersion` is the parameter that changes, and this is what
+                // carries it down.
+                if (holder != null && holder.boundRebindToken != rebindToken) {
+                    holder.boundRebindToken = rebindToken
+                }
+                holder?.bind(item)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        DisposableEffect(key) {
+            onDispose { holderRegistry.remove(key) }
+        }
+    }
+
+    /** The "View history" / "View all updates" row at the end of a section. */
+    @Composable
+    private fun RecentsFooterRow(recentsType: Int, onClick: () -> Unit) {
+        val accent = CupertinoColors.current.accent
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(start = 12.dp, end = 24.dp, top = 6.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_arrow_forward_24dp),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(accent),
+                modifier = Modifier.size(24.dp),
+            )
+            BasicText(
+                text = stringResource(
+                    if (recentsType == RecentMangaHeaderItem.NEW_CHAPTERS) {
+                        MR.strings.view_all_updates
+                    } else {
+                        MR.strings.view_history
+                    },
+                ),
+                style = CupertinoType.body.copy(color = accent),
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+    }
+
+    /**
+     * The indeterminate spinner.
+     *
+     * Hand-rolled rather than `androidx.compose.material3.CircularProgressIndicator`: material3
+     * is off-limits on Cupertino screens, and a Material pull-to-refresh indicator would also
+     * imply a gesture that B1b does not have.
+     */
+    @Composable
+    private fun CupertinoLoadingIndicator(modifier: Modifier = Modifier) {
+        val transition = rememberInfiniteTransition(label = "recents-spinner")
+        val angle by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+            label = "recents-spinner-angle",
+        )
+        Canvas(modifier.size(24.dp)) {
+            drawArc(
+                color = CupertinoColors.current.labelTertiary,
+                startAngle = angle,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = 2.dp.toPx()),
+            )
+        }
     }
 }

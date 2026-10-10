@@ -43,6 +43,15 @@ class RecentMangaHolder(
     val adapter: RecentMangaAdapter,
 ) : BaseChapterHolder(view, adapter) {
 
+    /**
+     * The display-preference version this holder was last bound under.
+     *
+     * A preference change re-runs every row's `update` block but changes nothing about the row
+     * itself, so without this the holder has no way to notice it was bound under different
+     * settings. Written only by `RecentsController`'s row composable.
+     */
+    internal var boundRebindToken = -1
+
     private val binding = RecentMangaItemBinding.bind(view)
 
     /**
