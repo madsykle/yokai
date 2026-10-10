@@ -948,32 +948,28 @@ class RecentsController(bundle: Bundle? = null) :
         presenter.startDownloadChapterNow(chapter)
     }
 
-    override fun onCoverClick(position: Int) {
-        val manga = (adapter.getItem(position) as? RecentMangaItem)?.mch?.manga ?: return
-        router.pushController(MangaDetailsController(manga).withFadeTransaction())
+    override fun onCoverClick(item: RecentMangaItem) {
+        router.pushController(MangaDetailsController(item.mch.manga).withFadeTransaction())
     }
 
-    override fun onRemoveHistoryClicked(position: Int) {
-        onItemLongClick(position)
+    override fun onRemoveHistoryClicked(item: RecentMangaItem) {
+        onItemLongClick(item)
     }
 
-    override fun onSubChapterClicked(position: Int, chapter: Chapter, view: View) {
-        val manga = (adapter.getItem(position) as? RecentMangaItem)?.mch?.manga ?: return
-        openChapter(view, manga, chapter)
+    override fun onSubChapterClicked(item: RecentMangaItem, chapter: Chapter, view: View) {
+        openChapter(view, item.mch.manga, chapter)
     }
 
-    override fun areExtraChaptersExpanded(position: Int): Boolean {
+    override fun areExtraChaptersExpanded(item: RecentMangaItem): Boolean {
         if (alwaysExpanded()) return true
-        val item = (adapter.getItem(position) as? RecentMangaItem) ?: return false
         val date = presenter.dateFormat.format(item.mch.history.last_read)
         val invertDefault = !adapter.collapseGrouped
         return presenter.expandedSectionsMap["${item.mch.manga} - $date"]?.xor(invertDefault)
             ?: invertDefault
     }
 
-    override fun updateExpandedExtraChapters(position: Int, expanded: Boolean) {
+    override fun updateExpandedExtraChapters(item: RecentMangaItem, expanded: Boolean) {
         if (alwaysExpanded()) return
-        val item = (adapter.getItem(position) as? RecentMangaItem) ?: return
         val date = presenter.dateFormat.format(item.mch.history.last_read)
         val invertDefault = !adapter.collapseGrouped
         presenter.expandedSectionsMap["${item.mch.manga} - $date"] = expanded.xor(invertDefault)
@@ -1034,14 +1030,22 @@ class RecentsController(bundle: Bundle? = null) :
         }
     }
 
+    /**
+     * [FlexibleAdapter]'s long-click listener, which is position-keyed and shared with every other
+     * tab's adapter. Kept as an override so the library interface stays satisfied; the position is
+     * resolved once and handed to the item-keyed overload below.
+     */
     override fun onItemLongClick(position: Int) {
         val item = adapter.getItem(position) as? RecentMangaItem ?: return
+        onItemLongClick(item)
+    }
+
+    private fun onItemLongClick(item: RecentMangaItem) {
         showRemoveHistoryDialog(item.mch.manga, item.mch.history, item.mch.chapter)
     }
 
-    override fun onItemLongClick(position: Int, chapter: ChapterHistory): Boolean {
+    override fun onItemLongClick(item: RecentMangaItem, chapter: ChapterHistory): Boolean {
         val history = chapter.history ?: return false
-        val item = adapter.getItem(position) as? RecentMangaItem ?: return false
         if (history.id != null) {
             showRemoveHistoryDialog(item.mch.manga, history, chapter)
         }
@@ -1083,18 +1087,22 @@ class RecentsController(bundle: Bundle? = null) :
         }
     }
 
-    override fun markAsRead(position: Int) {
+    override fun markAsRead(item: RecentMangaItem) {
         val preferences = presenter.preferences
-        val item = adapter.getItem(position) as? RecentMangaItem ?: return
-        val holder = binding.recycler.findViewHolderForAdapterPosition(position)
-        val holderId = (holder as? RecentMangaHolder)?.chapterId
-        adapter.notifyItemChanged(position)
+        // Which chapter the finger was on, published by the holder at touch time. This used to be
+        // `findViewHolderForAdapterPosition(position).chapterId`, which reached into the view tree
+        // to ask a question about the data.
+        val holderId = adapter.activeChapterIdFor(item.mch.manga.id ?: 0L)
+        val position = adapter.positionOf(item)
+        if (position >= 0) {
+            adapter.notifyItemChanged(position)
+        }
         val transition = TransitionSet().addTransition(androidx.transition.Fade())
         transition.duration = view!!.resources.getInteger(AR.integer.config_shortAnimTime)
             .toLong()
         androidx.transition.TransitionManager.beginDelayedTransition(binding.recycler, transition)
         if (holderId == -1L) return
-        val chapter = holderId?.let { item.mch.extraChapters.find { holderId == it.id } }
+        val chapter = holderId?.let { id -> item.mch.extraChapters.find { id == it.id } }
             ?: item.chapter
         val manga = item.mch.manga
         val lastRead = chapter.last_page_read

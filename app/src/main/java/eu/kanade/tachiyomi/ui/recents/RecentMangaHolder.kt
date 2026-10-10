@@ -44,18 +44,43 @@ class RecentMangaHolder(
 ) : BaseChapterHolder(view, adapter) {
 
     private val binding = RecentMangaItemBinding.bind(view)
-    var chapterId: Long? = null
+
+    /**
+     * The item this holder is currently showing. Set by [bind] and read by the click and touch
+     * listeners, which fire independently of any bind.
+     *
+     * This is what makes the holder position-free. It used to resolve its data through
+     * `adapter.getItem(bindingAdapterPosition)`, but `bindingAdapterPosition` is a property of the
+     * RecyclerView, not of the data — it is `NO_POSITION` the moment this holder leaves one.
+     */
+    private var boundItem: RecentMangaItem? = null
+
+    /**
+     * Which chapter the finger is on: `null` for the main row, a chapter id for an expanded
+     * sub-chapter, `-1L` for the "and N more" filler row. Read by [getFrontView] and [getRearEndView].
+     *
+     * Published to the adapter at the same moment so the controller can ask which chapter a swipe
+     * meant without holding a reference to this holder.
+     */
+    private var chapterId: Long? = null
 
     private val isUpdates get() = adapter.viewType.isUpdates
     private val isSmallUpdates get() = isUpdates && !adapter.showUpdatedTime
 
     init {
-        binding.cardLayout.setOnClickListener { adapter.delegate.onCoverClick(flexibleAdapterPosition) }
-        binding.removeHistory.setOnClickListener { adapter.delegate.onRemoveHistoryClicked(flexibleAdapterPosition) }
+        binding.cardLayout.setOnClickListener {
+            boundItem?.let { adapter.delegate.onCoverClick(it) }
+        }
+        binding.removeHistory.setOnClickListener {
+            boundItem?.let { adapter.delegate.onRemoveHistoryClicked(it) }
+        }
         binding.showMoreChapters.setOnClickListener { _ ->
             val moreVisible = !binding.moreChaptersLayout.isVisible
             binding.moreChaptersLayout.isVisible = moreVisible
-            adapter.delegate.updateExpandedExtraChapters(flexibleAdapterPosition, moreVisible)
+            adapter.delegate.updateExpandedExtraChapters(
+                boundItem ?: return@setOnClickListener,
+                moreVisible,
+            )
             binding.showMoreChapters.setAnimVectorCompat(
                 if (moreVisible) {
                     R.drawable.anim_expand_more_to_less
@@ -100,8 +125,9 @@ class RecentMangaHolder(
 
     @SuppressLint("ClickableViewAccessibility")
     fun bind(item: RecentMangaItem) {
+        boundItem = item
         val showDLs = adapter.showDownloads
-        binding.mainView.transitionName = "recents chapter $bindingAdapterPosition transition"
+        binding.mainView.transitionName = item.transitionName
         val showRemoveHistory = adapter.showRemoveHistory
         val showTitleFirst = adapter.showTitleFirst
         binding.downloadButton.downloadButton.isVisible = when (showDLs) {
@@ -183,7 +209,7 @@ class RecentMangaHolder(
         binding.showMoreChapters.isVisible = item.mch.extraChapters.isNotEmpty() &&
             !adapter.delegate.alwaysExpanded()
         binding.moreChaptersLayout.isVisible = item.mch.extraChapters.isNotEmpty() &&
-            adapter.delegate.areExtraChaptersExpanded(flexibleAdapterPosition)
+            adapter.delegate.areExtraChaptersExpanded(item)
         val moreVisible = binding.moreChaptersLayout.isVisible
 
         binding.body.isVisible = !isSmallUpdates
@@ -216,7 +242,7 @@ class RecentMangaHolder(
         }
         if (!item.mch.manga.isLocal()) {
             notifyStatus(
-                if (adapter.isSelected(flexibleAdapterPosition)) Download.State.CHECKED else item.status,
+                if (adapter.isSelected(item)) Download.State.CHECKED else item.status,
                 item.progress,
                 item.chapter.read,
             )
@@ -276,6 +302,7 @@ class RecentMangaHolder(
                         if (item.read) R.drawable.ic_eye_off_24dp else R.drawable.ic_eye_24dp,
                     )
                     chapterId = null
+                    adapter.setActiveChapterId(item.mch.manga.id ?: 0L, null)
                 }
                 false
             }
@@ -283,7 +310,7 @@ class RecentMangaHolder(
     }
 
     private fun addMoreUpdatesText(add: Boolean, originalItem: RecentMangaItem? = null) {
-        val item = originalItem ?: adapter.getItem(bindingAdapterPosition) as? RecentMangaItem ?: return
+        val item = originalItem ?: boundItem ?: return
         val originalText = binding.body.text.toString()
         val andMoreText = itemView.context.getString(
             MR.plurals.notification_and_n_more,
@@ -301,7 +328,7 @@ class RecentMangaHolder(
     }
 
     private fun readLastText(show: Boolean, originalItem: RecentMangaItem? = null): String {
-        val item = originalItem ?: adapter.getItem(bindingAdapterPosition) as? RecentMangaItem ?: return ""
+        val item = originalItem ?: boundItem ?: return ""
         val notValidNum = item.mch.chapter.chapter_number <= 0
         return if (item.chapter.id != item.mch.chapter.id) {
             if (show) {
@@ -316,7 +343,7 @@ class RecentMangaHolder(
     }
 
     private fun showScanlatorInBody(add: Boolean, originalItem: RecentMangaItem? = null) {
-        val item = originalItem ?: adapter.getItem(bindingAdapterPosition) as? RecentMangaItem ?: return
+        val item = originalItem ?: boundItem ?: return
         val originalText = binding.body.text.toString()
         binding.body.maxLines = 2
         val scanlator = item.chapter.scanlator ?: return
@@ -343,7 +370,7 @@ class RecentMangaHolder(
         if (size > 21) take(10) + null + takeLast(10) else this
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun RecentSubChapterItemBinding.configureBlankView(count: Int) {
+    private fun RecentSubChapterItemBinding.configureBlankView(mangaId: Long, count: Int) {
         val context = itemView.context
         title.text =
             context.getString(MR.plurals.notification_and_n_more, count, count)
@@ -359,6 +386,7 @@ class RecentMangaHolder(
         root.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 chapterId = -1L
+                adapter.setActiveChapterId(mangaId, -1L)
             }
             false
         }
@@ -367,7 +395,7 @@ class RecentMangaHolder(
     @SuppressLint("ClickableViewAccessibility")
     private fun RecentSubChapterItemBinding.configureView(chapter: ChapterHistory?, item: RecentMangaItem) {
         if (chapter?.id == null) {
-            configureBlankView(item.mch.extraChapters.size - 20)
+            configureBlankView(item.mch.manga.id ?: 0L, item.mch.extraChapters.size - 20)
             return
         }
         textLayout.updateLayoutParams<ConstraintLayout.LayoutParams> {
@@ -396,14 +424,10 @@ class RecentMangaHolder(
         subtitle.isVisible = subtitle.text.isNotBlank()
         title.textSize = (if (subtitle.isVisible) 14f else 14.5f)
         root.setOnClickListener {
-            adapter.delegate.onSubChapterClicked(
-                bindingAdapterPosition,
-                chapter,
-                it,
-            )
+            adapter.delegate.onSubChapterClicked(item, chapter, it)
         }
         root.setOnLongClickListener {
-            adapter.delegate.onItemLongClick(bindingAdapterPosition, chapter)
+            adapter.delegate.onItemLongClick(item, chapter)
         }
         listOf(root, downloadButton.root).forEach {
             it.setOnTouchListener { _, event ->
@@ -416,6 +440,7 @@ class RecentMangaHolder(
                         height = root.height
                     }
                     chapterId = chapter.id
+                    adapter.setActiveChapterId(item.mch.manga.id ?: 0L, chapter.id)
                 }
                 false
             }
@@ -438,7 +463,7 @@ class RecentMangaHolder(
         } && !item.mch.manga.isLocal()
         notifySubStatus(
             chapter,
-            if (adapter.isSelected(flexibleAdapterPosition)) {
+            if (adapter.isSelected(item)) {
                 Download.State.CHECKED
             } else {
                 downloadInfo.status
@@ -456,7 +481,7 @@ class RecentMangaHolder(
 
     override fun onLongClick(view: View?): Boolean {
         super.onLongClick(view)
-        val item = adapter.getItem(flexibleAdapterPosition) as? RecentMangaItem ?: return false
+        val item = boundItem ?: return false
         return item.mch.history.id != null
     }
 
@@ -500,3 +525,15 @@ class RecentMangaHolder(
         return if (chapterId == -1L) null else binding.endView
     }
 }
+
+/**
+ * Shared-element name for the row, matched by [ReaderActivity] through the intent extra rather
+ * than by a string lookup — it is the *view* that is passed, and this is its name.
+ *
+ * Keyed by manga **and** chapter, not by manga alone and never by adapter position: the same manga
+ * can legitimately appear twice in Recents with different chapters, and two attached rows sharing
+ * a transition name is an undefined pairing. Position would also change every time the list
+ * re-sorted or paginated, which is the identity problem this refactor exists to remove.
+ */
+private val RecentMangaItem.transitionName: String
+    get() = "recents chapter ${mch.manga.id ?: 0L}-${chapter.id ?: 0L} transition"
