@@ -4,7 +4,7 @@ Agent context file. Read this before generating any UI code. This is not documen
 
 0. Prime Directive
 
-Redesign Yokai's UI to feel like a native iOS 27 app while running on Android 10+ (API 29+). The visual language is Liquid Glass as defined by Apple's Human Interface Guidelines, adapted for Android's rendering stack. Do not generate "generic rounded-corner Material" output. Every component decision must trace back to a rule in this document.
+Redesign Yokai's UI to feel like a native iOS 27 app while running on Android 8.0+ (API 26+, the real minSdk — see §3 Tier 3). The visual language is Liquid Glass as defined by Apple's Human Interface Guidelines, adapted for Android's rendering stack. Do not generate "generic rounded-corner Material" output. Every component decision must trace back to a rule in this document.
 
 What this project is not:
 
@@ -66,13 +66,19 @@ Default opacity Frosted-diffuse, not ultra-clear. Base tint alpha ≈ 0.72
 
 ---
 
-3. Tiered Implementation Strategy (Android 10+)
+3. Tiered Implementation Strategy (Android 8.0+, API 26+)
 
 Real Liquid Glass refraction requires AGSL, which is API 33+. RenderEffect blur starts at API 31. Android 10 (API 29) has neither. The agent must implement three tiers behind a single API.
 
 Tier 1 — API 33+ (Full Liquid Glass)
 
-· Library: io.github.kyant0:backdrop:2.0.1 (Kyant0's AndroidLiquidGlass / Backdrop).
+· Library: io.github.kyant0:backdrop:1.0.6 (Kyant0's Backdrop).
+  CORRECTION (2026-10-07): this line previously read 2.0.1. That version is BLOCKED — it pulls
+  org.jetbrains.compose.foundation 1.12.0, which forces androidx Compose 1.12 → compileSdk 37 →
+  AGP 9.1.0+, and we are on AGP 8.12.2. 1.0.6 asks Compose 1.10.3 + minCompileSdk 36, which is
+  exactly our BOM. Revisit in the AGP 9 migration phase.
+  NOTE: io.github.kyant0:android-liquid-glass DOES NOT EXIST — that coordinate returns HTTP 404 on
+  Maven Central and the group directory contains only `backdrop/`. Backdrop IS the glass library.
 · Capabilities: AGSL shader-based refraction, lensing, custom shader effects.
 · Note: Backdrop is now a Compose Multiplatform library. It records Compose layers as backdrops. For Yokai's XML screens, wrap the backdrop source in AndroidView and test on one screen before rolling out.
 
@@ -82,8 +88,11 @@ Tier 2 — API 31–32 (Blur + Tint)
 · Capabilities: Hardware-accelerated blur, no refraction. Haze requires workarounds on API 31–32 (progressive effects use masks). Blur must be manually invalidated on API 31.
 · Fallback behavior: Haze uses a translucent scrim below API 31 by default.
 
-Tier 3 — API 29–30 (Scrim Fallback)
+Tier 3 — API 26–30 (Scrim Fallback)
 
+· CORRECTION (2026-10-07): minSdk is 26, not 29. Actual value is
+  `AndroidConfig.MIN_SDK = 26` (buildSrc/src/main/kotlin/AndroidConfig.kt:5). Tier 3 must cover
+  API 26–30 or ~4.7% of devices get no fallback path. Tier boundaries unchanged above that.
 · No blur, no refraction. Use a tinted, near-opaque bar with:
   · Color(0xE6F2F2F7) (light) / Color(0xE61C1C1E) (dark) background
   · 1px light top edge (Color(0x1AFFFFFF))
@@ -93,9 +102,9 @@ Tier 3 — API 29–30 (Scrim Fallback)
 Library Decision Matrix
 
 API Level Blur Refraction Recommended Library
-33+ ✅ ✅ Kyant0 Backdrop
+33+ ✅ ✅ Kyant0 Backdrop (1.0.6)
 31–32 ✅ ❌ Haze (with workarounds)
-29–30 ❌ ❌ Custom scrim composable
+26–30 ❌ ❌ Custom scrim composable
 
 Do not use: RenderScript (deprecated since Android 12, CPU-only on newer devices).
 
@@ -139,10 +148,19 @@ Base unit = 4dp. Use 8, 12, 16, 20, 24, 32. Never use arbitrary values like 13dp
 
 4.5 Motion
 
-· All animations use spring physics. No linear, no tween().
+· All AUTHORED animations use spring physics. No linear, no tween().
+· CARVE-OUT (2026-10-07 ruling): framework-provided defaults are grandfathered and may stay
+  tween-based — Nav3 transitions (`fadeIn`/`fadeOut`/`Crossfade`), `AnimatedVisibility`,
+  `AnimatedContent`, `Crossfade`. Phase 3 committed `fadeIn() togetherWith fadeOut()` in all
+  three Nav3 islands, CI-green. Without this carve-out Phase 4 fights itself. Anything the agent
+  writes is spring-only; anything the framework chose is not our decision to reverse.
 · Compose: spring(dampingRatio = 0.75f, stiffness = 300f).
 · Views: SpringAnimation from androidx.dynamicanimation.
-· Haptics: Trigger on tab switches, toggles, and sheet dismiss. Use HapticFeedbackConstants.CONTEXT_CLICK and CONFIRM.
+· Haptics: see docs/DESIGN_CUPERTINO.md §5 for the full interaction table. This line is
+  superseded by that table — CONTEXT_CLICK for tab switches and sheet dismiss, CLOCK_TICK for
+  segments, LONG_PRESS for selection, CONFIRM reserved for destructive confirms only.
+· Full motion vocabulary (snappy/default/gentle/bouncy tokens) is in
+  docs/DESIGN_CUPERTINO.md §4.
 
 ---
 
@@ -231,7 +249,8 @@ Yokai descends from TachiyomiJ2K: Conductor navigation, RxJava presenters, now m
 
 · Do not apply blur to RecyclerView items or manga cover images.
 · Do not use RoundedCornerShape(50) for pills — use the correct radii.
-· Do not animate with tween() or LinearInterpolator.
+· Do not animate with tween() or LinearInterpolator. (CARVE-OUT: framework-provided defaults —
+  Nav3 transitions, AnimatedVisibility, AnimatedContent, Crossfade — are grandfathered. See §4.5.)
 · Do not ship SF Pro or any Apple font.
 · Do not stack glass on glass.
 · Do not use RenderScript.
@@ -250,7 +269,7 @@ Yokai descends from TachiyomiJ2K: Conductor navigation, RxJava presenters, now m
 
 ```kotlin
 // Full Liquid Glass (API 33+)
-implementation("io.github.kyant0:backdrop:2.0.1")
+implementation("io.github.kyant0:backdrop:1.0.6")   // 2.0.1 blocked: Compose 1.12 → compileSdk 37 → AGP 9
 
 // Blur fallback (API 31+)
 implementation("dev.chrisbanes.haze:haze:1.6.10")
@@ -261,6 +280,18 @@ implementation("androidx.dynamicanimation:dynamicanimation:1.1.0-alpha03")
 // Compose BOM (Yokai already has this)
 implementation(platform("androidx.compose:compose-bom:2026.05.00"))
 ```
+
+---
+
+8.1 Cupertino Counterpart
+
+For the Cupertino half of the design system — typography ramp, semantic colour tokens, motion
+vocabulary, haptic table, component inventory — see docs/DESIGN_CUPERTINO.md. That document is
+the binding contract for all Phase 4 screen work. Where it and this file conflict, this file wins
+on glass concerns and DESIGN_CUPERTINO.md wins on everything else.
+
+The Cupertino component inventory deliberately EXCLUDES a wheel picker — cut 2026-10-07 as the
+largest single component with no screen demanding it (DESIGN_CUPERTINO.md Ruling 6).
 
 
 ---

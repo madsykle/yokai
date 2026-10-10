@@ -11,6 +11,8 @@ plugins {
     kotlin("android")
     alias(kotlinx.plugins.serialization)
     alias(kotlinx.plugins.parcelize)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.firebase.crashlytics) apply false
@@ -179,10 +181,17 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
-    // ReactiveX
-    implementation(libs.rxandroid)
-    implementation(libs.rxjava)
-    implementation(libs.rxrelay)
+    // Navigation 3 (Phase 3 — Voyager replacement). Pinned at 1.1.7: 1.2.0+ needs compileSdk 37 + AGP 9.1.0.
+    implementation(libs.navigation3.runtime)
+    implementation(libs.navigation3.ui)
+
+    // Hilt (Phase 2, :app only — KMP library modules stay on Koin)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    // kotlin-metadata-jvm 2.4.0 override for Kotlin 2.4 metadata (Hilt 2.58 bundles 2.2.20,
+    // which supports metadata 2.3 max). Highest version wins on the processor classpath.
+    // Temporary — remove when Hilt bundles kotlin-metadata-jvm 2.4.x (google/dagger#5177).
+    ksp("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.0")
 
     // Chucker
     debugImplementation(libs.chucker.library)
@@ -240,9 +249,6 @@ dependencies {
     implementation(libs.directionalviewpager)
     implementation(libs.viewtooltip)
     implementation(libs.taptargetview)
-
-    // Navigation
-    implementation(libs.bundles.voyager)
 
     // Shizuku
     implementation(libs.shizuku.api)

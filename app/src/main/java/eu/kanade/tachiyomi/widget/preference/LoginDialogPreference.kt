@@ -14,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import rx.Subscription
 import uy.kohesive.injekt.injectLazy
 import yokai.util.lang.getString
 
@@ -31,8 +30,6 @@ abstract class LoginDialogPreference(
     val preferences: PreferencesHelper by injectLazy()
 
     val scope = CoroutineScope(Job() + Dispatchers.Main)
-
-    var requestSubscription: Subscription? = null
 
     open var canLogout = false
 
@@ -69,7 +66,6 @@ abstract class LoginDialogPreference(
 
     open fun onDialogClosed() {
         scope.cancel()
-        requestSubscription?.unsubscribe()
     }
 
     protected abstract fun checkLogin()

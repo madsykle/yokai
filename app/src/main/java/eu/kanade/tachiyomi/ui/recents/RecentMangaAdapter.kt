@@ -59,6 +59,28 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
         setDisplayHeadersAtStartUp(true)
     }
 
+    /**
+     * Called instead of `notifyDataSetChanged()` when a display preference changes.
+     *
+     * With no RecyclerView attached, `notifyDataSetChanged()` redraws nothing, so a preference
+     * change would silently fail to reach the rows. The controller holds this and bumps a
+     * snapshot-state counter the composable reads, which re-runs `AndroidView`'s `update` and
+     * re-binds every row in place.
+     *
+     * Null until [RecentsController.onViewCreated] wires it, so the adapter is still constructible
+     * on its own.
+     */
+    var onDataInvalidated: (() -> Unit)? = null
+
+    /**
+     * Called when the cover-outline preference changes, so the controller can push
+     * [RecentMangaHolder.updateCards] into the holders it can actually see.
+     *
+     * This used to be a loop over `recyclerView.findViewHolderForAdapterPosition`, which cannot
+     * survive the list becoming a LazyColumn.
+     */
+    var onOutlineChanged: (() -> Unit)? = null
+
     fun setPreferenceFlows() {
         recentsPreferences.showRecentsDownloads().register { showDownloads = it }
         recentsPreferences.showRecentsRemHistory().register { showRemoveHistory = it }
@@ -70,14 +92,12 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
         preferences.sortFetchedTime().changesIn(delegate.scope()) { sortByFetched = it }
         uiPreferences.outlineOnCovers().register(false) {
             showOutline = it
-            (0 until itemCount).forEach { i ->
-                (recyclerView.findViewHolderForAdapterPosition(i) as? RecentMangaHolder)?.updateCards()
-            }
+            onOutlineChanged?.invoke()
         }
         preferences.libraryUpdateLastTimestamp().changesIn(delegate.scope()) {
             lastUpdatedTime = it
             if (viewType.isUpdates) {
-                notifyItemChanged(0)
+                onDataInvalidated?.invoke()
             }
         }
     }
@@ -95,30 +115,63 @@ class RecentMangaAdapter(val delegate: RecentsInterface) :
             .onEach {
                 onChanged(it)
                 if (notify) {
-                    notifyDataSetChanged()
+                    onDataInvalidated?.invoke()
                 }
             }
             .launchIn(delegate.scope())
     }
 
     interface RecentsInterface : GroupedDownloadInterface {
-        fun onCoverClick(position: Int)
-        fun onRemoveHistoryClicked(position: Int)
-        fun onSubChapterClicked(position: Int, chapter: Chapter, view: View)
-        fun updateExpandedExtraChapters(position: Int, expanded: Boolean)
-        fun areExtraChaptersExpanded(position: Int): Boolean
-        fun markAsRead(position: Int)
+        fun onCoverClick(item: RecentMangaItem)
+        fun onRemoveHistoryClicked(item: RecentMangaItem)
+        fun onSubChapterClicked(item: RecentMangaItem, chapter: Chapter, view: View)
+        fun updateExpandedExtraChapters(item: RecentMangaItem, expanded: Boolean)
+        fun areExtraChaptersExpanded(item: RecentMangaItem): Boolean
+        fun markAsRead(item: RecentMangaItem)
         fun alwaysExpanded(): Boolean
         fun scope(): CoroutineScope
         fun getViewType(): RecentsViewType
-        fun onItemLongClick(position: Int, chapter: ChapterHistory): Boolean
+        fun onItemLongClick(item: RecentMangaItem, chapter: ChapterHistory): Boolean
+    }
+
+    /**
+     * Which chapter the user's finger is currently resting on, per manga. `null` means the main
+     * row rather than one of its expanded sub-chapters.
+     *
+     * This used to be read back off the holder with
+     * `findViewHolderForAdapterPosition(position).chapterId`, which tied the swipe-to-mark-read
+     * path to the RecyclerView and would not survive the row moving into a LazyColumn. The holder
+     * now publishes here at touch time instead, so the controller never has to find a view.
+     */
+    private val activeChapterIds = mutableMapOf<Long, Long?>()
+
+    internal fun setActiveChapterId(mangaId: Long, chapterId: Long?) {
+        activeChapterIds[mangaId] = chapterId
+    }
+
+    internal fun activeChapterIdFor(mangaId: Long): Long? = activeChapterIds[mangaId]
+
+    fun positionOf(item: RecentMangaItem): Int = currentItems.indexOfFirst { it == item }
+
+    /**
+     * Selection state, keyed by item. [FlexibleAdapter] keys it by adapter position, which is a
+     * property of the RecyclerView rather than of the data.
+     *
+     * Kept as a real lookup rather than deleted: nothing on this screen activates selection today,
+     * but that is an inference about FlexibleAdapter's own behaviour that has not been checked.
+     * See the B2 pre-flight note in PROGRESS.md — if selection really is dead, the
+     * `Download.State.CHECKED` branch in the holder can go with it.
+     */
+    fun isSelected(item: RecentMangaItem): Boolean {
+        val position = positionOf(item)
+        return position >= 0 && super.isSelected(position)
     }
 
     override fun onItemSwiped(position: Int, direction: Int) {
         super.onItemSwiped(position, direction)
         when (direction) {
-            ItemTouchHelper.LEFT -> delegate.markAsRead(position)
-            ItemTouchHelper.RIGHT -> delegate.markAsRead(position)
+            ItemTouchHelper.LEFT -> (getItem(position) as? RecentMangaItem)?.let(delegate::markAsRead)
+            ItemTouchHelper.RIGHT -> (getItem(position) as? RecentMangaItem)?.let(delegate::markAsRead)
         }
     }
 
