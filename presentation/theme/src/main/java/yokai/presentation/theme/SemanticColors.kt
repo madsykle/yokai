@@ -133,20 +133,17 @@ val DarkCupertinoColors: CupertinoColorScheme = CupertinoColorScheme(
 /**
  * The scheme in scope.
  *
- * **Defaults to light and is currently provided by nothing.** Wiring it into `YokaiTheme` is a
- * one-line change, deliberately deferred: `GlassColors` lives in `Theme.kt` and is explicitly
- * out of scope for this commit, and adding a `MaterialTheme` colour override now would restyle
- * screens. The design system lands inert.
+ * Provided by `YokaiTheme`, which selects it from `isSystemInDarkTheme()`. The fallback below is
+ * light, so a component rendered outside `YokaiTheme` (a preview, a test, a bare `ComposeView`)
+ * shows the light scheme rather than crashing.
  */
 val LocalCupertinoColors = staticCompositionLocalOf { LightCupertinoColors }
 
 /**
  * The scheme in scope.
  *
- * **Defaults to light and is currently provided by nothing.** Wiring it into `YokaiTheme` is a
- * one-line change, deliberately deferred: `GlassColors` lives in `Theme.kt` and is explicitly
- * out of scope for the token commit, and adding a `MaterialTheme` colour override now would
- * restyle screens. The design system lands inert.
+ * `current` is the only sanctioned read; `light`/`dark` exist for previews and tests. `YokaiTheme`
+ * is what supplies the local for real screens.
  */
 object CupertinoColors {
     /** Read the current scheme. The only sanctioned way in. */

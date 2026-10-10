@@ -105,6 +105,7 @@ import kotlin.math.max
 import kotlinx.coroutines.launch
 import dev.icerock.moko.resources.compose.stringResource
 import yokai.i18n.MR
+import yokai.presentation.theme.YokaiTheme
 import yokai.presentation.theme.components.LargeTitleBar
 import yokai.presentation.theme.components.LargeTitleBarMetrics
 import yokai.presentation.theme.components.LargeTitleBarState
@@ -241,13 +242,18 @@ class RecentsController(bundle: Bundle? = null) :
         chromeViewType = presenter.viewType
         chromeScrollOffsetPx = 0f
         binding.cupertinoChrome.setContent {
-            RecentsChrome(
-                viewType = chromeViewType,
-                onViewTypeSelected = { selected ->
-                    setViewType(selected)
-                    chromeViewType = selected
-                },
-            )
+            // Same wrapper every Compose screen enters (BaseComposeController.kt:30). Also where
+            // LocalCupertinoColors comes from, i.e. why this chrome follows dark mode at all —
+            // without it the components resolve to LightCupertinoColors unconditionally.
+            YokaiTheme {
+                RecentsChrome(
+                    viewType = chromeViewType,
+                    onViewTypeSelected = { selected ->
+                        setViewType(selected)
+                        chromeViewType = selected
+                    },
+                )
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -230,6 +231,23 @@ fun YokaiTheme(content: @Composable () -> Unit) {
         colorScheme = colourScheme!!,
         typography = YokaiTypography.typography,
         shapes = glassShapes,
-        content = content,
+        content = {
+            // Every Cupertino component reads `CupertinoColors.current`, but until now nothing
+            // provided this local, so they all resolved to LightCupertinoColors regardless of
+            // theme. The app follows the system night mode only — AppCompat DayNight via
+            // values-night resources, and no AppCompatDelegate.setDefaultNightMode call exists —
+            // which is exactly what isSystemInDarkTheme reports.
+            //
+            // Blast radius is nil: nothing outside presentation/theme/components reads this
+            // local, so providing it changes the Cupertino components and nothing else.
+            CompositionLocalProvider(
+                LocalCupertinoColors provides if (isSystemInDarkTheme()) {
+                    CupertinoColors.dark
+                } else {
+                    CupertinoColors.light
+                },
+                content = content,
+            )
+        },
     )
 }
