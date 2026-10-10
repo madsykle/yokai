@@ -154,7 +154,7 @@ class RecentsController(bundle: Bundle? = null) :
 
     /**
      * Snapshot-backed so the chrome's `CupertinoSearchBar` recomposes as the user types.
-     * [setQuery] is the only writer, so the presenter's copy can never drift from the chrome's.
+     * [applyQuery] is the only writer, so the presenter's copy can never drift from the chrome's.
      */
     private var query by mutableStateOf("")
 
@@ -163,7 +163,7 @@ class RecentsController(bundle: Bundle? = null) :
      * listener. Forwards to the presenter exactly as the original setter did, so this is the same
      * filtering pathway — not a second one.
      */
-    private fun setQuery(value: String) {
+    private fun applyQuery(value: String) {
         query = value
         presenter.query = value
     }
@@ -287,7 +287,7 @@ class RecentsController(bundle: Bundle? = null) :
                 // presenter, not a second one.
                 onQueryChange = { new ->
                     if (query != new) {
-                        setQuery(new)
+                        applyQuery(new)
                         resetProgressItem()
                         refresh()
                     }
@@ -296,7 +296,7 @@ class RecentsController(bundle: Bundle? = null) :
                 cancelLabel = stringResource(MR.strings.cancel),
                 onCancel = {
                     if (query.isNotEmpty()) {
-                        setQuery("")
+                        applyQuery("")
                         resetProgressItem()
                         refresh()
                     }
@@ -1153,7 +1153,7 @@ class RecentsController(bundle: Bundle? = null) :
         }
         setOnQueryTextChangeListener(activityBinding?.searchToolbar?.searchView) {
             if (query != it) {
-                setQuery(it ?: return@setOnQueryTextChangeListener false)
+                applyQuery(it ?: return@setOnQueryTextChangeListener false)
                 resetProgressItem()
                 refresh()
             }
