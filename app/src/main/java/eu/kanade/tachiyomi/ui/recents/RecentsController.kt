@@ -1689,7 +1689,10 @@ private fun refreshItem(chapterId: Long) {
                     onSwipePastThreshold = { markAsRead(item) }
                     addView(
                         row,
-                        LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+                        ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ),
                     )
                 }
             },
