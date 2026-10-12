@@ -22,10 +22,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -65,6 +68,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.core.view.updatePaddingRelative
 import androidx.recyclerview.widget.RecyclerView
@@ -312,6 +316,7 @@ class RecentsController(bundle: Bundle? = null) :
                         }
                     },
                     onLoadMore = ::requestNextPage,
+                    onRefresh = ::startLibraryUpdate,
                 )
             }
         }
@@ -385,6 +390,18 @@ class RecentsController(bundle: Bundle? = null) :
          * type-1 rows in particular vary with the cover.
          */
         private const val PREFETCH_DISTANCE = 3
+
+        /**
+         * Pull distance that triggers a library update, in dp.
+         *
+         * Matches the pre-B1b Recents value (`ControllerExtensions.kt:304`,
+         * `setDistanceToTriggerSync(150.dpToPx)`), not SwipeRefresh's 80dp default. The docs note
+         * the reason on record: restore semantics.
+         */
+        private val PullRefreshThreshold = 150.dp
+
+        /** Rubber-band factor for the pull, so it does not track the finger 1:1. */
+        private const val PullResistance = 0.5f
     }
 
     /**
@@ -722,10 +739,9 @@ class RecentsController(bundle: Bundle? = null) :
             },
         )
         viewScope.launch {
-            // Refresh state, not the gesture. The SwipeRefreshLayout that used to host it is gone
-            // with the rest of the RecyclerView tree, so pulling no longer starts a library
-            // update; the `LibraryUpdateJob` collectors above and below still reflect one that
-            // started elsewhere. B1c restores the gesture.
+            // Refresh state, not the gesture. The gesture is the nested-scroll cage in
+            // RecentsScreen; this collector only reflects a library update that is running —
+            // including one started elsewhere in the app.
             LibraryUpdateJob.isRunningFlow(view.context).collect {
                 listIsRefreshing = it
             }
@@ -803,9 +819,10 @@ class RecentsController(bundle: Bundle? = null) :
 
     override fun shouldMoveItem(fromPosition: Int, toPosition: Int) = true
 
-    // Swipe-to-mark-read regressed with the ItemTouchHelper FlexibleAdapter used to own; this
-    // callback existed only to suspend pull-to-refresh while a swipe was in flight. B1c restores
-    // the gesture as a Compose SwipeToDismiss and reinstates the pause with it.
+    // Swipe-to-mark-read is a View-side driver now (`SwipeToMarkReadLayout`), so the
+    // ItemTouchHelper action-state callback that used to suspend pull-to-refresh while a swipe was
+    // in flight has nothing left to do: the horizontal touch-slop gate in the driver already keeps
+    // the two gestures from overlapping.
     override fun onActionStateChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) = Unit
 
     override fun canStillGoBack(): Boolean {
@@ -887,6 +904,39 @@ class RecentsController(bundle: Bundle? = null) :
     }
 
     fun refresh() = presenter.getRecents()
+
+    /**
+     * Starts a library update from the pull gesture.
+     *
+     * Body carried over from the pre-B1b `SwipeRefreshLayout.setOnRefreshListener`. The only
+     * substitutions are the Compose-backed [listIsRefreshing] for `swipeRefresh.isRefreshing` and
+     * the `context` local, which was `view.context` there too. The Cancel affordance and its
+     * snackbar are kept as they were — this is not a bare `startNow`.
+     */
+    private fun startLibraryUpdate() {
+        val view = view ?: return
+        val context = view.context
+        if (LibraryUpdateJob.isRunning(context)) return
+        listIsRefreshing = true
+        snack?.dismiss()
+        snack = view.snack(MR.strings.updating_library) {
+            anchorView = if (binding.downloadBottomSheet.root.sheetBehavior.isCollapsed()) {
+                binding.downloadBottomSheet.root
+            } else {
+                activityBinding?.bottomNav ?: binding.downloadBottomSheet.root
+            }
+            setAction(MR.strings.cancel) {
+                LibraryUpdateJob.stop(context)
+                viewScope.launchUI {
+                    NotificationReceiver.dismissNotification(
+                        context,
+                        Notifications.ID_LIBRARY_PROGRESS,
+                    )
+                }
+            }
+        }
+        LibraryUpdateJob.startNow(context)
+    }
 
     fun showLists(
         recents: List<RecentMangaItem>,
@@ -1369,6 +1419,7 @@ private fun refreshItem(chapterId: Long) {
         onQueryChange: (String) -> Unit,
         onQueryCancel: () -> Unit,
         onLoadMore: () -> Unit,
+        onRefresh: () -> Unit,
     ) {
         val context = LocalContext.current
         val density = LocalDensity.current
@@ -1382,6 +1433,63 @@ private fun refreshItem(chapterId: Long) {
         // a density scope.
         val topPadding = with(density) { topInsetPx.toDp() }
         val bottomPadding = with(density) { bottomInsetPx.toDp() }
+
+        // Pull-to-refresh. A hand-rolled nested-scroll cage, not a SwipeRefreshLayout: the gesture
+        // has to share the LazyColumn with the title collapse without either stealing the other's
+        // offsets. This connection only consumes downward overscroll while the list is pinned at
+        // the very top; the title-collapse connection observes the same phase but never consumes.
+        val pullOffset = remember { mutableFloatStateOf(0f) }
+        val thresholdPx = with(density) { PullRefreshThreshold.toPx() }
+        val restingIndicatorPx = with(density) { 24.dp.toPx() }
+        // The spinner's slot below the segmented control: grows with the drag, and holds a fixed
+        // gap while a library update runs so the list does not jump back up under it.
+        val pullTopPx = max(
+            pullOffset.floatValue,
+            if (listIsRefreshing) restingIndicatorPx else 0f,
+        )
+        val currentOnRefresh by rememberUpdatedState(onRefresh)
+        val pullRefresh = remember(listState, thresholdPx) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    // Dragging back up mid-pull collapses the pull before the list scrolls.
+                    if (source == NestedScrollSource.UserInput &&
+                        pullOffset.floatValue > 0f &&
+                        available.y < 0f
+                    ) {
+                        val consumed = (-available.y).coerceAtMost(pullOffset.floatValue)
+                        pullOffset.floatValue -= consumed
+                        return Offset(0f, -consumed)
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    val atTop = listState.firstVisibleItemIndex == 0 &&
+                        listState.firstVisibleItemScrollOffset == 0
+                    if (source == NestedScrollSource.UserInput && atTop && !listIsRefreshing &&
+                        available.y > 0f && consumed.y == 0f
+                    ) {
+                        pullOffset.floatValue =
+                            (pullOffset.floatValue + available.y * PullResistance)
+                                .coerceAtMost(thresholdPx * 2f)
+                        return Offset(0f, available.y)
+                    }
+                    return Offset.Zero
+                }
+
+                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                    if (pullOffset.floatValue >= thresholdPx && !listIsRefreshing) {
+                        currentOnRefresh()
+                    }
+                    pullOffset.floatValue = 0f
+                    return Velocity.Zero
+                }
+            }
+        }
 
         LaunchedEffect(listState) {
             snapshotFlow { listState.isScrollInProgress }
@@ -1432,8 +1540,11 @@ private fun refreshItem(chapterId: Long) {
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     state = listState,
-                    modifier = collapse.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = bottomPadding),
+                    modifier = collapse.fillMaxSize().nestedScroll(pullRefresh),
+                    contentPadding = PaddingValues(
+                        top = with(density) { pullTopPx.toDp() },
+                        bottom = bottomPadding,
+                    ),
                 ) {
                     rows.forEach { row ->
                         when (row) {
@@ -1525,9 +1636,19 @@ private fun refreshItem(chapterId: Long) {
                         title = emptyStateTitle,
                     )
                 }
-                if (isLoading || listIsRefreshing) {
+                if (isLoading || listIsRefreshing || pullOffset.floatValue > 0f) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                        CupertinoLoadingIndicator(Modifier.padding(top = 24.dp))
+                        CupertinoLoadingIndicator(
+                            modifier = Modifier
+                                .padding(top = 24.dp)
+                                .alpha(
+                                    if (listIsRefreshing) {
+                                        1f
+                                    } else {
+                                        (pullOffset.floatValue / thresholdPx).coerceIn(0f, 1f)
+                                    },
+                                ),
+                        )
                     }
                 }
             }
@@ -1550,17 +1671,27 @@ private fun refreshItem(chapterId: Long) {
         val key = "manga-${item.mch.manga.id}-${item.chapter.id}"
         AndroidView(
             factory = { ctx ->
-                val view = LayoutInflater.from(ctx)
+                val row = LayoutInflater.from(ctx)
                     .inflate(item.getLayoutRes(), null, false)
-                holderRegistry[key] = RecentMangaHolder(view, adapter)
-                view.setOnClickListener {
+                holderRegistry[key] = RecentMangaHolder(row, adapter)
+                row.setOnClickListener {
                     openChapter(it.findViewById(R.id.main_view), item.mch.manga, item.chapter)
                 }
-                view.setOnLongClickListener {
+                row.setOnLongClickListener {
                     onItemLongClick(item)
                     true
                 }
-                view
+                // The row keeps the inflated holder; this container only adds the swipe driver.
+                // The registry key and the shared-element view are untouched.
+                SwipeToMarkReadLayout(ctx).apply {
+                    frontView = row.findViewById(R.id.front_view)
+                    endView = row.findViewById(R.id.end_view)
+                    onSwipePastThreshold = { markAsRead(item) }
+                    addView(
+                        row,
+                        LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+                    )
+                }
             },
             update = { view ->
                 val holder = holderRegistry[key]
