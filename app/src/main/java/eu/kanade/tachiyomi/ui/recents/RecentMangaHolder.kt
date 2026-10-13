@@ -55,6 +55,15 @@ class RecentMangaHolder(
     private val binding = RecentMangaItemBinding.bind(view)
 
     /**
+     * The view that carries this row's shared-element `transitionName` (set in [bind]).
+     *
+     * `RecentsController` hands this view to the reader so the transition resolves against the view
+     * the name is actually on, instead of re-deriving it by id from whatever the click target
+     * happens to be — a lookup that fails silently into a transition-less `startActivity`.
+     */
+    val transitionView: View get() = binding.mainView
+
+    /**
      * The item this holder is currently showing. Set by [bind] and read by the click and touch
      * listeners, which fire independently of any bind.
      *

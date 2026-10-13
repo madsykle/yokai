@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -402,6 +403,15 @@ class RecentsController(bundle: Bundle? = null) :
 
         /** Rubber-band factor for the pull, so it does not track the finger 1:1. */
         private const val PullResistance = 0.5f
+
+        /**
+         * Height of the pull-to-refresh indicator's slot below the segmented control, in dp.
+         *
+         * The spinner is 24dp; the slot is one comfortable gap. It is the rest height while a
+         * refresh runs, and it is the same number the content padding uses, so the two can never
+         * disagree about where the list starts.
+         */
+        private val IndicatorSlot = 48.dp
     }
 
     /**
@@ -1440,13 +1450,20 @@ private fun refreshItem(chapterId: Long) {
         // the very top; the title-collapse connection observes the same phase but never consumes.
         val pullOffset = remember { mutableFloatStateOf(0f) }
         val thresholdPx = with(density) { PullRefreshThreshold.toPx() }
-        val restingIndicatorPx = with(density) { 24.dp.toPx() }
-        // The spinner's slot below the segmented control: grows with the drag, and holds a fixed
-        // gap while a library update runs so the list does not jump back up under it.
-        val pullTopPx = max(
-            pullOffset.floatValue,
-            if (listIsRefreshing) restingIndicatorPx else 0f,
-        )
+        // One number drives both where the spinner draws and where the content starts. Keeping the
+        // two separate is what made the first cut overlap: the spinner was pinned at a fixed
+        // offset while the content was pushed by the pull, so every pull shorter than that offset
+        // drew the spinner over the first row.
+        val indicatorSlotPx = with(density) { IndicatorSlot.toPx() }
+        val pullRaw = pullOffset.floatValue
+        val indicatorPinned = isLoading || listIsRefreshing
+        val pullTopPx = if (indicatorPinned) indicatorSlotPx else pullRaw
+        val indicatorAlpha = when {
+            indicatorPinned -> 1f
+            // No spinner until the gap can actually hold it.
+            pullRaw <= indicatorSlotPx -> 0f
+            else -> ((pullRaw - indicatorSlotPx) / (thresholdPx - indicatorSlotPx)).coerceIn(0f, 1f)
+        }
         val currentOnRefresh by rememberUpdatedState(onRefresh)
         val pullRefresh = remember(listState, thresholdPx) {
             object : NestedScrollConnection {
@@ -1475,7 +1492,7 @@ private fun refreshItem(chapterId: Long) {
                     ) {
                         pullOffset.floatValue =
                             (pullOffset.floatValue + available.y * PullResistance)
-                                .coerceAtMost(thresholdPx * 2f)
+                                .coerceAtMost(thresholdPx)
                         return Offset(0f, available.y)
                     }
                     return Offset.Zero
@@ -1636,19 +1653,16 @@ private fun refreshItem(chapterId: Long) {
                         title = emptyStateTitle,
                     )
                 }
-                if (isLoading || listIsRefreshing || pullOffset.floatValue > 0f) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                        CupertinoLoadingIndicator(
-                            modifier = Modifier
-                                .padding(top = 24.dp)
-                                .alpha(
-                                    if (listIsRefreshing) {
-                                        1f
-                                    } else {
-                                        (pullOffset.floatValue / thresholdPx).coerceIn(0f, 1f)
-                                    },
-                                ),
-                        )
+                if (indicatorPinned || pullRaw > 0f) {
+                    // The slot is exactly the top content padding, so the spinner can never draw
+                    // over a row: content begins where the slot ends.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(with(density) { pullTopPx.toDp() }),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CupertinoLoadingIndicator(Modifier.alpha(indicatorAlpha))
                     }
                 }
             }
@@ -1662,9 +1676,9 @@ private fun refreshItem(chapterId: Long) {
      * with a real composable, at which point the registry and the `RecentMangaHolder` plumbing go
      * with it.
      *
-     * The shared-element transition still works because the click hands [openChapter] the row's own
-     * `main_view`, which is attached to this hierarchy — the reader takes the `View` by identity
-     * and the `transitionName` rides along in the bundle.
+     * The shared-element transition resolves because the click hands [openChapter] the holder's own
+     * `transitionView` — the view `RecentMangaHolder.bind` writes the `transitionName` on, attached
+     * to this hierarchy. The swipe container in between is a container, never the target.
      */
     @Composable
     private fun RecentsMangaRow(item: RecentMangaItem, adapter: RecentMangaAdapter, rebindToken: Int) {
@@ -1673,16 +1687,22 @@ private fun refreshItem(chapterId: Long) {
             factory = { ctx ->
                 val row = LayoutInflater.from(ctx)
                     .inflate(item.getLayoutRes(), null, false)
-                holderRegistry[key] = RecentMangaHolder(row, adapter)
+                val holder = RecentMangaHolder(row, adapter)
+                holderRegistry[key] = holder
                 row.setOnClickListener {
-                    openChapter(it.findViewById(R.id.main_view), item.mch.manga, item.chapter)
+                    // The reader takes the transition target by identity and reads the
+                    // `transitionName` the holder puts on `main_view` in `bind`. Hand it that view
+                    // directly — re-deriving it by id from the click target is a lookup whose
+                    // failure is silent: `openChapter(null, …)` still opens the reader, just with
+                    // no shared-element animation.
+                    openChapter(holder.transitionView, item.mch.manga, item.chapter)
                 }
                 row.setOnLongClickListener {
                     onItemLongClick(item)
                     true
                 }
                 // The row keeps the inflated holder; this container only adds the swipe driver.
-                // The registry key and the shared-element view are untouched.
+                // The registry key and the holder's transition target are untouched.
                 SwipeToMarkReadLayout(ctx).apply {
                     frontView = row.findViewById(R.id.front_view)
                     endView = row.findViewById(R.id.end_view)
