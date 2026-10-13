@@ -43,9 +43,13 @@ fun SettingsScaffold(
     snackbarHost: @Composable () -> Unit = {},
     textFieldState: TextFieldState? = null,
     searchResult: @Composable (ColumnScope.() -> Unit)? = null,
+    onNavigateUp: (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val onBackPress = LocalBackPress.currentOrThrow
+    // Defaults to the host controller's own back handling, which is what a screen at the root of
+    // its island wants. Screens nested inside a Navigation 3 back stack must pass the stack's
+    // `onBack` instead, or the toolbar would pop the whole island instead of one entry.
+    val onBackPress = onNavigateUp ?: LocalBackPress.currentOrThrow
     val alertDialog = LocalDialogHostState.currentOrThrow
 
     YokaiScaffold(
@@ -72,6 +76,7 @@ fun SettingsScaffold(
     itemsProvider: @Composable () -> List<Preference>,
     textFieldState: TextFieldState? = null,
     searchResult: @Composable (ColumnScope.() -> Unit)? = null,
+    onNavigateUp: (() -> Unit)? = null,
 ) {
     val preferences: PreferencesHelper by injectLazy()
     val useLargeAppBar by preferences.useLargeToolbar().collectAsState()
@@ -84,6 +89,7 @@ fun SettingsScaffold(
         appBarScrollBehavior = if (useLargeAppBar) enterAlwaysCollapsedAppBarScrollBehavior(listState) else null,
         textFieldState = textFieldState,
         searchResult = searchResult,
+        onNavigateUp = onNavigateUp,
     ) { innerPadding ->
         PreferenceScreen(
             items = itemsProvider(),

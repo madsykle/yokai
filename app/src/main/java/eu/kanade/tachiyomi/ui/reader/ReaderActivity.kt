@@ -128,14 +128,12 @@ import eu.kanade.tachiyomi.util.system.isInNightMode
 import eu.kanade.tachiyomi.util.system.isLTR
 import eu.kanade.tachiyomi.util.system.isTablet
 import eu.kanade.tachiyomi.util.system.launchIO
-import eu.kanade.tachiyomi.util.system.launchNonCancellableIO
 import eu.kanade.tachiyomi.util.system.launchUI
 import eu.kanade.tachiyomi.util.system.materialAlertDialog
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.rootWindowInsetsCompat
 import eu.kanade.tachiyomi.util.system.spToPx
 import eu.kanade.tachiyomi.util.system.toast
-import eu.kanade.tachiyomi.util.system.withUIContext
 import eu.kanade.tachiyomi.util.view.collapse
 import eu.kanade.tachiyomi.util.view.compatToolTipText
 import eu.kanade.tachiyomi.util.view.doOnApplyWindowInsetsCompat
@@ -363,13 +361,17 @@ class ReaderActivity : BaseActivity<ReaderActivityBinding>() {
                     finish()
                     return
                 }
-                lifecycleScope.launchNonCancellableIO {
+                // init() is pure initialisation (4 db reads + a page load, zero writes), so it needs
+                // no NonCancellable protection. Running it on the cancellable lifecycleScope lets a
+                // back press or rotation cancel it and release this Activity immediately instead of
+                // retaining it for the whole load. withUIContext is redundant too: lifecycleScope runs
+                // on Dispatchers.Main.immediate and init() resumes back on that dispatcher after its
+                // internal withIOContext, so setInitialChapterError is already called on the main thread.
+                lifecycleScope.launch {
                     val initResult = viewModel.init(manga, chapter)
                     if (!initResult.getOrDefault(false)) {
                         val exception = initResult.exceptionOrNull() ?: IllegalStateException("Unknown err")
-                        withUIContext {
-                            setInitialChapterError(exception)
-                        }
+                        setInitialChapterError(exception)
                     }
                 }
             } else {

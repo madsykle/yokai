@@ -11,7 +11,6 @@ import yokai.util.lang.getString
 import dev.icerock.moko.resources.compose.stringResource
 import eu.kanade.tachiyomi.databinding.RecentsHeaderItemBinding
 import eu.kanade.tachiyomi.ui.base.holder.BaseFlexibleViewHolder
-import eu.kanade.tachiyomi.ui.library.LibraryHeaderItem
 import eu.kanade.tachiyomi.util.view.setText
 
 class RecentMangaHeaderItem(val recentsType: Int) :
@@ -37,13 +36,8 @@ class RecentMangaHeaderItem(val recentsType: Int) :
         holder.bind(recentsType)
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other is LibraryHeaderItem) {
-            return recentsType == recentsType
-        }
-        return false
-    }
+    override fun equals(other: Any?): Boolean =
+        other is RecentMangaHeaderItem && recentsType == other.recentsType
 
     override fun isDraggable(): Boolean {
         return false

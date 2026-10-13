@@ -1023,7 +1023,9 @@ class ReaderViewModel(
     private fun updateTrackChapterAfterReading(readerChapter: ReaderChapter) {
         if (!preferences.autoUpdateTrack().get()) return
 
-        launchIO {
+        // Must be viewModelScope: the bare `launchIO` in CoroutinesExtensions.kt is GlobalScope,
+        // so this job could outlive the ViewModel and keep it (via eventChannel) reachable.
+        viewModelScope.launchIO {
             val newChapterRead = readerChapter.chapter.chapter_number
             val errors = updateTrackChapterRead(preferences, manga?.id, newChapterRead, true)
             if (errors.isNotEmpty()) {

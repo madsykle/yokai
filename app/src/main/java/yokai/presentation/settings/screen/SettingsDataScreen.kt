@@ -26,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation3.runtime.NavKey
 import co.touchlab.kermit.Logger
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -71,6 +72,8 @@ object SettingsDataScreen : ComposableSettings() {
 
     private fun readResolve(): Any = SettingsDataScreen
 
+    override val route: NavKey get() = SettingsDataRoute
+
     @Composable
     override fun getTitleRes(): StringResource = MR.strings.data_and_storage
 
@@ -86,7 +89,8 @@ object SettingsDataScreen : ComposableSettings() {
     }
 
     @Composable
-    override fun getPreferences(): List<Preference> {
+    override fun getPreferences(onOpenStorybook: () -> Unit): List<Preference> {
+        // This screen has no nested Navigation 3 destinations, so the Storybook callback is unused.
         val storagePreferences: StoragePreferences by injectLazy()
         val backupPreferences: BackupPreferences by injectLazy()
 

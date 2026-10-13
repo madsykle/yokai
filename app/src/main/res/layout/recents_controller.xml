@@ -6,43 +6,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.google.android.material.loadingindicator.LoadingIndicator
-        android:id="@+id/progress"
-        android:indeterminate="true"
-        android:layout_width="75dp"
-        android:layout_height="75dp"
-        android:layout_gravity="center" />
+    <!-- The whole body: Cupertino chrome (large title, search, segmented control) plus the
+         LazyColumn, with the empty and loading states overlaid inside the same composition.
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
+         This replaces the RecyclerView / SwipeRefreshLayout / FrameLayout / EmptyView /
+         LoadingIndicator tree. It stayed a ComposeView declared here rather than becoming a
+         Compose base class because RecentsController still holds a ViewBinding that the download
+         bottom sheet alone accounts for; keeping `binding.root` keeps the sheet, the
+         BottomSheetBehavior's child ordering and the controller lifecycle exactly as they were. -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/cupertino_chrome"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent" />
 
-        <FrameLayout
-            android:id="@+id/recents_frame_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="?attr/background">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:background="?attr/background"
-                tools:listitem="@layout/recent_manga_item" />
-
-        </FrameLayout>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <eu.kanade.tachiyomi.widget.EmptyView
-        android:id="@+id/recents_empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:visibility="gone"/>
-
-    <!-- Adding bottom sheet after main content -->
+    <!-- Adding bottom sheet after main content. Must stay LAST: BottomSheetBehavior draws the
+         sheet above everything else in this CoordinatorLayout. -->
     <include layout="@layout/download_bottom_sheet"
         android:id="@+id/download_bottom_sheet"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

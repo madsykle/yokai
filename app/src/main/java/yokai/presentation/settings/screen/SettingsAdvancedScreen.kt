@@ -12,7 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
-import cafe.adriel.voyager.navigator.LocalNavigator
+import androidx.navigation3.runtime.NavKey
 import co.touchlab.kermit.Logger
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -61,17 +61,32 @@ import yokai.domain.simple
 import yokai.i18n.MR
 import yokai.presentation.component.preference.Preference
 import yokai.presentation.settings.ComposableSettings
-import yokai.presentation.settings.screen.advanced.StoryBookScreen
+import yokai.presentation.settings.screen.SettingsAdvancedRoute
 
 object SettingsAdvancedScreen : ComposableSettings() {
 
+    /**
+     * The "Use experimental compose library" toggle routes the Library tab to
+     * `LibraryComposeController`, which currently renders placeholder text instead of the library
+     * (`LibraryContent.kt:31-42`) and has empty sheet handlers (`LibraryComposeController.kt:85-92`),
+     * so enabling it breaks the tab. The gate is on `BuildConfig.DEBUG` alone, which means every debug
+     * build - including the one CI ships - exposes it.
+     *
+     * The toggle is hidden until the Library Compose rewrite lands.
+     * TODO: re-enable when Library Compose rewrite lands (Phase 4 step 2). Delete this constant and
+     *   restore the `BuildConfig.FLAVOR == "dev" || BuildConfig.DEBUG` condition at the call site.
+     */
+    private val isComposeLibraryToggleVisible = false
+
     private fun readResolve() = SettingsAdvancedScreen
+
+    override val route: NavKey get() = SettingsAdvancedRoute
 
     @Composable
     override fun getTitleRes(): StringResource = MR.strings.advanced
 
     @Composable
-    override fun getPreferences(): List<Preference> {
+    override fun getPreferences(onOpenStorybook: () -> Unit): List<Preference> {
         val preferences: PreferencesHelper by injectLazy()
         val basePreferences: BasePreferences by injectLazy()
         val networkPreferences: NetworkPreferences by injectLazy()
@@ -98,7 +113,7 @@ object SettingsAdvancedScreen : ComposableSettings() {
             add(getNetworkGroup(networkPreferences))
             add(getExtensionGroup(basePreferences))
             add(getLibraryGroup(basePreferences))
-            add(getDeveloperGroup())
+            add(getDeveloperGroup(onOpenStorybook))
         }.toPersistentList()
     }
 
@@ -393,7 +408,7 @@ object SettingsAdvancedScreen : ComposableSettings() {
                 subtitle = stringResource(MR.strings.updates_tracking_details),
                 onClick = { LibraryUpdateJob.startNow(context, target = LibraryUpdateJob.Target.TRACKING) },
             ))
-            if (BuildConfig.FLAVOR == "dev" || BuildConfig.DEBUG) {
+            if (isComposeLibraryToggleVisible) {
                 add(Preference.PreferenceItem.SwitchPreference(
                     pref = basePreferences.composeLibrary(),
                     title = stringResource(MR.strings.pref_use_compose_library),
@@ -409,13 +424,11 @@ object SettingsAdvancedScreen : ComposableSettings() {
     }
 
     @Composable
-    private fun getDeveloperGroup(): Preference.PreferenceGroup {
-        val navigator = LocalNavigator.currentOrThrow
-
+    private fun getDeveloperGroup(onOpenStorybook: () -> Unit): Preference.PreferenceGroup {
         val children = buildList {
             add(Preference.PreferenceItem.TextPreference(
                 title = "Storybook",
-                onClick = { navigator.push(StoryBookScreen()) },
+                onClick = onOpenStorybook,
             ))
         }.toPersistentList()
 
