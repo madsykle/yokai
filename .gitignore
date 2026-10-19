@@ -11,3 +11,8 @@
 .kotlin/
 kls_database.db
 weblate.conf
+
+# Signing material — never commit
+*.jks
+*.keystore
+keystore.properties

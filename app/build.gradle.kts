@@ -1,8 +1,10 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsPlugin
 import com.google.gms.googleservices.GoogleServicesPlugin
+import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -45,11 +47,27 @@ val buildTime: String by lazy {
     LocalDateTime.now(ZoneOffset.UTC).format(df)
 }
 
+// Personal signing key: env vars in CI, ~/yokai-signing/keystore.properties locally.
+// When absent, debug builds fall back to the default Android debug keystore.
+val signingProperties = Properties().apply {
+    val file = File(System.getProperty("user.home"), "yokai-signing/keystore.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(env: String, key: String): String? =
+    System.getenv(env)?.takeIf { it.isNotBlank() } ?: signingProperties.getProperty(key)
+
+val signingKeyStore: File? = signingValue("YOKAI_KEYSTORE", "storeFile")
+    ?.let(::File)
+    ?.takeIf { it.exists() }
+
 val supportedAbis = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     defaultConfig {
-        applicationId = "eu.kanade.tachiyomi"
+        applicationId = "dev.madsykle.yokai"
         versionCode = 162
         versionName = _versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -70,6 +88,17 @@ android {
         }
     }
 
+    signingConfigs {
+        signingKeyStore?.let { store ->
+            create("yokai") {
+                storeFile = store
+                storePassword = signingValue("YOKAI_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("YOKAI_KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("YOKAI_KEY_PASSWORD", "keyPassword")
+            }
+        }
+    }
+
     splits {
         abi {
             isEnable = true
@@ -83,11 +112,13 @@ android {
 
     buildTypes {
         getByName("debug") {
-            applicationIdSuffix = ".debugYokai"
+            applicationIdSuffix = ".debug"
             versionNameSuffix = "-d${commitCount}"
+            if (signingKeyStore != null) {
+                signingConfig = signingConfigs.getByName("yokai")
+            }
         }
         getByName("release") {
-            applicationIdSuffix = ".yokai"
             isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
@@ -104,10 +135,12 @@ android {
             buildConfigField("boolean", "BETA", "true")
             buildConfigField("boolean", "NIGHTLY", "true")
 
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (signingKeyStore != null) "yokai" else "debug",
+            )
             matchingFallbacks.add("release")
             versionNameSuffix = "-r${commitCount}"
-            applicationIdSuffix = ".nightlyYokai"
+            applicationIdSuffix = ".nightly"
         }
     }
 
