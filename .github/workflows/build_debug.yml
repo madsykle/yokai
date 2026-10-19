@@ -17,13 +17,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Full history: the version name/code are derived from `git rev-list --count HEAD`.
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -65,10 +65,12 @@ jobs:
           set -e
           apk="app/build/outputs/apk/standard/debug/app-standard-universal-debug.apk"
           "${ANDROID_SDK_ROOT}/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | tee signature.txt
-          grep -q "48:7F:C4:C4:41:C8:72:65:60:10:C6:18:C0:CD:F0:9F:A8:B4:9D:1D:14:34:81:54:96:30:13:A3:07:15:6B:35" signature.txt
+          # SHA-256 of the personal signing cert, as printed by apksigner (lowercase, no colons).
+          grep -q "487fc4c441c872656010c618c0cdf09fa8b49d1d14348154963013a307156b35" signature.txt
+          grep -q "CN=madsykle" signature.txt
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: yokai-debug-${{ github.sha }}
           path: app/build/outputs/apk/standard/debug/*.apk
