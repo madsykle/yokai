@@ -22,6 +22,12 @@ on:
         required: false
         type: string
 
+# The default GITHUB_TOKEN is read-only on this fork; releases and check runs need write.
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' }}
   cancel-in-progress: true
