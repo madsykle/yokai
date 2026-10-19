@@ -103,11 +103,8 @@ val RELEASE_TAG: String by lazy {
 }
 
 val GITHUB_REPO: String by lazy {
-    if (BuildConfig.NIGHTLY) {
-        "null2264/yokai-nightly"
-    } else {
-        "null2264/yokai"
-    }
+    // Personal fork: nightly tags (r<count>) and release tags (v<version>) live in this repo.
+    "madsykle/yokai"
 }
 
 val RELEASE_URL = "https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
