@@ -3,10 +3,8 @@ name: Build app
 run-name: ${{ github.event_name == 'workflow_dispatch' && format('Build and Release v{0}', github.event.inputs.version) || github.event.commits[0].message }}
 
 on:
-  push:
-    branches:
-      - master
-      - backport/**
+  # Pushing to master on a personal fork must not trigger an upstream release build.
+  # Release builds are manual only.
   workflow_dispatch:
     inputs:
       version:
