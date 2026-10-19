@@ -1,5 +1,3 @@
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsPlugin
-import com.google.gms.googleservices.GoogleServicesPlugin
 import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -18,10 +16,10 @@ plugins {
     alias(libs.plugins.google.services) apply false
 }
 
-if (gradle.startParameter.taskRequests.toString().contains("standard", true)) {
-    apply<CrashlyticsPlugin>()
-    apply<GoogleServicesPlugin>()
-}
+// Upstream applies the Crashlytics/Google Services plugins for the `standard` flavor.
+// Disabled on this fork: app/src/standard/google-services.json is registered for
+// eu.kanade.tachiyomi.* only, and the personal applicationId no longer matches it.
+// The Firebase SDKs stay on the classpath; their call sites already catch failures.
 
 fun runCommand(command: String): String {
     val result = providers.exec { commandLine(command.split(" ")) }
