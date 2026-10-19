@@ -10,17 +10,19 @@ import com.google.accompanist.themeadapter.material3.createMdc3Theme
 fun YokaiTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
 
-    val (colourScheme) =
+    val (colourScheme, typography) =
         @Suppress("DEPRECATION")
         createMdc3Theme(
             context = context,
             layoutDirection = LayoutDirection.Rtl,
             setTextColors = true,
-            readTypography = false,
+            readTypography = true,
+            setDefaultFontFamily = true,
         )
 
     MaterialTheme(
         colorScheme = colourScheme!!,
+        typography = typography!!,
         content = content
     )
 }

@@ -32,7 +32,78 @@
     </style>
 
     <style name="TextAppearance.FloatingTitle" parent="TextAppearance.Material3.TitleLarge">
-        <item name="android:textSize">16sp</item>
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight" tools:targetApi="p">700</item>
+        <item name="lineHeight">40sp</item>
+        <item name="android:lineHeight" tools:targetApi="p">40sp</item>
+    </style>
+
+    <!-- iOS typography -->
+    <style name="TextAppearance.Yokai.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textFontWeight" tools:targetApi="p">600</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textFontWeight" tools:targetApi="p">600</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textFontWeight" tools:targetApi="p">500</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- iOS shapes -->
+    <style name="ShapeAppearance.Yokai.SmallComponent" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="ShapeAppearance.Yokai.MediumComponent" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Yokai.LargeComponent" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">32dp</item>
+        <item name="cornerSizeTopRight">32dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
     <style name="TextAppearance.Widget.Tab" parent="TextAppearance.MaterialComponents.Button">
@@ -76,15 +147,15 @@
     </style>
 
     <style name="Widget.Tachiyomi.CardView.Elevated" parent="Widget.Material3.CardView.Elevated">
-        <item name="shapeAppearance">?attr/shapeAppearanceCornerSmall</item>
+        <item name="shapeAppearance">?attr/shapeAppearanceMediumComponent</item>
     </style>
 
     <style name="Widget.Tachiyomi.CardView.Outlined" parent="Widget.Material3.CardView.Outlined">
-        <item name="shapeAppearance">?attr/shapeAppearanceCornerSmall</item>
+        <item name="shapeAppearance">?attr/shapeAppearanceMediumComponent</item>
     </style>
 
     <style name="Widget.Tachiyomi.CardView.Filled" parent="Widget.Material3.CardView.Filled">
-        <item name="shapeAppearance">?attr/shapeAppearanceCornerSmall</item>
+        <item name="shapeAppearance">?attr/shapeAppearanceMediumComponent</item>
     </style>
 
     <style name="Widget.Tachiyomi.CardView.Tracker" parent="Widget.Material3.CardView.Outlined">
@@ -153,6 +224,7 @@
     </style>
 
     <style name="BottomSheet.Modal" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/ShapeAppearance.Yokai.LargeComponent</item>
         <item name="paddingBottomSystemWindowInsets">false</item>
         <item name="paddingLeftSystemWindowInsets">false</item>
         <item name="paddingRightSystemWindowInsets">false</item>

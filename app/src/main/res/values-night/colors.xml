@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- iOS dark palette -->
+    <color name="ios_black">#000000</color>
+    <color name="ios_grouped">#1C1C1E</color>
+    <color name="ios_raised">#2C2C2E</color>
+    <color name="ios_raised2">#3A3A3C</color>
+    <color name="ios_separator">#38383A</color>
+    <color name="ios_label">#FFFFFF</color>
+    <color name="ios_label_secondary">#99EBEBF5</color>
+    <color name="ios_label_tertiary">#4DEBEBF5</color>
+    <color name="ios_blue">#0A84FF</color>
+    <color name="ios_red">#FF453A</color>
+
     <color name="tachiyomi_primary">#AEC6FF</color>
     <color name="tachiyomi_onPrimary">#002C71</color>
     <color name="tachiyomi_primaryContainer">#00419E</color>

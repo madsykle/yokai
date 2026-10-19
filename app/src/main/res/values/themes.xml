@@ -31,6 +31,22 @@
         <item name="colorTertiary">@color/download_badge</item>
         <item name="colorOnTertiary">@color/black</item>
 
+        <!-- Typography -->
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Yokai.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Yokai.TitleMedium</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Yokai.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Yokai.BodyMedium</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Yokai.LabelLarge</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Yokai.BodySmall</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Yokai.LabelSmall</item>
+
+        <!-- Shapes -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Yokai.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Yokai.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Yokai.LargeComponent</item>
+
         <item name="readerBackground">@color/primaryVariantTachiyomi</item>
         <item name="android:listSelector">?attr/colorSecondary</item>
         <item name="android:divider">@color/divider</item>
@@ -86,8 +102,10 @@
 
     <style name="ThemeOverlay.Tachiyomi.Amoled" parent="">
         <item name="colorSurface">@color/md_black_1000</item>
+        <item name="colorSurfaceContainerLowest">@color/md_black_1000</item>
         <item name="colorPrimaryVariant">@color/md_black_1000</item>
         <item name="background">@color/md_black_1000</item>
+        <item name="android:colorBackground">@color/md_black_1000</item>
         <item name="readerBackground">@color/md_black_1000</item>
     </style>
 
