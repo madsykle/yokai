@@ -18,6 +18,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.GestureDetector
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -181,6 +182,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     private val updateChecker by lazy { AppUpdateChecker() }
     private val isUpdaterEnabled = BuildConfig.INCLUDE_UPDATER
     private var tabAnimation: ValueAnimator? = null
+    private var navGlassIndicator: NavGlassIndicator? = null
     private var searchBarAnimation: ValueAnimator? = null
     private var overflowDialog: Dialog? = null
     var currentToolbar: Toolbar? = null
@@ -522,6 +524,8 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 }
         }
 
+        navGlassIndicator = binding.bottomNav?.let { NavGlassIndicator(it) }
+
         nav.setOnItemSelectedListener { item ->
             val id = item.itemId
             val currentController = router.backstack.lastOrNull()?.controller
@@ -535,6 +539,14 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 }
             }
             continueSwitchingTabs = false
+            navGlassIndicator?.moveTo(id)
+            nav.performHapticFeedback(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    HapticFeedbackConstants.CONFIRM
+                } else {
+                    HapticFeedbackConstants.VIRTUAL_KEY
+                },
+            )
             val currentRoot = router.backstack.firstOrNull()
             if (currentRoot?.tag()?.toIntOrNull() != id) {
                 setRoot(
