@@ -42,6 +42,21 @@
     </style>
 
     <!-- iOS typography -->
+    <style name="TextAppearance.SearchBar" parent="TextAppearance.Yokai.BodyLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="TextAppearance.SearchQuery" parent="TextAppearance.Yokai.BodyLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
     <style name="TextAppearance.Yokai.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>

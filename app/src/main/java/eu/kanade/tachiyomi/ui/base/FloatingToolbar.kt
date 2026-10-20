@@ -75,7 +75,7 @@ class FloatingToolbar @JvmOverloads constructor(context: Context, attrs: Attribu
         super.onFinishInflate()
         toolbarTitle = findViewById<MaterialTextView>(R.id.card_title)
         toolbarTitle.setTextAppearance(titleTextAppearance)
-        toolbarTitle.setTextColor(actionColorAlpha)
+        toolbarTitle.setTextColor(context.getResourceColor(R.attr.colorOnSurfaceVariant))
 
         toolbarsubTitle = findViewById<MaterialTextView>(R.id.card_subtitle)
         toolbarsubTitle.setTextAppearance(subtitleTextAppearance)

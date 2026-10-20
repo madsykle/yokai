@@ -4,13 +4,11 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.widget.SearchView
-import androidx.core.graphics.ColorUtils
 import eu.kanade.tachiyomi.R
 import yokai.i18n.MR
 import yokai.util.lang.getString
@@ -21,7 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import android.R as AR
 
 class MiniSearchView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     SearchView(context, attrs) {
@@ -30,12 +27,9 @@ class MiniSearchView @JvmOverloads constructor(context: Context, attrs: Attribut
     private val searchTextView: SearchAutoComplete? = findViewById(androidx.appcompat.R.id.search_src_text)
 
     init {
-        searchTextView?.setTextAppearance(AR.style.TextAppearance_Material_Body1)
-        val actionColorAlpha =
-            ColorUtils.setAlphaComponent(context.getResourceColor(R.attr.actionBarTintColor), 200)
-        searchTextView?.setTextColor(actionColorAlpha)
-        searchTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-        searchTextView?.setHintTextColor(actionColorAlpha)
+        searchTextView?.setTextAppearance(R.style.TextAppearance_SearchQuery)
+        searchTextView?.setTextColor(context.getResourceColor(R.attr.colorOnSurface))
+        searchTextView?.setHintTextColor(context.getResourceColor(R.attr.colorOnSurfaceVariant))
 
         val clearButton = findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
         clearButton?.imageTintList = ColorStateList.valueOf(context.getResourceColor(R.attr.actionBarTintColor))

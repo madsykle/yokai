@@ -15,7 +15,7 @@ fun YokaiTheme(content: @Composable () -> Unit) {
         createMdc3Theme(
             context = context,
             layoutDirection = LayoutDirection.Rtl,
-            setTextColors = true,
+            setTextColors = false,
             readTypography = true,
             setDefaultFontFamily = true,
         )
