@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/tabs_layout"
+    style="@style/Widget.Yokai.Sheet"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bottom_sheet_rounded_background"
     android:orientation="vertical">
 
     <androidx.constraintlayout.widget.ConstraintLayout

@@ -6,8 +6,8 @@
     style="@style/BottomSheetDialogTheme"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bottom_sheet_rounded_background"
-    android:backgroundTint="?attr/colorPrimaryVariant"
+    android:background="@drawable/sheet_ios_bg"
+    android:elevation="0dp"
     android:orientation="vertical"
     app:behavior_peekHeight="60sp"
     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
@@ -16,8 +16,7 @@
         android:id="@+id/sheet_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bottom_sheet_rounded_background"
-        android:backgroundTint="?attr/colorPrimaryVariant"
+        android:background="@android:color/transparent"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -26,13 +25,12 @@
 
         <ImageView
             android:id="@+id/pill"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="36dp"
+            android:layout_height="5dp"
             android:layout_gravity="center"
             android:layout_marginTop="5dp"
-            android:alpha="0.25"
             android:contentDescription="@string/drag_handle"
-            android:src="@drawable/draggable_pill"
+            android:src="@drawable/drag_handle_ios"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

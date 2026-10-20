@@ -5,9 +5,9 @@
     android:id="@+id/menu_sheet_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bottom_sheet_rounded_background"
-    app:layout_constraintVertical_chainStyle="packed"
-    android:backgroundTint="?attr/background">
+    android:background="@drawable/sheet_ios_bg"
+    android:elevation="0dp"
+    app:layout_constraintVertical_chainStyle="packed">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/menu_sheet_recycler"
@@ -26,8 +26,6 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/mainActionBarSize"
         android:layout_gravity="top"
-        android:background="@drawable/bottom_sheet_rounded_background"
-        android:backgroundTint="?attr/colorSurface"
         android:clickable="true"
         android:elevation="0dp"
         android:focusable="true"

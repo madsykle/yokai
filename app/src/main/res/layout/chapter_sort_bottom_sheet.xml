@@ -4,7 +4,8 @@
     android:id="@+id/display_bottom_sheet"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bottom_sheet_rounded_background">
+    android:background="@drawable/sheet_ios_bg"
+    android:elevation="0dp">
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/settings_scroll_view"
@@ -114,12 +115,10 @@
 
     <ImageView
         android:id="@+id/pill"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="36dp"
+        android:layout_height="5dp"
         android:layout_gravity="center|top"
         android:layout_marginTop="5dp"
-        android:alpha="0.25"
         android:contentDescription="@string/drag_handle"
-        android:src="@drawable/draggable_pill"
-        app:tint="?attr/colorOnBackground" />
+        android:src="@drawable/drag_handle_ios" />
 </FrameLayout>

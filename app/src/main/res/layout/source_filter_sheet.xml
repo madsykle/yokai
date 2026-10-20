@@ -5,9 +5,9 @@
     android:id="@+id/source_filter_sheet"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bottom_sheet_rounded_background"
-    app:layout_constraintVertical_chainStyle="packed"
-    android:backgroundTint="?attr/background">
+    android:background="@drawable/sheet_ios_bg"
+    android:elevation="0dp"
+    app:layout_constraintVertical_chainStyle="packed">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/card_view"
@@ -16,6 +16,7 @@
         app:layout_constraintBottom_toBottomOf="@id/bottom_space"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="@dimen/rounded_radius"
         app:cardElevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
@@ -25,8 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:background="@drawable/bottom_sheet_rounded_background"
-            android:backgroundTint="?attr/colorSurface"
+            android:background="@android:color/transparent"
             app:layout_constraintBottom_toTopOf="@id/title_layout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -45,7 +45,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:layout_gravity="top"
-        android:background="?attr/colorSurface"
+        android:background="@android:color/transparent"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintStart_toStartOf="parent"

@@ -5,7 +5,8 @@
     android:id="@+id/display_bottom_sheet"
     android:animateLayoutChanges="true"
     android:layout_width="match_parent"
-    android:background="@drawable/bottom_sheet_rounded_background"
+    android:background="@drawable/sheet_ios_bg"
+    android:elevation="0dp"
     android:layout_height="match_parent">
 
     <androidx.recyclerview.widget.RecyclerView
@@ -30,8 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="?actionBarSize"
             android:layout_gravity="top"
-            android:background="@drawable/bottom_sheet_rounded_background"
-            android:backgroundTint="?attr/colorSurface"
+            android:background="@android:color/transparent"
             android:clickable="true"
             android:elevation="0dp"
             android:focusable="true"
