@@ -57,6 +57,14 @@
         <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
 
+    <style name="TextAppearance.Tachiyomi.BottomNavLabel" parent="TextAppearance.Material3.LabelSmall">
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
     <style name="TextAppearance.Yokai.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
@@ -376,10 +384,21 @@
         <item name="itemIconTint">@color/bottom_nav_item_selector</item>
         <item name="itemRippleColor">@color/ripple_nav</item>
         <item name="itemTextColor">@color/bottom_nav_text_selector</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.Tachiyomi.BottomNavLabel</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.Tachiyomi.BottomNavLabel</item>
         <item name="labelVisibilityMode">labeled</item>
-        <item name="android:background">?colorPrimaryVariant</item>
-        <item name="tabBarIconColor">?tabBarIconColor</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Tachiyomi.BottomNavigationView.ActiveIndicator</item>
+        <item name="android:background">@drawable/nav_glass_bg</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="elevation">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="tabBarIconColor">?attr/tabBarIconColor</item>
         <item name="tabRippleColor">?colorControlHighlight</item>
+    </style>
+
+    <style name="Widget.Tachiyomi.BottomNavigationView.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@android:color/transparent</item>
     </style>
 
     <style name="Widget.Tachiyomi.NavigationRail" parent="Widget.Material3.NavigationRailView">
