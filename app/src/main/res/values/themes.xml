@@ -39,6 +39,7 @@
         <item name="textAppearanceBodyLarge">@style/TextAppearance.Yokai.BodyLarge</item>
         <item name="textAppearanceBodyMedium">@style/TextAppearance.Yokai.BodyMedium</item>
         <item name="textAppearanceLabelLarge">@style/TextAppearance.Yokai.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Yokai.LabelMedium</item>
         <item name="textAppearanceBodySmall">@style/TextAppearance.Yokai.BodySmall</item>
         <item name="textAppearanceLabelSmall">@style/TextAppearance.Yokai.LabelSmall</item>
 

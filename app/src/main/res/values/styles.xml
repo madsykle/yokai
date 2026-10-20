@@ -37,6 +37,7 @@
         <item name="android:textSize">34sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textFontWeight" tools:targetApi="p">700</item>
+        <item name="android:letterSpacing">-0.01</item>
         <item name="lineHeight">40sp</item>
         <item name="android:lineHeight" tools:targetApi="p">40sp</item>
     </style>
@@ -46,6 +47,7 @@
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">17sp</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
 
@@ -53,6 +55,7 @@
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">17sp</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
@@ -70,6 +73,7 @@
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">22sp</item>
         <item name="android:textFontWeight" tools:targetApi="p">600</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 
     <style name="TextAppearance.Yokai.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
@@ -77,18 +81,21 @@
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">17sp</item>
         <item name="android:textFontWeight" tools:targetApi="p">600</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Yokai.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">17sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Yokai.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">15sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Yokai.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
@@ -96,18 +103,25 @@
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">15sp</item>
         <item name="android:textFontWeight" tools:targetApi="p">500</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Yokai.BodySmall" parent="TextAppearance.Material3.BodySmall">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Yokai.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <!-- iOS shapes -->
