@@ -270,7 +270,7 @@
         <item name="android:backgroundTint">@null</item>
     </style>
 
-    <style name="Widget.Yokai.Sheet">
+    <style name="Widget.Yokai.Sheet" parent="">
         <item name="android:background">@drawable/sheet_ios_bg</item>
         <item name="android:elevation">0dp</item>
         <item name="backgroundTint">@null</item>
@@ -520,7 +520,7 @@
     </style>
 
 
-    <style name="Widget.Tachiyomi.FilterTag">
+    <style name="Widget.Tachiyomi.FilterTag" parent="">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:background">@drawable/filter_tag_chip_bg</item>
