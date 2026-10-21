@@ -5,7 +5,7 @@
     style="@style/Theme.Widget.GridView.Catalogue"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bottom_sheet_rounded_background"
+    android:background="?background"
     android:clipToPadding="false"
     android:columnWidth="140dp"
     tools:listitem="@layout/manga_grid_item" />
