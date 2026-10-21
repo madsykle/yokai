@@ -109,4 +109,5 @@ Bottom line: XML-only covers colors, type, row height, side padding, header styl
 
 ## Blocked
 
+- Section 3's actual overflow UI is the custom `OverflowDialog` (`ui/more/OverflowDialog.kt` + `res/layout/tachi_overflow_layout.xml`), not a `PopupMenu`. Theme XML can set its card background through `colorBackgroundFloating`, but its 12dp card corner, 0dp stroke, and explicit divider require layout edits, which the "theme XML only" constraint excluded.
 - Compile/device verification for this UI pass was not run. The workspace Rules forbid local Gradle/APK builds, and the task forbids pushing, so GitHub Actions could not be used. Resource XML was checked with `aapt2 compile`; Kotlin changes were reviewed statically but not compiled. No emulator or device testing is claimed.
