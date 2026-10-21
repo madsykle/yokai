@@ -48,9 +48,30 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
 
     private val centerX = FloatValueHolder(0f)
     private var spring: SpringAnimation? = null
+    private var pendingItem: View? = null
+    private val itemLayoutListener = object : View.OnLayoutChangeListener {
+        override fun onLayoutChange(
+            view: View,
+            left: Int,
+            top: Int,
+            right: Int,
+            bottom: Int,
+            oldLeft: Int,
+            oldTop: Int,
+            oldRight: Int,
+            oldBottom: Int,
+        ) {
+            if (view.width > 0) {
+                view.removeOnLayoutChangeListener(this)
+                if (pendingItem === view) pendingItem = null
+                sync(animated = false)
+            }
+        }
+    }
 
     init {
         nav.background = layers
+        layers.setLayerInset(0, 0, 0, 0, 0)
         nav.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
                 sync(animated = false)
@@ -68,7 +89,19 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
      */
     fun sync(animated: Boolean) {
         val item = nav.findViewById<View>(nav.selectedItemId) ?: return
-        if (nav.width <= 0 || nav.height <= 0 || item.width <= 0) return
+        if (nav.width <= 0 || nav.height <= 0) return
+        if (item.width <= 0) {
+            if (pendingItem !== item) {
+                pendingItem?.let { it.removeOnLayoutChangeListener(itemLayoutListener) }
+                pendingItem = item
+                item.addOnLayoutChangeListener(itemLayoutListener)
+            }
+            return
+        }
+        if (pendingItem === item) {
+            item.removeOnLayoutChangeListener(itemLayoutListener)
+            pendingItem = null
+        }
 
         capsule.alpha = 255
         val parentLeft = (item.parent as? View)?.left ?: 0
@@ -115,7 +148,9 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
         val half = width / 2f
         val left = (center - half).roundToInt().coerceAtLeast(0)
         val right = (center + half).roundToInt().coerceAtMost(nav.width)
+        layers.setLayerInset(0, 0, 0, 0, 0)
         layers.setLayerInset(1, left, top, nav.width - right, nav.height - bottom)
+        layers.invalidateSelf()
         capsule.cornerRadius = (bottom - top) / 2f
     }
 
