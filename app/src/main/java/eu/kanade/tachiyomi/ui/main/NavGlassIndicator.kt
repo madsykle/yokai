@@ -82,7 +82,7 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
             return
         }
 
-        spring = SpringAnimation(center, FloatValueHolder.VALUE).apply {
+        spring = SpringAnimation(center).apply {
             spring = SpringForce(targetCenter).apply {
                 dampingRatio = 0.8f
                 stiffness = 400f
