@@ -1,19 +1,17 @@
 package eu.kanade.tachiyomi.ui.main
 
 import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.LayerDrawable
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.OvershootInterpolator
 import androidx.dynamicanimation.animation.FloatValueHolder
 import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.dynamicanimation.animation.SpringForce
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.roundToInt
 
 /**
  * Draws a glass capsule behind the bottom navigation items and springs it to the selected tab.
@@ -21,57 +19,19 @@ import kotlin.math.roundToInt
 class NavGlassIndicator(private val nav: BottomNavigationView) {
 
     private val density = nav.resources.displayMetrics.density
-    private val pillInset = dp(8f)
-    private val verticalClearance = dp(3f)
-    private val pillSideInset = dp(16f)
-    private val minCapsuleWidth = dp(76f)
     private val itemWidthInset = dp(8f)
-    private val maxStretch = dp(14f)
-    private val stretchDivisor = dp(80f)
+    private val minCapsuleWidth = dp(76f)
 
-    private var baseWidth = minCapsuleWidth
-
-    private val capsule = GradientDrawable().apply {
-        shape = GradientDrawable.RECTANGLE
-        orientation = GradientDrawable.Orientation.TOP_BOTTOM
-        colors = intArrayOf(0x38FFFFFF, 0x14FFFFFF)
-        setStroke(dp(1f).roundToInt(), 0x1FFFFFFF)
-        alpha = 0
-    }
-
-    private val layers = LayerDrawable(
-        arrayOf(
-            nav.background ?: ColorDrawable(Color.TRANSPARENT),
-            capsule,
-        ),
+    private val background = NavGlassBackground(
+        nav.background ?: ColorDrawable(Color.TRANSPARENT),
+        density,
     )
 
-    private val centerX = FloatValueHolder(0f)
+    private val center = FloatValueHolder(0f)
     private var spring: SpringAnimation? = null
-    private var pendingItem: View? = null
-    private val itemLayoutListener = object : View.OnLayoutChangeListener {
-        override fun onLayoutChange(
-            view: View,
-            left: Int,
-            top: Int,
-            right: Int,
-            bottom: Int,
-            oldLeft: Int,
-            oldTop: Int,
-            oldRight: Int,
-            oldBottom: Int,
-        ) {
-            if (view.width > 0) {
-                view.removeOnLayoutChangeListener(this)
-                if (pendingItem === view) pendingItem = null
-                sync(animated = false)
-            }
-        }
-    }
 
     init {
-        nav.background = layers
-        layers.setLayerInset(0, 0, 0, 0, 0)
+        nav.background = background
         nav.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
                 sync(animated = false)
@@ -88,70 +48,50 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
      * position changes so programmatic and user selections cannot drift apart.
      */
     fun sync(animated: Boolean) {
-        val item = nav.findViewById<View>(nav.selectedItemId) ?: return
         if (nav.width <= 0 || nav.height <= 0) return
-        if (item.width <= 0) {
-            if (pendingItem !== item) {
-                pendingItem?.let { it.removeOnLayoutChangeListener(itemLayoutListener) }
-                pendingItem = item
-                item.addOnLayoutChangeListener(itemLayoutListener)
-            }
-            return
-        }
-        if (pendingItem === item) {
-            item.removeOnLayoutChangeListener(itemLayoutListener)
-            pendingItem = null
-        }
 
-        capsule.alpha = 255
-        val parentLeft = (item.parent as? View)?.left ?: 0
-        val rawCenter = parentLeft + item.left + item.width / 2f
-        baseWidth = max(minCapsuleWidth, item.width - itemWidthInset)
-        val half = baseWidth / 2f
-        val minCenter = pillSideInset + half
-        val maxCenter = nav.width - pillSideInset - half
-        val target = if (minCenter <= maxCenter) {
-            rawCenter.coerceIn(minCenter, maxCenter)
+        val itemCount = nav.menu.size()
+        if (itemCount == 0) return
+
+        val selectedId = nav.selectedItemId
+        val menuView = nav.getChildAt(0) as? ViewGroup
+        val selectedIndex = (0 until itemCount).firstOrNull { nav.menu.getItem(it).itemId == selectedId }
+            ?: 0
+        val item = menuView?.findViewById<View>(selectedId)
+            ?: menuView?.getChildAt(selectedIndex)
+
+        val targetCenter: Float
+        val targetWidth: Float
+        if (item != null && item.width > 0) {
+            val rect = Rect()
+            nav.offsetDescendantRectToMyCoords(item, rect)
+            targetCenter = rect.exactCenterX()
+            targetWidth = max(minCapsuleWidth, rect.width() - itemWidthInset)
         } else {
-            nav.width / 2f
+            val itemWidth = nav.width.toFloat() / itemCount
+            targetCenter = (selectedIndex + 0.5f) * itemWidth
+            targetWidth = max(minCapsuleWidth, itemWidth - itemWidthInset)
         }
 
+        background.capsuleWidth = targetWidth
         spring?.cancel()
+
         if (!animated || !nav.isLaidOut) {
-            centerX.value = target
-            applyGeometry(target, baseWidth)
+            center.value = targetCenter
+            background.centerX = targetCenter
             return
         }
 
-        spring = SpringAnimation(centerX).apply {
-            spring = SpringForce(target).apply {
+        spring = SpringAnimation(center, FloatValueHolder.VALUE).apply {
+            spring = SpringForce(targetCenter).apply {
                 dampingRatio = 0.8f
                 stiffness = 400f
             }
-            addUpdateListener { _, value, velocity ->
-                val stretch = (abs(velocity) / stretchDivisor).coerceIn(0f, maxStretch)
-                applyGeometry(value, baseWidth + stretch)
-            }
-            addEndListener { _, canceled, _, _ ->
-                if (!canceled) {
-                    applyGeometry(centerX.value, baseWidth)
-                }
+            addUpdateListener { _, value, _ ->
+                background.centerX = value
             }
             start()
         }
-    }
-
-    private fun applyGeometry(center: Float, width: Float) {
-        if (nav.width <= 0 || nav.height <= 0) return
-        val top = (pillInset + verticalClearance).roundToInt().coerceAtLeast(0)
-        val bottom = (nav.height - pillInset - verticalClearance).roundToInt().coerceAtLeast(top)
-        val half = width / 2f
-        val left = (center - half).roundToInt().coerceAtLeast(0)
-        val right = (center + half).roundToInt().coerceAtMost(nav.width)
-        layers.setLayerInset(0, 0, 0, 0, 0)
-        layers.setLayerInset(1, left, top, nav.width - right, nav.height - bottom)
-        layers.invalidateSelf()
-        capsule.cornerRadius = (bottom - top) / 2f
     }
 
     private fun attachPressFeedback() {
