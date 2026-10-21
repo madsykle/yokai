@@ -401,7 +401,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         }
         nav.getItemView(R.id.nav_recents)?.setOnLongClickListener {
             if (nav.selectedItemId != R.id.nav_recents) {
-                nav.selectedItemId = R.id.nav_recents
+                selectTab(R.id.nav_recents)
             }
             when (basePreferences.longTapRecentsNavBehaviour().get()) {
                 BasePreferences.LongTapRecents.DEFAULT -> {
@@ -426,7 +426,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
         }
         nav.getItemView(R.id.nav_browse)?.setOnLongClickListener {
             if (nav.selectedItemId != R.id.nav_browse) {
-                nav.selectedItemId = R.id.nav_browse
+                selectTab(R.id.nav_browse)
             }
             when (basePreferences.longTapBrowseNavBehaviour().get()) {
                 BasePreferences.LongTapBrowse.DEFAULT -> {
@@ -515,16 +515,18 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             toolbar.setNavigationIconTint(getResourceColor(R.attr.actionBarTintColor))
             toolbar.router = router
         }
+        navGlassIndicator = binding.bottomNav?.let { NavGlassIndicator(it) }
+
         if (router.hasRootController()) {
-            nav.selectedItemId =
+            selectTab(
                 when (router.backstack.firstOrNull()?.controller) {
                     is RecentsController -> R.id.nav_recents
                     is BrowseController -> R.id.nav_browse
                     else -> R.id.nav_library
-                }
+                },
+                animated = false,
+            )
         }
-
-        navGlassIndicator = binding.bottomNav?.let { NavGlassIndicator(it) }
 
         nav.setOnItemSelectedListener { item ->
             val id = item.itemId
@@ -533,13 +535,14 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 if (!currentController.canChangeTabs {
                     continueSwitchingTabs = true
                     this@MainActivity.nav.selectedItemId = id
+                    navGlassIndicator?.sync(animated = true)
                 }
                 ) {
                     return@setOnItemSelectedListener false
                 }
             }
             continueSwitchingTabs = false
-            navGlassIndicator?.moveTo(id)
+            navGlassIndicator?.sync(animated = true)
             nav.performHapticFeedback(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     HapticFeedbackConstants.CONFIRM
@@ -960,6 +963,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
 
     override fun onResume() {
         super.onResume()
+        navGlassIndicator?.sync(animated = false)
         checkForAppUpdates()
         lifecycleScope.launchIO {
             extensionManager.getExtensionUpdates(false)
@@ -994,7 +998,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 object : TapTargetView.Listener() {
                     override fun onTargetClick(view: TapTargetView) {
                         super.onTargetClick(view)
-                        nav.selectedItemId = R.id.nav_recents
+                        selectTab(R.id.nav_recents)
                     }
                 },
             )
@@ -1066,10 +1070,10 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             )
         }
         when (intent.action) {
-            SHORTCUT_LIBRARY -> nav.selectedItemId = R.id.nav_library
+            SHORTCUT_LIBRARY -> selectTab(R.id.nav_library)
             SHORTCUT_RECENTLY_UPDATED, SHORTCUT_RECENTLY_READ, Constants.SHORTCUT_RECENTS -> {
                 if (nav.selectedItemId != R.id.nav_recents) {
-                    nav.selectedItemId = R.id.nav_recents
+                    selectTab(R.id.nav_recents)
                 } else {
                     router.popToRoot()
                 }
@@ -1085,10 +1089,10 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                     )
                 }
             }
-            SHORTCUT_BROWSE -> nav.selectedItemId = R.id.nav_browse
+            SHORTCUT_BROWSE -> selectTab(R.id.nav_browse)
             SHORTCUT_EXTENSIONS -> {
                 if (nav.selectedItemId != R.id.nav_browse) {
-                    nav.selectedItemId = R.id.nav_browse
+                    selectTab(R.id.nav_browse)
                 } else {
                     router.popToRoot()
                 }
@@ -1100,12 +1104,12 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             }
             Constants.SHORTCUT_MANGA -> {
                 val extras = intent.extras ?: return false
-                if (router.backstack.isEmpty()) nav.selectedItemId = R.id.nav_library
+                if (router.backstack.isEmpty()) selectTab(R.id.nav_library)
                 router.pushController(MangaDetailsController(extras).withFadeTransaction())
             }
             SHORTCUT_UPDATE_NOTES -> {
                 val extras = intent.extras ?: return false
-                if (router.backstack.isEmpty()) nav.selectedItemId = R.id.nav_library
+                if (router.backstack.isEmpty()) selectTab(R.id.nav_library)
                 if (
                     router.backstack.lastOrNull()?.controller !is AboutController.NewUpdateDialogController &&
                     // FIXME: Show Compose version of NewUpdateDialog for AboutController
@@ -1116,11 +1120,11 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
             }
             SHORTCUT_SOURCE -> {
                 val extras = intent.extras ?: return false
-                if (router.backstack.isEmpty()) nav.selectedItemId = R.id.nav_library
+                if (router.backstack.isEmpty()) selectTab(R.id.nav_library)
                 router.pushController(BrowseSourceController(extras).withFadeTransaction())
             }
             SHORTCUT_DOWNLOADS -> {
-                nav.selectedItemId = R.id.nav_recents
+                selectTab(R.id.nav_recents)
                 router.popToRoot()
                 nav.post {
                     val controller =
@@ -1129,7 +1133,7 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
                 }
             }
             Intent.ACTION_VIEW -> {
-                if (router.backstack.isEmpty()) nav.selectedItemId = R.id.nav_library
+                if (router.backstack.isEmpty()) selectTab(R.id.nav_library)
                 if (intent.scheme == "tachiyomi" && intent.data?.host == "add-repo") {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         router.popToRoot()
@@ -1238,11 +1242,16 @@ open class MainActivity : BaseActivity<MainActivityBinding>() {
     }
 
     private fun goToStartingTab() {
-        nav.selectedItemId = startingTab()
+        selectTab(startingTab())
     }
 
     fun goToTab(@IdRes id: Int) {
+        selectTab(id)
+    }
+
+    private fun selectTab(@IdRes id: Int, animated: Boolean = true) {
         nav.selectedItemId = id
+        navGlassIndicator?.sync(animated)
     }
 
     private fun setRoot(controller: Controller, id: Int) {
