@@ -27,6 +27,16 @@
         <item name="colorOnSecondaryContainer">@color/ios_label</item>
 
         <item name="colorError">@color/ios_red</item>
+
+        <item name="colorBackgroundFloating">@color/ios_raised</item>
+        <item name="popupMenuBackground">@drawable/popup_menu_ios_bg</item>
+        <item name="popupMenuStyle">@style/Widget.Yokai.PopupMenu</item>
+        <item name="android:popupMenuStyle">@style/Widget.Yokai.PopupMenu</item>
+        <item name="actionOverflowMenuStyle">@style/Widget.Yokai.PopupMenu.Overflow</item>
+        <item name="textAppearanceLargePopupMenu">@style/TextAppearance.Yokai.PopupMenu</item>
+        <item name="textAppearanceSmallPopupMenu">@style/TextAppearance.Yokai.PopupMenu</item>
+        <item name="textAppearancePopupMenuHeader">@style/TextAppearance.Yokai.PopupMenu</item>
+        <item name="android:dropdownListPreferredItemHeight">44dp</item>
     </style>
 
     <style name="Theme.Tachiyomi" parent="Theme.Base.Night"/>

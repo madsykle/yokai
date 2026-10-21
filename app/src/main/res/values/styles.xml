@@ -313,14 +313,64 @@
         <item name="android:textColorHint">@color/material_on_background_disabled</item>
     </style>
 
+    <style name="TextAppearance.Yokai.PopupMenu" parent="TextAppearance.Yokai.BodyLarge">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Widget.Yokai.PopupMenu" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@drawable/popup_menu_ios_bg</item>
+        <item name="android:popupElevation">0dp</item>
+        <item name="android:divider">@null</item>
+        <item name="android:dividerHeight">0dp</item>
+    </style>
+
+    <style name="Widget.Yokai.PopupMenu.Overflow" parent="Widget.Material3.PopupMenu.Overflow">
+        <item name="android:popupBackground">@drawable/popup_menu_ios_bg</item>
+        <item name="android:popupElevation">0dp</item>
+        <item name="android:divider">@null</item>
+        <item name="android:dividerHeight">0dp</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.AlertDialog.Title" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textFontWeight" tools:targetApi="p">600</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="MaterialAlertDialog.Yokai.Title.Text" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textAppearance">@style/TextAppearance.Yokai.AlertDialog.Title</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="Widget.Yokai.AlertDialog.Button" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">#0A84FF</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
     <style name="Theme.Widget.Yokai.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="alertDialogStyle">@style/Widget.Yokai.AlertDialog</item>
-        <item name="elevationOverlayEnabled">true</item>
-        <item name="elevationOverlayColor">?colorSecondary</item>
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="android:backgroundDimAmount">0.4</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.Yokai.Title.Text</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Yokai.AlertDialog.Button</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Yokai.AlertDialog.Button</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Yokai.AlertDialog.Button</item>
     </style>
 
     <style name="Widget.Yokai.AlertDialog" parent="MaterialAlertDialog.Material3">
-        <item name="backgroundTint">?attr/colorSurface</item>
+        <item name="backgroundTint">#2C2C2E</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Yokai.MediumComponent</item>
     </style>
 
     <!--=================-->
