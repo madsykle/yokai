@@ -105,7 +105,7 @@ Bottom line: XML-only covers colors, type, row height, side padding, header styl
 - Sheets: `sheet_ios_bg.xml` is `#1C1C1E` with 32dp top corners only, no elevation/tint; `Widget.Yokai.Sheet`; drag handle 36dp x 5dp, fully rounded, `ios_label_tertiary`.
 - Chips: 34dp high, fully rounded; unchecked `#2C2C2E`, checked `#0A84FF`, white 15sp medium text, no stroke.
 - Menus: `popup_menu_ios_bg.xml` is `#2C2C2E`, 14dp corners, 1dp `#14FFFFFF` border, 0 elevation; 44dp rows, 17sp regular white text, no dividers. Alert dialogs: `#2C2C2E`, 14dp corners, 17sp semibold title, `#0A84FF` 17sp buttons, 0.4 dim.
-- Segmented control (Recents): 36dp high, `#1C1C1E` container, fully rounded; selected `#3A3A3C` pill with 2dp inset; white 13sp selected label and `#99EBEBF5` unselected label; no ripple. Stock `TabLayout` has no state-dependent font weight, so the current XML uses medium for both; a semibold selected label needs a custom tab view.
+- Segmented control (Recents): 36dp high, `#1C1C1E` container, fully rounded; selected `#3A3A3C` pill with 2dp inset; white 13sp semibold selected label and `#99EBEBF5` 13sp medium unselected label; no ripple. Implemented with `tabTextAppearance` + `tabSelectedTextAppearance` (Material 1.14 exposes the selected appearance).
 
 ## Blocked
 
