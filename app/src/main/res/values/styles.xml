@@ -156,6 +156,12 @@
         <item name="android:letterSpacing">0</item>
     </style>
 
+    <style name="TextAppearance.Widget.Tab.Segmented.Selected" parent="TextAppearance.Widget.Tab.Segmented">
+        <item name="fontFamily">@font/inter_semibold</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
     <!--=======-->
     <!--Widgets-->
     <!--=======-->
@@ -402,6 +408,7 @@
         <item name="tabIndicatorAnimationMode">elastic</item>
         <item name="tabIndicatorFullWidth">true</item>
         <item name="tabTextAppearance">@style/TextAppearance.Widget.Tab.Segmented</item>
+        <item name="tabSelectedTextAppearance">@style/TextAppearance.Widget.Tab.Segmented.Selected</item>
         <item name="tabPaddingStart">0dp</item>
         <item name="tabPaddingEnd">0dp</item>
         <item name="tabPaddingTop">0dp</item>
