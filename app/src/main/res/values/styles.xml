@@ -159,6 +159,7 @@
     <style name="TextAppearance.Widget.Tab.Segmented.Selected" parent="TextAppearance.Widget.Tab.Segmented">
         <item name="fontFamily">@font/inter_semibold</item>
         <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textFontWeight" tools:targetApi="p">600</item>
         <item name="android:textColor">#FFFFFF</item>
     </style>
 
