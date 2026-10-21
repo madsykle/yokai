@@ -166,14 +166,15 @@
             android:layout_marginEnd="6dp"
             android:layout_marginBottom="4dp"
             android:orientation="vertical"
-            android:layout_height="31sp">
+            android:layout_height="wrap_content">
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/title"
                 style="?textAppearanceBodySmall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                app:lineHeight="15sp"
+                android:includeFontPadding="false"
+                app:lineHeight="18sp"
                 android:maxLines="2"
                 android:textColor="@color/library_comfortable_title_selector"
                 app:layout_constraintBottom_toTopOf="@+id/subtitle"
@@ -187,6 +188,8 @@
                 android:textColor="@color/library_comfortable_subtitle_selector"
                 android:layout_marginTop="-1dp"
                 android:ellipsize="end"
+                android:includeFontPadding="false"
+                app:lineHeight="16sp"
                 android:singleLine="true"
                 tools:text="Sample artist" />
         </LinearLayout>
