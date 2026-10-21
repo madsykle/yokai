@@ -191,11 +191,97 @@
     </style>
 
     <style name="Tachiyomi.PreferenceTheme" parent="@style/PreferenceThemeOverlay">
+        <item name="preferenceStyle">@style/Widget.Yokai.Preference</item>
+        <item name="preferenceCategoryStyle">@style/Widget.Yokai.PreferenceCategory</item>
         <item name="switchPreferenceCompatStyle">@style/Widget.Tachiyomi.SwitchPreferenceCompat</item>
+        <item name="checkBoxPreferenceStyle">@style/Widget.Yokai.CheckBoxPreference</item>
+        <item name="dialogPreferenceStyle">@style/Widget.Yokai.DialogPreference</item>
+        <item name="editTextPreferenceStyle">@style/Widget.Yokai.EditTextPreference</item>
+        <item name="dropdownPreferenceStyle">@style/Widget.Yokai.DropdownPreference</item>
+        <item name="preferenceFragmentCompatStyle">@style/Widget.Yokai.PreferenceFragment</item>
+        <item name="preferenceFragmentListStyle">@style/Widget.Yokai.PreferenceFragmentList</item>
+        <item name="preferenceCategoryTitleTextAppearance">@style/TextAppearance.Yokai.PreferenceCategory</item>
+        <item name="preferenceCategoryTitleTextColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.PreferenceTitle" parent="TextAppearance.Yokai.BodyLarge">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.PreferenceSummary" parent="TextAppearance.Yokai.BodySmall">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.PreferenceCategory" parent="TextAppearance.Yokai.BodySmall">
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textFontWeight" tools:targetApi="p">500</item>
+    </style>
+
+    <style name="Widget.Yokai.Preference" parent="Preference.Material">
+        <item name="android:layout">@layout/preference_yokai</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">true</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.PreferenceCategory" parent="Preference.Category.Material">
+        <item name="android:layout">@layout/preference_category_yokai</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
+        <item name="iconSpaceReserved">false</item>
     </style>
 
     <style name="Widget.Tachiyomi.SwitchPreferenceCompat" parent="Preference.SwitchPreferenceCompat.Material">
         <item name="widgetLayout">@layout/preference_widget_material_switch</item>
+        <item name="android:layout">@layout/preference_yokai</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.CheckBoxPreference" parent="Preference.CheckBoxPreference.Material">
+        <item name="android:layout">@layout/preference_yokai</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.DialogPreference" parent="Preference.DialogPreference.Material">
+        <item name="android:layout">@layout/preference_yokai</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.EditTextPreference" parent="Preference.DialogPreference.EditTextPreference.Material">
+        <item name="android:layout">@layout/preference_yokai</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.DropdownPreference" parent="Preference.DropDown.Material">
+        <item name="android:layout">@layout/preference_dropdown_yokai</item>
+        <item name="singleLineTitle">false</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
+    <style name="Widget.Yokai.PreferenceFragment" parent="PreferenceFragment.Material">
+        <item name="android:divider">@drawable/preference_list_divider_ios</item>
+        <item name="allowDividerAfterLastItem">false</item>
+        <item name="android:paddingLeft">0dp</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingRight">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+    </style>
+
+    <style name="Widget.Yokai.PreferenceFragmentList" parent="PreferenceFragmentList.Material">
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:clipToPadding">false</item>
     </style>
 
     <style name="Widget.Tachiyomi.CardView.Elevated" parent="Widget.Material3.CardView.Elevated">
