@@ -36,7 +36,6 @@
         <item name="textAppearanceLargePopupMenu">@style/TextAppearance.Yokai.PopupMenu</item>
         <item name="textAppearanceSmallPopupMenu">@style/TextAppearance.Yokai.PopupMenu</item>
         <item name="textAppearancePopupMenuHeader">@style/TextAppearance.Yokai.PopupMenu</item>
-        <item name="android:dropdownListPreferredItemHeight">44dp</item>
     </style>
 
     <style name="Theme.Tachiyomi" parent="Theme.Base.Night"/>
