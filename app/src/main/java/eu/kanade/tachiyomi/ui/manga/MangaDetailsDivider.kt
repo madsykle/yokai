@@ -5,17 +5,22 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.util.system.dpToPx
+import eu.kanade.tachiyomi.util.system.getResourceColor
 import eu.kanade.tachiyomi.util.system.isLTR
 import android.R as AR
 
-class MangaDetailsDivider(context: Context, val padding: Int = 12.dpToPx) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+class MangaDetailsDivider(context: Context, val padding: Int = 16.dpToPx) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
 
     private val divider: Drawable
 
     init {
         val a = context.obtainStyledAttributes(intArrayOf(AR.attr.listDivider))
-        divider = a.getDrawable(0)!!
+        // Use the themed separator color so the hairline matches the rest of the iOS surfaces.
+        divider = a.getDrawable(0)!!.mutate().apply {
+            setTint(context.getResourceColor(R.attr.colorOutline))
+        }
         a.recycle()
     }
 

@@ -12,7 +12,7 @@
 
     <TextView
         android:id="@+id/chapter_title"
-        style="?textAppearanceBodyMedium"
+        style="?textAppearanceBodyLarge"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -27,13 +27,14 @@
 
     <TextView
         android:id="@+id/chapter_subtitle"
-        style="?textAppearanceCaption"
+        style="?textAppearanceBodySmall"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="12dp"
         android:ellipsize="end"
         android:maxLines="1"
+        android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/bookmark_button"
         app:layout_constraintStart_toStartOf="parent"
