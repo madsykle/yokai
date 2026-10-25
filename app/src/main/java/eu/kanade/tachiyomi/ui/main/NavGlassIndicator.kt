@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.OvershootInterpolator
@@ -20,9 +19,7 @@ import eu.kanade.tachiyomi.R
 class NavGlassIndicator(private val nav: BottomNavigationView) {
 
     private val density = nav.resources.displayMetrics.density
-    private val capsule = CapsuleDrawable(density).apply {
-        itemCount = nav.menu.size()
-    }
+    private val capsule = CapsuleDrawable(density)
     private var animator: ValueAnimator? = null
     private var hasSynced = false
 
@@ -57,9 +54,7 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
         }
 
         val target = (index + 0.5f) * nav.width / itemCount
-        Log.d("NavGlass", "sel=$index target=$target w=${nav.width}")
 
-        capsule.itemCount = itemCount
         if (!animated || nav.width == 0 || !hasSynced) {
             animator?.cancel()
             capsule.centerX = target
@@ -105,13 +100,13 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
     private class CapsuleDrawable(private val density: Float) : Drawable() {
 
         private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x1FFFFFFF
+            color = 0x26FFFFFF
             style = Paint.Style.FILL
         }
         private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x26FFFFFF
+            color = 0x1FFFFFFF
             style = Paint.Style.STROKE
-            strokeWidth = (0.75f * density).coerceAtLeast(1f)
+            strokeWidth = 0.5f * density
         }
 
         private var alpha = 255
@@ -124,36 +119,36 @@ class NavGlassIndicator(private val nav: BottomNavigationView) {
                 }
             }
 
-        var itemCount: Int = 0
-            set(value) {
-                if (field != value) {
-                    field = value
-                    invalidateSelf()
-                }
-            }
-
-        private val capsuleInset = 8f * density
+        private val halfCapsuleWidth = 40f * density
         private val verticalInset = 11f * density
+        private val horizontalClearance = 20f * density
 
         override fun onBoundsChange(bounds: Rect) {
             invalidateSelf()
         }
 
         override fun draw(canvas: Canvas) {
-            if (itemCount <= 0 || bounds.width() <= 0 || bounds.height() <= 0) return
+            if (bounds.width() <= 0 || bounds.height() <= 0) return
 
-            val itemWidth = bounds.width() / itemCount.toFloat()
-            val capsuleWidth = itemWidth - capsuleInset
             val top = bounds.top + verticalInset
             val bottom = bounds.bottom - verticalInset
-            if (capsuleWidth <= 0f || bottom <= top) return
+            if (bottom <= top) return
 
-            val left = centerX - capsuleWidth / 2f
+            // Shrink symmetrically near the pill edges so the capsule keeps its target center.
+            val halfWidth = minOf(
+                halfCapsuleWidth,
+                centerX - horizontalClearance,
+                bounds.width() - horizontalClearance - centerX,
+            ).coerceAtLeast(0f)
+            if (halfWidth <= 0f) return
+
+            val left = centerX - halfWidth
+            val right = centerX + halfWidth
             val radius = (bottom - top) / 2f
-            fillPaint.alpha = (0x1F * alpha) / 255
-            strokePaint.alpha = (0x26 * alpha) / 255
-            canvas.drawRoundRect(left, top, left + capsuleWidth, bottom, radius, radius, fillPaint)
-            canvas.drawRoundRect(left, top, left + capsuleWidth, bottom, radius, radius, strokePaint)
+            fillPaint.alpha = (0x26 * alpha) / 255
+            strokePaint.alpha = (0x1F * alpha) / 255
+            canvas.drawRoundRect(left, top, right, bottom, radius, radius, fillPaint)
+            canvas.drawRoundRect(left, top, right, bottom, radius, radius, strokePaint)
         }
 
         override fun setAlpha(alpha: Int) {
