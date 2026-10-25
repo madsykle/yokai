@@ -15,12 +15,18 @@
     <!--Text Appearance-->
     <!--===============-->
     <style name="TextAppearance" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:textColor">?attr/colorOnBackground</item>
     </style>
 
     <style name="TextAppearance.BodyMedium.ReducedSpace" parent="TextAppearance.Material3.BodySmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">14sp</item>
         <item name="lineHeight">19sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.Tachiyomi.BodySecondary" parent="TextAppearance">
@@ -28,6 +34,9 @@
     </style>
 
     <style name="TextAppearance.Tachiyomi.Button" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:textColor">?colorSecondary</item>
     </style>
 
@@ -68,6 +77,42 @@
         <item name="android:letterSpacing">0</item>
     </style>
 
+    <style name="TextAppearance.Yokai.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
     <style name="TextAppearance.Yokai.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
         <item name="fontFamily">@font/inter</item>
         <item name="android:fontFamily">@font/inter</item>
@@ -82,6 +127,12 @@
         <item name="android:textSize">17sp</item>
         <item name="android:textFontWeight" tools:targetApi="p">600</item>
         <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.Yokai.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 
     <style name="TextAppearance.Yokai.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
@@ -107,6 +158,8 @@
     </style>
 
     <style name="TextAppearance.Yokai.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
@@ -610,6 +663,7 @@
     <style name="Widget.Tachiyomi.Button.OutlinedButton" parent="Widget.Material3.Button.OutlinedButton">
         <item name="backgroundTint">@color/ext_bg_selector</item>
         <item name="android:textColor">@color/ext_button_text_selector</item>
+        <item name="android:letterSpacing">0</item>
         <item name="rippleColor">?colorControlHighlight</item>
     </style>
 
@@ -622,6 +676,7 @@
 
     <style name="Theme.Widget.Button.TextButton" parent="Widget.Material3.Button.TextButton">
         <item name="android:textColor">?attr/colorSecondary</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="Theme.Widget.ImageBorderless" parent="Widget.AppCompat.ImageButton">
@@ -694,7 +749,10 @@
     </style>
 
     <style name="Theme.TextAppearance.Chip" parent="TextAppearance.MaterialComponents.Chip">
+        <item name="fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/inter</item>
         <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
 </resources>

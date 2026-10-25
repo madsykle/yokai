@@ -28,6 +28,22 @@
 
         <item name="colorError">@color/ios_red</item>
 
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Yokai.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Yokai.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Yokai.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Yokai.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Yokai.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Yokai.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Yokai.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Yokai.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Yokai.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Yokai.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Yokai.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Yokai.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Yokai.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Yokai.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Yokai.LabelSmall</item>
+
         <item name="colorBackgroundFloating">@color/ios_raised</item>
         <item name="popupMenuBackground">@drawable/popup_menu_ios_bg</item>
         <item name="popupMenuStyle">@style/Widget.Yokai.PopupMenu</item>
