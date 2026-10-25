@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Settings row that opens another screen or a dialog: same as preference_yokai.xml plus a
+  trailing iOS chevron. Switch/checkbox/slider rows keep preference_yokai.xml so they never
+  show a chevron next to their widget.
+
+  Assigned at runtime by eu.kanade.tachiyomi.ui.setting.SettingsRowStyler.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="44dp"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:clipToPadding="false"
+    android:baselineAligned="false"
+    android:orientation="horizontal">
+
+    <androidx.preference.internal.PreferenceImageView
+        android:id="@android:id/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="16dp"
+        android:visibility="gone"
+        android:importantForAccessibility="no"
+        app:maxWidth="24dp"
+        app:maxHeight="24dp" />
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:id="@android:id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Yokai.PreferenceTitle"
+            android:textColor="?attr/colorOnSurface"
+            android:textAlignment="viewStart" />
+
+        <TextView
+            android:id="@android:id/summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@android:id/title"
+            android:layout_alignStart="@android:id/title"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.Yokai.PreferenceSummary"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textAlignment="viewStart"
+            android:maxLines="10" />
+
+    </RelativeLayout>
+
+    <!-- ios_label_tertiary (#4DEBEBF5) as a literal: the ios_* colour resources only exist
+         in values-night, so a day-mode device would not resolve the reference. -->
+    <ImageView
+        android:id="@+id/settings_nav_chevron"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="6dp"
+        android:src="@drawable/ic_chevron_right_24dp"
+        android:tint="#4DEBEBF5"
+        android:scaleType="fitCenter"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no" />
+
+    <LinearLayout
+        android:id="@android:id/widget_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="end|center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="0dp"
+        android:orientation="vertical" />
+
+</LinearLayout>

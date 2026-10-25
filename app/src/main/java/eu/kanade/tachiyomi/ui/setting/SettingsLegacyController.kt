@@ -45,6 +45,7 @@ abstract class SettingsLegacyController : PreferenceController(), SettingsContro
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         listView.layoutManager = LinearLayoutManagerAccurateOffset(view.context)
+        listView.addItemDecoration(SettingsCardItemDecoration())
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle?): View {
@@ -77,6 +78,7 @@ abstract class SettingsLegacyController : PreferenceController(), SettingsContro
         val screen = preferenceManager.createPreferenceScreen(getThemedContext())
         preferenceScreen = screen
         setupPreferenceScreen(screen)
+        SettingsRowStyler.applyNavigationLayout(screen)
     }
 
     abstract fun setupPreferenceScreen(screen: PreferenceScreen): PreferenceScreen

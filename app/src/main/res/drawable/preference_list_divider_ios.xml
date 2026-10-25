@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  1dp #38383A separator between rows inside a settings card.
+
+  The preference library draws this divider from the very left/right edge of the list, so the
+  insets below line it up with the title start (16dp of card padding plus the 16dp list inset)
+  and stop it at the trailing edge of the card.
+
+  #38383A is ios_separator; it is a literal here because the ios_* colour resources only exist
+  in values-night and a day-mode device would not resolve the reference.
+-->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:insetLeft="16dp"
-    android:insetRight="0dp"
+    android:insetLeft="32dp"
+    android:insetRight="16dp"
     android:insetTop="0dp"
     android:insetBottom="0dp">
 
