@@ -21,12 +21,12 @@
         android:layout_height="wrap_content"
         app:layout_constrainedHeight="true"
         app:layout_constrainedWidth="true"
-        app:strokeWidth="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#14FFFFFF"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="14dp"
-        android:background="?colorBackgroundFloating"
-        app:cardBackgroundColor="?colorBackgroundFloating"
-        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="#2C2C2E"
+        app:cardCornerRadius="14dp"
         app:cardElevation="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -73,6 +73,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     android:layout_height="1dp"
+                    android:visibility="gone"
                     android:background="@color/divider" />
 
                 <eu.kanade.tachiyomi.widget.MenuSheetItemView

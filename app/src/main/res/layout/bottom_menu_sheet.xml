@@ -9,6 +9,14 @@
     android:elevation="0dp"
     app:layout_constraintVertical_chainStyle="packed">
 
+    <View
+        android:id="@+id/drag_handle"
+        style="@style/Widget.Ioscontrols.SheetDragHandle"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/menu_sheet_recycler"
         android:layout_width="match_parent"
@@ -33,7 +41,7 @@
         app:layout_constraintBottom_toTopOf="@id/menu_sheet_recycler"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/drag_handle">
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/toolbar_title"

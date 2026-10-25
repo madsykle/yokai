@@ -8,6 +8,12 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
+    <View
+        android:id="@+id/drag_handle"
+        style="@style/Widget.Ioscontrols.SheetDragHandle"
+        android:layout_marginBottom="4dp"
+        android:layout_gravity="center_horizontal" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:id="@+id/tabs_constraint"

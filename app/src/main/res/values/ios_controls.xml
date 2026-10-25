@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  iOS-style control resources owned by the "controls" stream.
+
+  All names in this file are prefixed (Widget.Ioscontrols / TextAppearance.Ioscontrols /
+  ios_*) so they cannot collide with the shared values/styles.xml or with the other
+  restyle streams.
+
+  Colours are literal iOS palette values on purpose: the ios_* colour resources only
+  exist in values-night/colors.xml, so referencing them from a default-config style
+  would resolve to nothing on a device in day mode.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 36dp x 5dp fully rounded grabber, ios_label_tertiary. Also reused as the
+         background of a plain View. -->
+    <style name="Widget.Ioscontrols.SheetDragHandle" parent="">
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">5dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:background">@drawable/drag_handle_ios</item>
+    </style>
+
+    <!-- Chip type: 15sp medium Inter, always white (chips are drawn on the dark
+         ios_raised / ios_blue fills). -->
+    <style name="TextAppearance.Ioscontrols.Chip" parent="TextAppearance.MaterialComponents.Chip">
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textFontWeight" tools:targetApi="p">500</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- Selectable chip: 34dp tall, pill shaped, #2C2C2E unchecked / #0A84FF checked,
+         no stroke, no leading or trailing icon. -->
+    <style name="Widget.Ioscontrols.Chip.Choice" parent="Widget.Material3.Chip.Filter">
+        <item name="shapeAppearance">@style/ShapeAppearance.Yokai.SmallComponent</item>
+        <item name="chipBackgroundColor">@color/ios_chip_choice_bg</item>
+        <item name="chipMinHeight">34dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconVisible">false</item>
+        <item name="chipIconEnabled">false</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="checkedIconEnabled">false</item>
+        <item name="closeIconVisible">false</item>
+        <item name="closeIconEnabled">false</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+        <item name="android:textAppearance">@style/TextAppearance.Ioscontrols.Chip</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <!-- Non selectable chip: same metrics, flat #2C2C2E fill. -->
+    <style name="Widget.Ioscontrols.Chip.Assist" parent="Widget.Material3.Chip.Assist">
+        <item name="shapeAppearance">@style/ShapeAppearance.Yokai.SmallComponent</item>
+        <item name="chipBackgroundColor">#2C2C2E</item>
+        <item name="chipMinHeight">34dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconVisible">false</item>
+        <item name="chipIconEnabled">false</item>
+        <item name="closeIconVisible">false</item>
+        <item name="closeIconEnabled">false</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+        <item name="android:textAppearance">@style/TextAppearance.Ioscontrols.Chip</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+</resources>
