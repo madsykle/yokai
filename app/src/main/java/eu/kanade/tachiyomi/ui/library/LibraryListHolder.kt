@@ -64,6 +64,7 @@ class LibraryListHolder(
             binding.unreadDownloadBadge.badgeView.isVisible = false
             binding.padding.isVisible = false
             binding.subtitle.isVisible = false
+            binding.iosListsRowDivider.isVisible = false
             return
         }
 
@@ -74,6 +75,7 @@ class LibraryListHolder(
         }
         binding.padding.isVisible = true
         binding.card.isVisible = true
+        binding.iosListsRowDivider.isVisible = true
         binding.title.textAlignment = View.TEXT_ALIGNMENT_TEXT_START
 
         // Update the binding.title of the manga.

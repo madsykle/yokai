@@ -34,6 +34,7 @@
             style="@style/Theme.Widget.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/clear_history" />
+            android:text="@string/clear_history"
+            android:textColor="?attr/colorError" />
     </LinearLayout>
 </eu.kanade.tachiyomi.ui.recents.options.RecentsHistoryView>

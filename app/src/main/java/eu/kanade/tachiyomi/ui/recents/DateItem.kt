@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
+import androidx.core.view.updatePaddingRelative
 import androidx.recyclerview.widget.RecyclerView
 import eu.davidea.flexibleadapter.FlexibleAdapter
 import eu.davidea.flexibleadapter.items.AbstractHeaderItem
@@ -74,7 +75,12 @@ class DateItem(val date: Date, val addedString: Boolean = false) : AbstractHeade
                     },
                 )
             } else {
-                sectionText.updatePadding(18.dpToPx)
+                sectionText.updatePaddingRelative(
+                    start = 16.dpToPx,
+                    end = 16.dpToPx,
+                    top = 20.dpToPx,
+                    bottom = 6.dpToPx,
+                )
             }
         }
 

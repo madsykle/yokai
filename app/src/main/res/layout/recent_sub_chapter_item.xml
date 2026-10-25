@@ -10,7 +10,7 @@
 
     <View
         android:id="@+id/divider"
-        android:background="@color/divider"
+        android:background="?attr/colorOutline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -40,6 +40,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="@font/inter_medium"
+            android:letterSpacing="0"
             android:maxLines="1"
             tools:text="Chapter name"
             android:textColor="?attr/colorOnBackground"
@@ -54,8 +56,10 @@
             android:visibility="gone"
             tools:visibility="visible"
             android:ellipsize="end"
+            android:fontFamily="@font/inter"
             android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp"
             app:layout_constraintVertical_chainStyle="packed"/>
     </androidx.appcompat.widget.LinearLayoutCompat>
 

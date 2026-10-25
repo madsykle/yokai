@@ -54,8 +54,9 @@
             android:id="@+id/source_image"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginStart="6dp"
-            android:padding="8dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/ios_lists_source_icon_bg"
+            android:padding="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintStart_toStartOf="parent"
@@ -67,10 +68,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="@font/inter_medium"
+            android:letterSpacing="0"
             android:maxLines="1"
             android:paddingStart="0dp"
             android:paddingEnd="8dp"
             android:textColor="?attr/colorOnBackground"
+            android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/source_latest"
             app:layout_constraintStart_toEndOf="@+id/source_image"
@@ -87,6 +91,8 @@
             android:minWidth="50dp"
             android:text="@string/latest"
             android:textAllCaps="false"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="15sp"
             app:layout_constraintEnd_toStartOf="@id/source_pin" />
 
         <ImageButton
@@ -103,6 +109,16 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:contentDescription="@string/pin" />
+
+        <View
+            android:id="@+id/ios_lists_row_divider"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginStart="68dp"
+            android:background="?attr/colorOutline"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

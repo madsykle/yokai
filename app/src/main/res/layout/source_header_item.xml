@@ -10,10 +10,14 @@
         style="?textAppearanceBodySmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+        android:fontFamily="@font/inter_semibold"
+        android:letterSpacing="0"
+        android:paddingTop="12dp"
+        android:paddingBottom="6dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
         tools:text="Title" />
 
 </FrameLayout>

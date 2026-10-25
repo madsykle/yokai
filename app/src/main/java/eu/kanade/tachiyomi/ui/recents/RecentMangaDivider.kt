@@ -3,23 +3,22 @@ package eu.kanade.tachiyomi.ui.recents
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
+import androidx.recyclerview.widget.RecyclerView
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.util.system.dpToPx
+import eu.kanade.tachiyomi.util.system.getResourceColor
 import eu.kanade.tachiyomi.util.system.isLTR
-import android.R as AR
 
-class RecentMangaDivider(context: Context) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+class RecentMangaDivider(context: Context) : RecyclerView.ItemDecoration() {
 
-    private val divider: Drawable
+    private val divider: Drawable = ColorDrawable(context.getResourceColor(R.attr.colorOutline))
+    private val dividerHeight = 1.dpToPx
+    private val dividerInset = 84.dpToPx
 
-    init {
-        val a = context.obtainStyledAttributes(intArrayOf(AR.attr.listDivider))
-        divider = a.getDrawable(0)!!
-        a.recycle()
-    }
-
-    override fun onDraw(c: Canvas, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
+    override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         val childCount = parent.childCount
         for (i in 0 until childCount - 1) {
             val child = parent.getChildAt(i)
@@ -27,13 +26,12 @@ class RecentMangaDivider(context: Context) : androidx.recyclerview.widget.Recycl
             if (holder is RecentMangaHolder &&
                 parent.getChildViewHolder(parent.getChildAt(i + 1)) is RecentMangaHolder
             ) {
-                val params =
-                    child.layoutParams as androidx.recyclerview.widget.RecyclerView.LayoutParams
+                val params = child.layoutParams as RecyclerView.LayoutParams
                 val top = child.bottom + params.bottomMargin
-                val bottom = top + divider.intrinsicHeight
-                val left = parent.paddingStart + if (parent.context.resources.isLTR) 12.dpToPx else 0
+                val bottom = top + dividerHeight
+                val left = parent.paddingStart + if (parent.context.resources.isLTR) dividerInset else 0
                 val right =
-                    parent.width - parent.paddingEnd - if (!parent.context.resources.isLTR) 12.dpToPx else 0
+                    parent.width - parent.paddingEnd - if (!parent.context.resources.isLTR) dividerInset else 0
 
                 divider.setBounds(left, top, right, bottom)
                 divider.draw(c)
@@ -44,9 +42,9 @@ class RecentMangaDivider(context: Context) : androidx.recyclerview.widget.Recycl
     override fun getItemOffsets(
         outRect: Rect,
         view: View,
-        parent: androidx.recyclerview.widget.RecyclerView,
-        state: androidx.recyclerview.widget.RecyclerView.State,
+        parent: RecyclerView,
+        state: RecyclerView.State,
     ) {
-        outRect.set(0, 0, 0, divider.intrinsicHeight)
+        outRect.set(0, 0, 0, dividerHeight)
     }
 }
